@@ -13,13 +13,13 @@ type User struct {
 
 func UserViewHandler(users map[string]User) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		userId := r.URL.Query().Get("user_id")
+		userID := r.URL.Query().Get("user_id")
 		if r.URL.Query().Get("user_id") == "" {
 			http.Error(rw, "userId is empty", http.StatusBadRequest)
 			return
 		}
 
-		user, ok := users[userId]
+		user, ok := users[userID]
 		if !ok {
 			http.Error(rw, "user not found", http.StatusNotFound)
 			return
