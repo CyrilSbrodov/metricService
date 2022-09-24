@@ -63,7 +63,7 @@ func TestUserViewHandler(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			request := httptest.NewRequest(http.MethodPost, tt.request, nil)
+			request := httptest.NewRequest(http.MethodGet, tt.request, nil)
 			w := httptest.NewRecorder()
 			h := http.HandlerFunc(handlers.UserViewHandler(tt.users))
 			h.ServeHTTP(w, request)
