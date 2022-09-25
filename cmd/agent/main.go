@@ -71,10 +71,10 @@ func main() {
 			val := reflect.ValueOf(gauge)
 			for i := 0; i < val.NumField(); i++ {
 				//отправка данных по адресу
-				uploadGauge(client, getUrl(urlGauge, val.Field(i).Field(0).Interface().(string)), val.Field(i).Field(1).Interface().(float64))
+				uploadGauge(client, getURL(urlGauge, val.Field(i).Field(0).Interface().(string)), val.Field(i).Field(1).Interface().(float64))
 			}
 			//отправка данных по адресу
-			uploadCounter(client, getUrl(urlCounter, counter.PollCount.Name), counter.PollCount.Value)
+			uploadCounter(client, getURL(urlCounter, counter.PollCount.Name), counter.PollCount.Value)
 
 			//обновление метрики 2 сек
 		case <-tickerUpdate.C:
@@ -120,7 +120,7 @@ func update(memory *runtime.MemStats, gauge handlers.Gauge, counter handlers.Cou
 	return gauge, counter
 }
 
-func getUrl(url, name string) string {
+func getURL(url, name string) string {
 	url += name
 	return url
 }

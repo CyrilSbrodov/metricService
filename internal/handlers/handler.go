@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -163,19 +162,19 @@ func UserViewHandler(users map[string]User) http.HandlerFunc {
 	}
 }
 
-func CollectMetricData(g *Gauge, c *Counter) http.HandlerFunc {
-	return func(rw http.ResponseWriter, r *http.Request) {
-		str := fmt.Sprintf("%f "+"%d ", g.Sys, c.PollCount)
-		resultJson, err := json.MarshalIndent(str, " ", " ")
-		if err != nil {
-			errors.New(fmt.Sprintf("не удалось перекодировать данные. ошибка: %v", err))
-		}
-		rw.Header().Set("Access-Control-Allow-Origin", "*")
-		rw.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-		rw.WriteHeader(http.StatusOK)
-		_, _ = rw.Write(resultJson)
-	}
-}
+//func CollectMetricData(g *Gauge, c *Counter) http.HandlerFunc {
+//	return func(rw http.ResponseWriter, r *http.Request) {
+//		str := fmt.Sprintf("%f "+"%d ", g.Sys, c.PollCount)
+//		resultJson, err := json.MarshalIndent(str, " ", " ")
+//		if err != nil {
+//			errors.New(fmt.Sprintf("не удалось перекодировать данные. ошибка: %v", err))
+//		}
+//		rw.Header().Set("Access-Control-Allow-Origin", "*")
+//		rw.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+//		rw.WriteHeader(http.StatusOK)
+//		_, _ = rw.Write(resultJson)
+//	}
+//}
 
 func UpdateHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
