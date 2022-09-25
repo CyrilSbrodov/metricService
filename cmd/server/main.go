@@ -98,7 +98,7 @@ func main() {
 		},
 	}
 	http.HandleFunc("/user", handlers.UserViewHandler(users))
-	http.HandleFunc("/update", handlers.UpdateHandler())
+	http.HandleFunc("/update/", handlers.UpdateHandler())
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

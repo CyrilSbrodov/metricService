@@ -17,6 +17,8 @@ type Arg struct {
 }
 
 func main() {
+	urlGauge := "http://localhost:8080/update/gauge/"
+	urlCounter := "http://localhost:8080/update/counter/"
 	var arg = Arg{
 		2 * time.Second,
 		10 * time.Second,
@@ -65,35 +67,18 @@ func main() {
 		select {
 		//отправка метрики 10 сек
 		case <-tickerUpload.C:
-			//сбор данных в строку
+
 			val := reflect.ValueOf(gauge)
-			result := ""
 			for i := 0; i < val.NumField(); i++ {
-				result += fmt.Sprintf("%s: %f\n", val.Field(i).Field(0).Interface().(string), val.Field(i).Field(1).Interface().(float64))
+				//отправка данных по адресу
+				uploadGauge(client, getUrl(urlGauge, val.Field(i).Field(0).Interface().(string)), val.Field(i).Field(1).Interface().(float64))
 			}
-			result += fmt.Sprintf("%s: %d", counter.PollCount.Name, counter.PollCount.Value)
-
 			//отправка данных по адресу
-			request, err := http.NewRequest(http.MethodPost, "http://localhost:8080/update", bytes.NewBufferString(result))
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-			request.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
-			//чтение ответа
-			response, err := client.Do(request)
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-
-			response.Body.Close()
+			uploadCounter(client, getUrl(urlCounter, counter.PollCount.Name), counter.PollCount.Value)
 
 			//обновление метрики 2 сек
 		case <-tickerUpdate.C:
 			gauge, counter = update(&memory, gauge, counter)
-			fmt.Println("Обновил", counter.PollCount.Value)
 		}
 	}
 
@@ -133,4 +118,49 @@ func update(memory *runtime.MemStats, gauge handlers.Gauge, counter handlers.Cou
 	gauge.RandomValue.Value = 1
 
 	return gauge, counter
+}
+
+func getUrl(url, name string) string {
+	url += name
+	return url
+}
+
+func uploadGauge(client *http.Client, url string, value float64) {
+	val := fmt.Sprintf("%f", value)
+
+	request, err := http.NewRequest(http.MethodPost, url, bytes.NewBufferString(val))
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	request.Header.Add("Content-Type", "text/plain")
+
+	//чтение ответа
+	response, err := client.Do(request)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	defer response.Body.Close()
+}
+
+func uploadCounter(client *http.Client, url string, value int64) {
+	val := fmt.Sprintf("%d", value)
+
+	request, err := http.NewRequest(http.MethodPost, url, bytes.NewBufferString(val))
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	request.Header.Add("Content-Type", "text/plain")
+
+	//чтение ответа
+	response, err := client.Do(request)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	defer response.Body.Close()
 }
