@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/CyrilSbrodov/metricService.git/internal/handlers"
-	"io"
 	"net/http"
 	"os"
 	"reflect"
@@ -58,44 +57,14 @@ func main() {
 	gauge.RandomValue.Name = "RandomValue"
 
 	//запуск тикера
-	ticker := time.NewTicker(arg.reportInterval)
+	tickerUpload := time.NewTicker(arg.reportInterval)
+	tickerUpdate := time.NewTicker(arg.pollInterval)
 	client := &http.Client{}
 
 	for {
 		select {
-		case <-ticker.C:
-			//сбор метрики
-			runtime.ReadMemStats(&memory)
-			gauge.Alloc.Value = float64(memory.Alloc)
-			gauge.BuckHashSys.Value = float64(memory.BuckHashSys)
-			gauge.Frees.Value = float64(memory.Frees)
-			gauge.GCCPUFraction.Value = memory.GCCPUFraction
-			gauge.GCSys.Value = float64(memory.GCSys)
-			gauge.HeapAlloc.Value = float64(memory.HeapAlloc)
-			gauge.HeapIdle.Value = float64(memory.HeapIdle)
-			gauge.HeapInuse.Value = float64(memory.HeapInuse)
-			gauge.HeapObjects.Value = float64(memory.HeapObjects)
-			gauge.HeapReleased.Value = float64(memory.HeapReleased)
-			gauge.HeapSys.Value = float64(memory.HeapSys)
-			gauge.LastGC.Value = float64(memory.LastGC)
-			gauge.Lookups.Value = float64(memory.Lookups)
-			gauge.MCacheInuse.Value = float64(memory.MCacheInuse)
-			gauge.MCacheSys.Value = float64(memory.MCacheSys)
-			gauge.MSpanInuse.Value = float64(memory.MSpanInuse)
-			gauge.MSpanSys.Value = float64(memory.MSpanSys)
-			gauge.Mallocs.Value = float64(memory.Mallocs)
-			gauge.NextGC.Value = float64(memory.NextGC)
-			gauge.NumForcedGC.Value = float64(memory.NumForcedGC)
-			gauge.NumGC.Value = float64(memory.NumGC)
-			gauge.OtherSys.Value = float64(memory.OtherSys)
-			gauge.PauseTotalNs.Value = float64(memory.PauseTotalNs)
-			gauge.StackInuse.Value = float64(memory.StackInuse)
-			gauge.StackSys.Value = float64(memory.StackSys)
-			gauge.Sys.Value = float64(memory.Sys)
-			gauge.TotalAlloc.Value = float64(memory.TotalAlloc)
-			counter.PollCount.Value += 1
-			gauge.RandomValue.Value = 1
-
+		//отправка метрики 10 сек
+		case <-tickerUpload.C:
 			//сбор данных в строку
 			val := reflect.ValueOf(gauge)
 			result := ""
@@ -119,15 +88,49 @@ func main() {
 				os.Exit(1)
 			}
 
-			body, err := io.ReadAll(response.Body)
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-			fmt.Println(string(body))
 			response.Body.Close()
 
+			//обновление метрики 2 сек
+		case <-tickerUpdate.C:
+			gauge, counter = update(&memory, gauge, counter)
+			fmt.Println("Обновил", counter.PollCount.Value)
 		}
 	}
 
+}
+
+func update(memory *runtime.MemStats, gauge handlers.Gauge, counter handlers.Counter) (handlers.Gauge, handlers.Counter) {
+	//сбор метрики
+	runtime.ReadMemStats(memory)
+	gauge.Alloc.Value = float64(memory.Alloc)
+	gauge.BuckHashSys.Value = float64(memory.BuckHashSys)
+	gauge.Frees.Value = float64(memory.Frees)
+	gauge.GCCPUFraction.Value = memory.GCCPUFraction
+	gauge.GCSys.Value = float64(memory.GCSys)
+	gauge.HeapAlloc.Value = float64(memory.HeapAlloc)
+	gauge.HeapIdle.Value = float64(memory.HeapIdle)
+	gauge.HeapInuse.Value = float64(memory.HeapInuse)
+	gauge.HeapObjects.Value = float64(memory.HeapObjects)
+	gauge.HeapReleased.Value = float64(memory.HeapReleased)
+	gauge.HeapSys.Value = float64(memory.HeapSys)
+	gauge.LastGC.Value = float64(memory.LastGC)
+	gauge.Lookups.Value = float64(memory.Lookups)
+	gauge.MCacheInuse.Value = float64(memory.MCacheInuse)
+	gauge.MCacheSys.Value = float64(memory.MCacheSys)
+	gauge.MSpanInuse.Value = float64(memory.MSpanInuse)
+	gauge.MSpanSys.Value = float64(memory.MSpanSys)
+	gauge.Mallocs.Value = float64(memory.Mallocs)
+	gauge.NextGC.Value = float64(memory.NextGC)
+	gauge.NumForcedGC.Value = float64(memory.NumForcedGC)
+	gauge.NumGC.Value = float64(memory.NumGC)
+	gauge.OtherSys.Value = float64(memory.OtherSys)
+	gauge.PauseTotalNs.Value = float64(memory.PauseTotalNs)
+	gauge.StackInuse.Value = float64(memory.StackInuse)
+	gauge.StackSys.Value = float64(memory.StackSys)
+	gauge.Sys.Value = float64(memory.Sys)
+	gauge.TotalAlloc.Value = float64(memory.TotalAlloc)
+	counter.PollCount.Value += 1
+	gauge.RandomValue.Value = 1
+
+	return gauge, counter
 }
