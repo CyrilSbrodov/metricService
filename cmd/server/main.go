@@ -3,7 +3,10 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/CyrilSbrodov/metricService.git/internal/handlers"
+	"log"
 	"math"
+	"net/http"
 )
 
 // Relationship определяет положение в семье.
@@ -84,19 +87,20 @@ func main() {
 
 	fmt.Println(u.FullName())
 
-	//users := map[string]handlers.User{
-	//	"user1": {
-	//		FirstName: "Test",
-	//		LastName:  "Test",
-	//	},
-	//	"user2": {
-	//		FirstName: "Test 2",
-	//		LastName:  "Test 2",
-	//	},
-	//}
-	//http.HandleFunc("/user", handlers.UserViewHandler(users))
-	//
-	//log.Fatal(http.ListenAndServe(":8080", nil))
+	users := map[string]handlers.User{
+		"user1": {
+			FirstName: "Test",
+			LastName:  "Test",
+		},
+		"user2": {
+			FirstName: "Test 2",
+			LastName:  "Test 2",
+		},
+	}
+	http.HandleFunc("/user", handlers.UserViewHandler(users))
+	http.HandleFunc("/update", handlers.UpdateHandler())
+
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
 func Abs(value float64) float64 {
