@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 	"net/http"
@@ -71,10 +70,11 @@ func main() {
 			val := reflect.ValueOf(gauge)
 			for i := 0; i < val.NumField(); i++ {
 				//отправка данных по адресу
-				uploadGauge(client, getURL(urlGauge, val.Field(i).Field(0).Interface().(string)), val.Field(i).Field(1).Interface().(float64))
+				value := fmt.Sprintf("%f", val.Field(i).Field(1).Interface().(float64))
+				uploadGauge(client, getURL(urlGauge, val.Field(i).Field(0).Interface().(string), value))
 			}
 			//отправка данных по адресу
-			uploadCounter(client, getURL(urlCounter, counter.PollCount.Name), counter.PollCount.Value)
+			uploadCounter(client, getURL(urlCounter, counter.PollCount.Name, string(counter.PollCount.Value)))
 
 			//обновление метрики 2 сек
 		case <-tickerUpdate.C:
@@ -120,15 +120,13 @@ func update(memory *runtime.MemStats, gauge storage.Gauge, counter storage.Count
 	return gauge, counter
 }
 
-func getURL(url, name string) string {
-	url += name
+func getURL(url, name, value string) string {
+	url += name + value
 	return url
 }
 
-func uploadGauge(client *http.Client, url string, value float64) {
-	val := fmt.Sprintf("%f", value)
-
-	request, err := http.NewRequest(http.MethodPost, url, bytes.NewBufferString(val))
+func uploadGauge(client *http.Client, url string) {
+	request, err := http.NewRequest(http.MethodPost, url, nil)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -147,10 +145,9 @@ func uploadGauge(client *http.Client, url string, value float64) {
 	defer response.Body.Close()
 }
 
-func uploadCounter(client *http.Client, url string, value int64) {
-	val := fmt.Sprintf("%d", value)
+func uploadCounter(client *http.Client, url string) {
 
-	request, err := http.NewRequest(http.MethodPost, url, bytes.NewBufferString(val))
+	request, err := http.NewRequest(http.MethodPost, url, nil)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

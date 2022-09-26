@@ -5,6 +5,7 @@ import (
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -70,7 +71,7 @@ func (h handler) UserViewHandler(users map[string]storage.User) http.HandlerFunc
 
 func (h handler) GaugeHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		content, err := ioutil.ReadAll(r.Body)
+		_, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Write([]byte(err.Error()))
@@ -85,6 +86,12 @@ func (h handler) GaugeHandler() http.HandlerFunc {
 			rw.Write([]byte("not value"))
 			return
 		}
+		method := url[1]
+		if method != "update" {
+			rw.WriteHeader(http.StatusNotFound)
+			rw.Write([]byte("not value"))
+			return
+		}
 		types := url[2]
 		if types != "gauge" {
 			rw.WriteHeader(http.StatusNotImplemented)
@@ -92,23 +99,25 @@ func (h handler) GaugeHandler() http.HandlerFunc {
 			return
 		}
 		name := url[3]
-
-		err = h.CollectGauge(name, string(content))
+		value, err := strconv.ParseFloat(url[4], 64)
+		if err != nil {
+			rw.WriteHeader(http.StatusBadRequest)
+			rw.Write([]byte(err.Error()))
+			return
+		}
+		err = h.CollectGauge(name, value)
 		if err != nil {
 			rw.WriteHeader(http.StatusBadRequest)
 			rw.Write([]byte(err.Error()))
 			return
 		}
 		rw.WriteHeader(http.StatusOK)
-		//fmt.Println(string(content))
-		//fmt.Println(string(content))
-		//fmt.Println(url)
 	}
 }
 
 func (h handler) CounterHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		content, err := ioutil.ReadAll(r.Body)
+		_, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Write([]byte(err.Error()))
@@ -120,6 +129,12 @@ func (h handler) CounterHandler() http.HandlerFunc {
 		url := strings.Split(r.URL.Path, "/")
 
 		if len(url) < 4 {
+			rw.WriteHeader(http.StatusNotFound)
+			rw.Write([]byte("not value"))
+			return
+		}
+		method := url[1]
+		if method != "update" {
 			rw.WriteHeader(http.StatusNotFound)
 			rw.Write([]byte("not value"))
 			return
@@ -132,13 +147,19 @@ func (h handler) CounterHandler() http.HandlerFunc {
 		}
 		name := url[3]
 
-		err = h.CollectCounter(name, string(content))
+		value, err := strconv.Atoi(url[4])
+		if err != nil {
+			rw.WriteHeader(http.StatusBadRequest)
+			rw.Write([]byte(err.Error()))
+			return
+		}
+
+		err = h.CollectCounter(name, int64(value))
 		if err != nil {
 			rw.WriteHeader(http.StatusBadRequest)
 			rw.Write([]byte(err.Error()))
 			return
 		}
 		rw.WriteHeader(http.StatusOK)
-
 	}
 }
