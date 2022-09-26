@@ -1,30 +1,31 @@
 package main
 
 import (
-	"net/http"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-//func TestAbs(t *testing.T) {
-//
-//	tests := []struct {
-//		name  string
-//		value float64
-//		want  float64
-//	}{
-//		{name: "simple negative value", value: -10, want: 10},
-//		{name: "simple positive value", value: 10, want: 10},
-//		{name: "zero", value: -0, want: 0},
-//		{name: "small value", value: -0.000000001, want: 0.000000001},
-//	}
-//	for _, tt := range tests {
-//		t.Run(tt.name, func(t *testing.T) {
-//			v := Abs(tt.value)
-//			// для сравнения двух чисел подойдет функция Equal
-//			assert.Equal(t, tt.want, v)
-//		})
-//	}
-//}
+func TestAbs(t *testing.T) {
+
+	tests := []struct {
+		name  string
+		value float64
+		want  float64
+	}{
+		{name: "simple negative value", value: -10, want: 10},
+		{name: "simple positive value", value: 10, want: 10},
+		{name: "zero", value: -0, want: 0},
+		{name: "small value", value: -0.000000001, want: 0.000000001},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := Abs(tt.value)
+			// для сравнения двух чисел подойдет функция Equal
+			assert.Equal(t, tt.want, v)
+		})
+	}
+}
+
 //
 //func TestUser_FullName(t *testing.T) {
 //	type fields struct {
@@ -135,29 +136,29 @@ import (
 //	}
 //}
 
-func TestApp_Run(t *testing.T) {
-	type fields struct {
-		server *http.Server
-	}
-	server := http.Server{}
-	tests := []struct {
-		name   string
-		fields fields
-	}{
-		{
-			"start Server",
-			fields{
-				&server,
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			a := &App{
-				server: tt.fields.server,
-			}
-			a.Run()
-		})
-	}
-}
+//func TestApp_Run(t *testing.T) {
+//	type fields struct {
+//		server *http.Server
+//	}
+//	server := http.Server{}
+//	tests := []struct {
+//		name   string
+//		fields fields
+//	}{
+//		{
+//			"start Server",
+//			fields{
+//				&server,
+//			},
+//		},
+//	}
+//
+//	for _, tt := range tests {
+//		t.Run(tt.name, func(t *testing.T) {
+//			a := &App{
+//				server: tt.fields.server,
+//			}
+//			a.Run()
+//		})
+//	}
+//}

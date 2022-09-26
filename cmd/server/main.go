@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"github.com/CyrilSbrodov/metricService.git/internal/handlers"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage/repositories"
 	"log"
+	"math"
 	"net/http"
 	"os"
 	"os/signal"
@@ -64,6 +66,11 @@ import (
 //func (u User) FullName() string {
 //	return u.FirstName + " " + u.LastName
 //}
+
+func Abs(value float64) float64 {
+	return math.Abs(value)
+}
+
 func main() {
 	//f := Family{}
 	//err := f.AddNew(Father, Person{
@@ -80,8 +87,8 @@ func main() {
 	//})
 	//fmt.Println(f, err)
 	//
-	//v := Abs(3)
-	//fmt.Println(v)
+	v := Abs(3)
+	fmt.Println(v)
 	//
 	//u := User{
 	//	FirstName: "Misha",
@@ -101,31 +108,13 @@ func main() {
 	//	},
 	//}
 
-	serv := NewApp()
-	serv.Run()
-}
-
-//func Abs(value float64) float64 {
-//	return math.Abs(value)
-//}
-
-type App struct {
-	server *http.Server
-}
-
-func NewApp() *App {
-	return &App{}
-}
-
-func (a *App) Run() {
-
 	router := http.ServeMux{}
 	repo := repositories.NewRepository()
 	//service := storage.NewService(repo)
 	handler := handlers.NewHandler(repo)
 	handler.Register(&router)
 
-	a.server = &http.Server{
+	srv := http.Server{
 		Addr:         ":8080",
 		Handler:      &router,
 		WriteTimeout: 15 * time.Second,
@@ -135,7 +124,7 @@ func (a *App) Run() {
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
-		if err := a.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("listen: %s\n", err)
 		}
 	}()
@@ -150,7 +139,7 @@ func (a *App) Run() {
 		cancel()
 	}()
 
-	if err := a.server.Shutdown(ctx); err != nil {
+	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatalf("Server Shutdown Failed:%+v", err)
 	}
 	log.Print("Server Exited Properly")
