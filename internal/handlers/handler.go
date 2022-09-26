@@ -13,12 +13,12 @@ type Handlers interface {
 	Register(router *http.ServeMux)
 }
 
-type handler struct {
+type Handler struct {
 	//storage.Service
 	storage.Storage
 }
 
-func (h handler) Register(router *http.ServeMux) {
+func (h Handler) Register(router *http.ServeMux) {
 	//router.HandleFunc("/user", h.UserViewHandler(users map[string]storage.User))
 	router.HandleFunc("/update/gauge/", h.GaugeHandler())
 	router.HandleFunc("/update/counter/", h.CounterHandler())
@@ -26,12 +26,12 @@ func (h handler) Register(router *http.ServeMux) {
 }
 
 func NewHandler(storage storage.Storage) Handlers {
-	return &handler{
+	return &Handler{
 		storage,
 	}
 }
 
-func (h handler) UserViewHandler(users map[string]storage.User) http.HandlerFunc {
+func (h Handler) UserViewHandler(users map[string]storage.User) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		userID := r.URL.Query().Get("user_id")
 		if r.URL.Query().Get("user_id") == "" {
@@ -70,7 +70,7 @@ func (h handler) UserViewHandler(users map[string]storage.User) http.HandlerFunc
 //	}
 //}
 
-func (h handler) GaugeHandler() http.HandlerFunc {
+func (h Handler) GaugeHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		_, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -116,7 +116,7 @@ func (h handler) GaugeHandler() http.HandlerFunc {
 	}
 }
 
-func (h handler) CounterHandler() http.HandlerFunc {
+func (h Handler) CounterHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		_, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -164,7 +164,7 @@ func (h handler) CounterHandler() http.HandlerFunc {
 		rw.WriteHeader(http.StatusOK)
 	}
 }
-func (h handler) OtherHandler() http.HandlerFunc {
+func (h Handler) OtherHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		_, err := ioutil.ReadAll(r.Body)
 		if err != nil {

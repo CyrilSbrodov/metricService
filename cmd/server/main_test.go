@@ -1,5 +1,10 @@
 package main
 
+import (
+	"net/http"
+	"testing"
+)
+
 //func TestAbs(t *testing.T) {
 //
 //	tests := []struct {
@@ -129,3 +134,30 @@ package main
 //		})
 //	}
 //}
+
+func TestApp_Run(t *testing.T) {
+	type fields struct {
+		server *http.Server
+	}
+	server := http.Server{}
+	tests := []struct {
+		name   string
+		fields fields
+	}{
+		{
+			"start Server",
+			fields{
+				&server,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &App{
+				server: tt.fields.server,
+			}
+			a.Run()
+		})
+	}
+}

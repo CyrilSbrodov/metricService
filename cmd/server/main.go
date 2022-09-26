@@ -100,12 +100,7 @@ func main() {
 	//		LastName:  "Test 2",
 	//	},
 	//}
-	//stor := repositories.NewRepository()
-	//service := storage.NewService(stor)
-	//http.HandleFunc("/user", handlers.UserViewHandler(users))
-	//http.HandleFunc("/update/", handlers.UpdateHandler())
-	//
-	//log.Fatal(http.ListenAndServe(":8080", nil))
+
 	serv := NewApp()
 	serv.Run()
 }
