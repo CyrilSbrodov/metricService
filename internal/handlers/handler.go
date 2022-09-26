@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 	"github.com/go-chi/chi/v5"
 	"io/ioutil"
@@ -25,6 +26,7 @@ func (h Handler) Register(r *chi.Mux) {
 		r.Post("/update/gauge/*", h.GaugeHandler())
 		r.Post("/update/counter/*", h.CounterHandler())
 		r.Post("/*", h.OtherHandler())
+		r.Get("/value/*", h.GetHandler())
 	})
 }
 
@@ -206,5 +208,50 @@ func (h Handler) OtherHandler() http.HandlerFunc {
 		}
 
 		rw.WriteHeader(http.StatusBadRequest)
+	}
+}
+
+func (h Handler) GetHandler() http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		url := strings.Split(r.URL.Path, "/")
+		if len(url) < 3 {
+			rw.WriteHeader(http.StatusBadRequest)
+			rw.Write([]byte("incorrect request"))
+			return
+		}
+		method := url[1]
+		if method != "value" {
+			rw.WriteHeader(http.StatusNotFound)
+			rw.Write([]byte("method is wrong"))
+			return
+		}
+		name := url[3]
+		types := url[2]
+		if types == "gauge" {
+			value, err := h.GetGauge(name)
+			if err != nil {
+				rw.WriteHeader(http.StatusNotFound)
+				rw.Write([]byte("incorrect name"))
+				return
+			}
+			rw.WriteHeader(http.StatusOK)
+			rw.Write([]byte(fmt.Sprintf("%v", value)))
+			return
+		} else if types == "counter" {
+			value, err := h.GetCounter(name)
+			if err != nil {
+				rw.WriteHeader(http.StatusNotFound)
+				rw.Write([]byte("incorrect name"))
+				return
+			}
+			rw.WriteHeader(http.StatusOK)
+			rw.Write([]byte(fmt.Sprintf("%v", value)))
+			return
+		} else {
+			rw.WriteHeader(http.StatusNotImplemented)
+			rw.Write([]byte("incorrect type"))
+			return
+		}
+
 	}
 }

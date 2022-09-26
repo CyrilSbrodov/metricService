@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"fmt"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 )
 
@@ -34,4 +35,20 @@ func (r *Repository) CollectCounter(name string, value int64) error {
 	//fmt.Println("r.Counter")
 	//fmt.Println(r.Counter)
 	return nil
+}
+
+func (r *Repository) GetGauge(name string) (float64, error) {
+	value, ok := r.Gauge[name]
+	if !ok {
+		return value, fmt.Errorf("missing metric %s", name)
+	}
+	return value, nil
+}
+
+func (r *Repository) GetCounter(name string) (int64, error) {
+	value, ok := r.Counter[name]
+	if !ok {
+		return value, fmt.Errorf("missing metric %s", name)
+	}
+	return value, nil
 }
