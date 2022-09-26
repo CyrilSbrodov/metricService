@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
+	"github.com/go-chi/chi/v5"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -10,7 +11,7 @@ import (
 )
 
 type Handlers interface {
-	Register(router *http.ServeMux)
+	Register(router *chi.Mux)
 }
 
 type Handler struct {
@@ -18,11 +19,13 @@ type Handler struct {
 	storage.Storage
 }
 
-func (h Handler) Register(router *http.ServeMux) {
+func (h Handler) Register(r *chi.Mux) {
 	//router.HandleFunc("/user", h.UserViewHandler(users map[string]storage.User))
-	router.HandleFunc("/update/gauge/", h.GaugeHandler())
-	router.HandleFunc("/update/counter/", h.CounterHandler())
-	router.HandleFunc("/", h.OtherHandler())
+	r.Group(func(r chi.Router) {
+		r.Post("/update/gauge/*", h.GaugeHandler())
+		r.Post("/update/counter/*", h.CounterHandler())
+		r.Post("/*", h.OtherHandler())
+	})
 }
 
 func NewHandler(storage storage.Storage) Handlers {
@@ -87,13 +90,15 @@ func (h Handler) GaugeHandler() http.HandlerFunc {
 			rw.Write([]byte("not value"))
 			return
 		}
+
 		method := url[1]
 		if method != "update" {
 			rw.WriteHeader(http.StatusNotFound)
-			rw.Write([]byte("not value"))
+			rw.Write([]byte("incorrect method"))
 			return
 		}
 		types := url[2]
+
 		if types != "gauge" {
 			rw.WriteHeader(http.StatusNotImplemented)
 			rw.Write([]byte("incorrect type"))
@@ -103,7 +108,7 @@ func (h Handler) GaugeHandler() http.HandlerFunc {
 		value, err := strconv.ParseFloat(url[4], 64)
 		if err != nil {
 			rw.WriteHeader(http.StatusBadRequest)
-			rw.Write([]byte(err.Error()))
+			rw.Write([]byte("incorrect value"))
 			return
 		}
 		err = h.CollectGauge(name, value)
@@ -118,6 +123,7 @@ func (h Handler) GaugeHandler() http.HandlerFunc {
 
 func (h Handler) CounterHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
+
 		_, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)

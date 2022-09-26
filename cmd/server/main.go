@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/CyrilSbrodov/metricService.git/internal/handlers"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage/repositories"
+	"github.com/go-chi/chi/v5"
 	"log"
 	"math"
 	"net/http"
@@ -108,15 +109,15 @@ func main() {
 	//	},
 	//}
 
-	router := http.ServeMux{}
+	router := chi.NewRouter()
 	repo := repositories.NewRepository()
 	//service := storage.NewService(repo)
 	handler := handlers.NewHandler(repo)
-	handler.Register(&router)
+	handler.Register(router)
 
 	srv := http.Server{
 		Addr:         ":8080",
-		Handler:      &router,
+		Handler:      router,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
