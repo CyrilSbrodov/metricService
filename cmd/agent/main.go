@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/CyrilSbrodov/metricService.git/internal/handlers"
+	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 	"net/http"
 	"os"
 	"reflect"
@@ -21,10 +21,10 @@ func main() {
 	urlCounter := "http://localhost:8080/update/counter/"
 	var arg = Arg{
 		2 * time.Second,
-		10 * time.Second,
+		3 * time.Second,
 	}
-	var gauge handlers.Gauge
-	var counter handlers.Counter
+	var gauge storage.Gauge
+	var counter storage.Counter
 	var memory runtime.MemStats
 
 	//присвоение имени метрики
@@ -84,7 +84,7 @@ func main() {
 
 }
 
-func update(memory *runtime.MemStats, gauge handlers.Gauge, counter handlers.Counter) (handlers.Gauge, handlers.Counter) {
+func update(memory *runtime.MemStats, gauge storage.Gauge, counter storage.Counter) (storage.Gauge, storage.Counter) {
 	//сбор метрики
 	runtime.ReadMemStats(memory)
 	gauge.Alloc.Value = float64(memory.Alloc)
@@ -142,6 +142,8 @@ func uploadGauge(client *http.Client, url string, value float64) {
 		os.Exit(1)
 	}
 
+	//fmt.Println(response.Status)
+
 	defer response.Body.Close()
 }
 
@@ -161,6 +163,8 @@ func uploadCounter(client *http.Client, url string, value int64) {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+
+	//fmt.Println(response.Status)
 
 	defer response.Body.Close()
 }
