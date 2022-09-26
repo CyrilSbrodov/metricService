@@ -1,9 +1,7 @@
 package repositories
 
 import (
-	"fmt"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
-	"strconv"
 )
 
 type Repository struct {
@@ -20,36 +18,20 @@ func NewRepository() *Repository {
 	}
 }
 
-func (r *Repository) CollectGauge(name, value string) error {
+func (r *Repository) CollectGauge(name string, value float64) error {
 
-	//_, ok := r.Gauge[name]
-	//if !ok {
-	//	return fmt.Errorf("%s does not exists ", name)
-	//}
-	val, err := strconv.ParseFloat(value, 64)
-	if err != nil {
-		return err //TODO
-	}
-	r.Gauge[name] = val
+	r.Gauge[name] = value
 
-	fmt.Println("r.Gauge")
-	fmt.Println(r.Gauge)
+	//fmt.Println("r.Gauge")
+	//fmt.Println(r.Gauge)
 	return nil
 }
 
-func (r *Repository) CollectCounter(name, value string) error {
+func (r *Repository) CollectCounter(name string, value int64) error {
 
-	//_, ok := r.Counter[name]
-	//if !ok {
-	//	return fmt.Errorf("%s does not exists ", name)
-	//}
-	val, err := strconv.Atoi(value)
-	if err != nil {
-		return err //TODO
-	}
-	r.Counter[name] = int64(val)
+	r.Counter[name] = value
 
-	fmt.Println("r.Counter")
-	fmt.Println(r.Counter)
+	//fmt.Println("r.Counter")
+	//fmt.Println(r.Counter)
 	return nil
 }
