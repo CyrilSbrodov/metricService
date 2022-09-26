@@ -19,7 +19,8 @@ type handler struct {
 
 func (h handler) Register(router *http.ServeMux) {
 	//router.HandleFunc("/user", h.UserViewHandler(users map[string]storage.User))
-	router.HandleFunc("/update/", h.UpdateHandler())
+	router.HandleFunc("/update/gauge/", h.GaugeHandler())
+	router.HandleFunc("/update/counter/", h.CounterHandler())
 }
 
 func NewHandler(storage storage.Storage) Handlers {
@@ -67,7 +68,45 @@ func (h handler) UserViewHandler(users map[string]storage.User) http.HandlerFunc
 //	}
 //}
 
-func (h handler) UpdateHandler() http.HandlerFunc {
+func (h handler) GaugeHandler() http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		content, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			rw.WriteHeader(http.StatusInternalServerError)
+			rw.Write([]byte(err.Error()))
+			return
+		}
+
+		defer r.Body.Close()
+
+		url := strings.Split(r.URL.Path, "/")
+		if len(url) < 4 {
+			rw.WriteHeader(http.StatusBadRequest)
+			rw.Write([]byte("not value"))
+			return
+		}
+		types := url[2]
+		if types != "gauge" {
+			rw.WriteHeader(http.StatusBadRequest)
+			rw.Write([]byte("incorrect type"))
+			return
+		}
+		name := url[3]
+
+		err = h.CollectGauge(name, string(content))
+		if err != nil {
+			rw.WriteHeader(http.StatusBadRequest)
+			rw.Write([]byte(err.Error()))
+			return
+		}
+		rw.WriteHeader(http.StatusOK)
+		//fmt.Println(string(content))
+		//fmt.Println(string(content))
+		//fmt.Println(url)
+	}
+}
+
+func (h handler) CounterHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		content, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -80,14 +119,26 @@ func (h handler) UpdateHandler() http.HandlerFunc {
 
 		url := strings.Split(r.URL.Path, "/")
 
-		err = h.Collect(url[2], url[3], string(content))
+		if len(url) < 4 {
+			rw.WriteHeader(http.StatusBadRequest)
+			rw.Write([]byte("not value"))
+			return
+		}
+		types := url[2]
+		if types != "counter" {
+			rw.WriteHeader(http.StatusBadRequest)
+			rw.Write([]byte("incorrect type"))
+			return
+		}
+		name := url[3]
+
+		err = h.CollectCounter(name, string(content))
 		if err != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
+			rw.WriteHeader(http.StatusBadRequest)
 			rw.Write([]byte(err.Error()))
 			return
 		}
 		rw.WriteHeader(http.StatusOK)
-		//fmt.Println(string(content))
 
 	}
 }

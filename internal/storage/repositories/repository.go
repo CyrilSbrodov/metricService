@@ -1,7 +1,9 @@
 package repositories
 
 import (
+	"errors"
 	"fmt"
+	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 	"strconv"
 )
 
@@ -11,30 +13,43 @@ type Repository struct {
 }
 
 func NewRepository() *Repository {
-	gauge := make(map[string]float64)
-	counter := make(map[string]int64)
+	gauge := storage.GaugeData
+	counter := storage.CounterData
 	return &Repository{
 		Gauge:   gauge,
 		Counter: counter,
 	}
 }
 
-func (r *Repository) Collect(types, name, value string) error {
-	if types == "gauge" {
-		value, err := strconv.ParseFloat(value, 64)
-		if err != nil {
-			return err //TODO
-		}
-		r.Gauge[name] = value
-	} else if types == "counter" {
-		value, err := strconv.Atoi(value)
-		if err != nil {
-			return err //TODO
-		}
-		r.Counter[name] = int64(value)
+func (r *Repository) CollectGauge(name, value string) error {
+
+	_, ok := r.Gauge[name]
+	if !ok {
+		return errors.New(fmt.Sprintf("%s does not exists ", name))
 	}
+	val, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return err //TODO
+	}
+	r.Gauge[name] = val
+
 	fmt.Println("r.Gauge")
 	fmt.Println(r.Gauge)
+	return nil
+}
+
+func (r *Repository) CollectCounter(name, value string) error {
+
+	_, ok := r.Counter[name]
+	if !ok {
+		return errors.New(fmt.Sprintf("%s does not exists ", name))
+	}
+	val, err := strconv.Atoi(value)
+	if err != nil {
+		return err //TODO
+	}
+	r.Counter[name] = int64(val)
+
 	fmt.Println("r.Counter")
 	fmt.Println(r.Counter)
 	return nil

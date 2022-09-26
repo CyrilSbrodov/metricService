@@ -1,5 +1,6 @@
 package storage
 
 type Storage interface {
-	Collect(types, name, value string) error
+	CollectGauge(name, value string) error
+	CollectCounter(name, value string) error
 }
