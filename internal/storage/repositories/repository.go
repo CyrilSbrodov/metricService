@@ -22,10 +22,10 @@ func NewRepository() *Repository {
 
 func (r *Repository) CollectGauge(name, value string) error {
 
-	_, ok := r.Gauge[name]
-	if !ok {
-		return fmt.Errorf("%s does not exists ", name)
-	}
+	//_, ok := r.Gauge[name]
+	//if !ok {
+	//	return fmt.Errorf("%s does not exists ", name)
+	//}
 	val, err := strconv.ParseFloat(value, 64)
 	if err != nil {
 		return err //TODO
@@ -39,10 +39,10 @@ func (r *Repository) CollectGauge(name, value string) error {
 
 func (r *Repository) CollectCounter(name, value string) error {
 
-	_, ok := r.Counter[name]
-	if !ok {
-		return fmt.Errorf("%s does not exists ", name)
-	}
+	//_, ok := r.Counter[name]
+	//if !ok {
+	//	return fmt.Errorf("%s does not exists ", name)
+	//}
 	val, err := strconv.Atoi(value)
 	if err != nil {
 		return err //TODO
