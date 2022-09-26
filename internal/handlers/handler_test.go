@@ -143,6 +143,7 @@ func TestHandler_GaugeHandler(t *testing.T) {
 			}
 			h.GaugeHandler().ServeHTTP(w, request)
 			result := w.Result()
+			defer result.Body.Close()
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 		})
 	}
@@ -213,6 +214,7 @@ func TestHandler_CounterHandler(t *testing.T) {
 			}
 			h.CounterHandler().ServeHTTP(w, request)
 			result := w.Result()
+			defer result.Body.Close()
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 		})
 	}
