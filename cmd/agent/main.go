@@ -21,7 +21,7 @@ func main() {
 	urlCounter := "http://localhost:8080/update/counter/"
 	var arg = Arg{
 		2 * time.Second,
-		3 * time.Second,
+		10 * time.Second,
 	}
 	var gauge storage.Gauge
 	var counter storage.Counter
