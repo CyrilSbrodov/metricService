@@ -7,6 +7,7 @@ import (
 	"os"
 	"reflect"
 	"runtime"
+	"strconv"
 	"time"
 )
 
@@ -74,11 +75,14 @@ func main() {
 				uploadGauge(client, getURL(urlGauge, val.Field(i).Field(0).Interface().(string), value))
 			}
 			//отправка данных по адресу
-			uploadCounter(client, getURL(urlCounter, counter.PollCount.Name, string(counter.PollCount.Value)))
+			value := strconv.FormatInt(counter.PollCount.Value, 32)
+
+			uploadCounter(client, getURL(urlCounter, counter.PollCount.Name, value))
 
 			//обновление метрики 2 сек
 		case <-tickerUpdate.C:
 			gauge, counter = update(&memory, gauge, counter)
+			fmt.Println(counter)
 		}
 	}
 
@@ -121,7 +125,7 @@ func update(memory *runtime.MemStats, gauge storage.Gauge, counter storage.Count
 }
 
 func getURL(url, name, value string) string {
-	url += name + value
+	url += name + "/" + value
 	return url
 }
 
