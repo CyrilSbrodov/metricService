@@ -22,6 +22,7 @@ func (h handler) Register(router *http.ServeMux) {
 	//router.HandleFunc("/user", h.UserViewHandler(users map[string]storage.User))
 	router.HandleFunc("/update/gauge/", h.GaugeHandler())
 	router.HandleFunc("/update/counter/", h.CounterHandler())
+	router.HandleFunc("/", h.OtherHandler())
 }
 
 func NewHandler(storage storage.Storage) Handlers {
@@ -79,9 +80,9 @@ func (h handler) GaugeHandler() http.HandlerFunc {
 		}
 
 		defer r.Body.Close()
-
+		
 		url := strings.Split(r.URL.Path, "/")
-		if len(url) < 4 {
+		if len(url) < 5 {
 			rw.WriteHeader(http.StatusNotFound)
 			rw.Write([]byte("not value"))
 			return
@@ -128,7 +129,7 @@ func (h handler) CounterHandler() http.HandlerFunc {
 
 		url := strings.Split(r.URL.Path, "/")
 
-		if len(url) < 4 {
+		if len(url) < 5 {
 			rw.WriteHeader(http.StatusNotFound)
 			rw.Write([]byte("not value"))
 			return
@@ -161,5 +162,39 @@ func (h handler) CounterHandler() http.HandlerFunc {
 			return
 		}
 		rw.WriteHeader(http.StatusOK)
+	}
+}
+func (h handler) OtherHandler() http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		_, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			rw.WriteHeader(http.StatusInternalServerError)
+			rw.Write([]byte(err.Error()))
+			return
+		}
+
+		defer r.Body.Close()
+
+		url := strings.Split(r.URL.Path, "/")
+
+		if len(url) < 3 {
+			rw.WriteHeader(http.StatusNotFound)
+			rw.Write([]byte("not value"))
+			return
+		}
+		method := url[1]
+		if method != "update" {
+			rw.WriteHeader(http.StatusNotFound)
+			rw.Write([]byte("method is wrong"))
+			return
+		}
+		types := url[2]
+		if types != "counter" || types != "gauge" {
+			rw.WriteHeader(http.StatusNotImplemented)
+			rw.Write([]byte("incorrect type"))
+			return
+		}
+
+		rw.WriteHeader(http.StatusBadRequest)
 	}
 }
