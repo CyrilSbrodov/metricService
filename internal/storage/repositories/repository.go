@@ -1,7 +1,6 @@
 package repositories
 
 import (
-	"errors"
 	"fmt"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 	"strconv"
@@ -25,7 +24,7 @@ func (r *Repository) CollectGauge(name, value string) error {
 
 	_, ok := r.Gauge[name]
 	if !ok {
-		return errors.New(fmt.Sprintf("%s does not exists ", name))
+		return fmt.Errorf("%s does not exists ", name)
 	}
 	val, err := strconv.ParseFloat(value, 64)
 	if err != nil {
@@ -42,7 +41,7 @@ func (r *Repository) CollectCounter(name, value string) error {
 
 	_, ok := r.Counter[name]
 	if !ok {
-		return errors.New(fmt.Sprintf("%s does not exists ", name))
+		return fmt.Errorf("%s does not exists ", name)
 	}
 	val, err := strconv.Atoi(value)
 	if err != nil {

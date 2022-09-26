@@ -81,13 +81,13 @@ func (h handler) GaugeHandler() http.HandlerFunc {
 
 		url := strings.Split(r.URL.Path, "/")
 		if len(url) < 4 {
-			rw.WriteHeader(http.StatusBadRequest)
+			rw.WriteHeader(http.StatusNotFound)
 			rw.Write([]byte("not value"))
 			return
 		}
 		types := url[2]
 		if types != "gauge" {
-			rw.WriteHeader(http.StatusBadRequest)
+			rw.WriteHeader(http.StatusNotImplemented)
 			rw.Write([]byte("incorrect type"))
 			return
 		}
@@ -120,13 +120,13 @@ func (h handler) CounterHandler() http.HandlerFunc {
 		url := strings.Split(r.URL.Path, "/")
 
 		if len(url) < 4 {
-			rw.WriteHeader(http.StatusBadRequest)
+			rw.WriteHeader(http.StatusNotFound)
 			rw.Write([]byte("not value"))
 			return
 		}
 		types := url[2]
 		if types != "counter" {
-			rw.WriteHeader(http.StatusBadRequest)
+			rw.WriteHeader(http.StatusNotImplemented)
 			rw.Write([]byte("incorrect type"))
 			return
 		}
