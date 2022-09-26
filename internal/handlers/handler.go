@@ -80,7 +80,7 @@ func (h handler) GaugeHandler() http.HandlerFunc {
 		}
 
 		defer r.Body.Close()
-		
+
 		url := strings.Split(r.URL.Path, "/")
 		if len(url) < 5 {
 			rw.WriteHeader(http.StatusNotFound)
@@ -189,7 +189,11 @@ func (h handler) OtherHandler() http.HandlerFunc {
 			return
 		}
 		types := url[2]
-		if types != "counter" || types != "gauge" {
+		if types != "counter" {
+			rw.WriteHeader(http.StatusNotImplemented)
+			rw.Write([]byte("incorrect type"))
+			return
+		} else if types != "gauge" {
 			rw.WriteHeader(http.StatusNotImplemented)
 			rw.Write([]byte("incorrect type"))
 			return
