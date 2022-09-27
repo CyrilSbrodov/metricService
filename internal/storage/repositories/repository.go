@@ -23,17 +23,18 @@ func (r *Repository) CollectGauge(name string, value float64) error {
 
 	r.Gauge[name] = value
 
-	//fmt.Println("r.Gauge")
-	//fmt.Println(r.Gauge)
 	return nil
 }
 
 func (r *Repository) CollectCounter(name string, value int64) error {
+	val, ok := r.Counter[name]
+	if !ok {
+		r.Counter[name] = value
+		return nil
+	}
+	r.Counter[name] = value + val
+	fmt.Println(r.Counter)
 
-	r.Counter[name] = value
-
-	//fmt.Println("r.Counter")
-	//fmt.Println(r.Counter)
 	return nil
 }
 

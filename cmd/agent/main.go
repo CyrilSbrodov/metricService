@@ -7,7 +7,6 @@ import (
 	"os"
 	"reflect"
 	"runtime"
-	"strconv"
 	"time"
 )
 
@@ -74,7 +73,7 @@ func main() {
 				uploadGauge(client, getURL(urlGauge, val.Field(i).Field(0).Interface().(string), value))
 			}
 			//отправка данных по адресу
-			value := strconv.FormatInt(counter.PollCount.Value, 32)
+			value := fmt.Sprintf("%d", counter.PollCount.Value)
 			uploadCounter(client, getURL(urlCounter, counter.PollCount.Name, value))
 			//обновление метрики 2 сек
 		case <-tickerUpdate.C:
@@ -126,42 +125,26 @@ func getURL(url, name, value string) string {
 }
 
 func uploadGauge(client *http.Client, url string) {
-	request, err := http.NewRequest(http.MethodPost, url, nil)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	request.Header.Add("Content-Type", "text/plain")
-
-	//чтение ответа
-	response, err := client.Do(request)
+	req, err := http.Post(url, "text/plain", nil)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	//fmt.Println(response.Status)
+	fmt.Println(req.StatusCode)
 
-	defer response.Body.Close()
+	defer req.Body.Close()
 }
 
 func uploadCounter(client *http.Client, url string) {
 
-	request, err := http.NewRequest(http.MethodPost, url, nil)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	request.Header.Add("Content-Type", "text/plain")
-
-	//чтение ответа
-	response, err := client.Do(request)
+	req, err := http.Post(url, "text/plain", nil)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	//fmt.Println(response.Status)
+	fmt.Println(req.StatusCode)
 
-	defer response.Body.Close()
+	defer req.Body.Close()
 }

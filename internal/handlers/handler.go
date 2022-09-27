@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 	"github.com/go-chi/chi/v5"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -20,14 +19,14 @@ type Handler struct {
 	storage.Storage
 }
 
+// создание роутеров
 func (h Handler) Register(r *chi.Mux) {
-	//router.HandleFunc("/user", h.UserViewHandler(users map[string]storage.User))
-	r.Group(func(r chi.Router) {
-		r.Post("/update/gauge/*", h.GaugeHandler())
-		r.Post("/update/counter/*", h.CounterHandler())
-		r.Post("/*", h.OtherHandler())
-		r.Get("/value/*", h.GetHandler())
-	})
+
+	r.Post("/update/gauge/*", h.GaugeHandler())
+	r.Post("/update/counter/*", h.CounterHandler())
+	r.Post("/*", h.OtherHandler())
+	r.Get("/value/*", h.GetHandler())
+
 }
 
 func NewHandler(storage storage.Storage) Handlers {
@@ -36,6 +35,7 @@ func NewHandler(storage storage.Storage) Handlers {
 	}
 }
 
+//хендлер из задания про родственников
 func (h Handler) UserViewHandler(users map[string]storage.User) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		userID := r.URL.Query().Get("user_id")
@@ -61,31 +61,19 @@ func (h Handler) UserViewHandler(users map[string]storage.User) http.HandlerFunc
 	}
 }
 
-//func CollectMetricData(g *Gauge, c *Counter) http.HandlerFunc {
-//	return func(rw http.ResponseWriter, r *http.Request) {
-//		str := fmt.Sprintf("%f "+"%d ", g.Sys, c.PollCount)
-//		resultJson, err := json.MarshalIndent(str, " ", " ")
-//		if err != nil {
-//			errors.New(fmt.Sprintf("не удалось перекодировать данные. ошибка: %v", err))
-//		}
-//		rw.Header().Set("Access-Control-Allow-Origin", "*")
-//		rw.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-//		rw.WriteHeader(http.StatusOK)
-//		_, _ = rw.Write(resultJson)
-//	}
-//}
-
+//хендлер получения метрики Gauge
 func (h Handler) GaugeHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		_, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
-			rw.Write([]byte(err.Error()))
-			return
-		}
+		//_, err := ioutil.ReadAll(r.Body)
+		//if err != nil {
+		//	rw.WriteHeader(http.StatusInternalServerError)
+		//	rw.Write([]byte(err.Error()))
+		//	return
+		//}
+		//
+		//defer r.Body.Close()
 
-		defer r.Body.Close()
-
+		//проверка и разбивка URL
 		url := strings.Split(r.URL.Path, "/")
 		if len(url) < 5 {
 			rw.WriteHeader(http.StatusNotFound)
@@ -113,6 +101,8 @@ func (h Handler) GaugeHandler() http.HandlerFunc {
 			rw.Write([]byte("incorrect value"))
 			return
 		}
+
+		//отправка значений в БД
 		err = h.CollectGauge(name, value)
 		if err != nil {
 			rw.WriteHeader(http.StatusBadRequest)
@@ -123,18 +113,20 @@ func (h Handler) GaugeHandler() http.HandlerFunc {
 	}
 }
 
+//хендлер получения метрики Counter
 func (h Handler) CounterHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
-		_, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
-			rw.Write([]byte(err.Error()))
-			return
-		}
+		//_, err := ioutil.ReadAll(r.Body)
+		//if err != nil {
+		//	rw.WriteHeader(http.StatusInternalServerError)
+		//	rw.Write([]byte(err.Error()))
+		//	return
+		//}
+		//
+		//defer r.Body.Close()
 
-		defer r.Body.Close()
-
+		//проверка и разбивка URL
 		url := strings.Split(r.URL.Path, "/")
 
 		if len(url) < 5 {
@@ -163,6 +155,7 @@ func (h Handler) CounterHandler() http.HandlerFunc {
 			return
 		}
 
+		//отправка значений в БД
 		err = h.CollectCounter(name, int64(value))
 		if err != nil {
 			rw.WriteHeader(http.StatusBadRequest)
@@ -172,17 +165,20 @@ func (h Handler) CounterHandler() http.HandlerFunc {
 		rw.WriteHeader(http.StatusOK)
 	}
 }
+
+//проверка на правильность заполнения update and gauge and counter
 func (h Handler) OtherHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		_, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
-			rw.Write([]byte(err.Error()))
-			return
-		}
+		//_, err := ioutil.ReadAll(r.Body)
+		//if err != nil {
+		//	rw.WriteHeader(http.StatusInternalServerError)
+		//	rw.Write([]byte(err.Error()))
+		//	return
+		//}
+		//
+		//defer r.Body.Close()
 
-		defer r.Body.Close()
-
+		//проверка и разбивка URL
 		url := strings.Split(r.URL.Path, "/")
 
 		if len(url) < 3 {
@@ -211,8 +207,11 @@ func (h Handler) OtherHandler() http.HandlerFunc {
 	}
 }
 
+//хендлер получения данных из gauge and counter
 func (h Handler) GetHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
+
+		//проверка и разбивка URL
 		url := strings.Split(r.URL.Path, "/")
 		if len(url) < 3 {
 			rw.WriteHeader(http.StatusBadRequest)
@@ -228,6 +227,8 @@ func (h Handler) GetHandler() http.HandlerFunc {
 		name := url[3]
 		types := url[2]
 		if types == "gauge" {
+
+			//получение значений из gauge
 			value, err := h.GetGauge(name)
 			if err != nil {
 				rw.WriteHeader(http.StatusNotFound)
@@ -238,6 +239,8 @@ func (h Handler) GetHandler() http.HandlerFunc {
 			rw.Write([]byte(fmt.Sprintf("%v", value)))
 			return
 		} else if types == "counter" {
+
+			//получение значений из counter
 			value, err := h.GetCounter(name)
 			if err != nil {
 				rw.WriteHeader(http.StatusNotFound)

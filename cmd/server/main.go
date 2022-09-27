@@ -109,19 +109,24 @@ func main() {
 	//	},
 	//}
 
+	//определение роутера
 	router := chi.NewRouter()
+	//определение БД
 	repo := repositories.NewRepository()
 	//service := storage.NewService(repo)
+	//определение хендлера
 	handler := handlers.NewHandler(repo)
+	//регистрация хендлера
 	handler.Register(router)
 
 	srv := http.Server{
 		Addr:         ":8080",
 		Handler:      router,
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 1 * time.Second,
+		ReadTimeout:  1 * time.Second,
 	}
 
+	//gracefullshutdown
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
