@@ -127,5 +127,5 @@ type Counter struct {
 	}
 }
 
-var GaugeData map[string]float64
-var CounterData map[string]int64
+var GaugeData = map[string]float64{}
+var CounterData = map[string]int64{}

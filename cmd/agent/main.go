@@ -132,8 +132,6 @@ func uploadGauge(client *http.Client, url string) {
 		os.Exit(1)
 	}
 
-	fmt.Println(req.StatusCode)
-
 	defer req.Body.Close()
 }
 
@@ -144,8 +142,6 @@ func uploadCounter(client *http.Client, url string) {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-
-	fmt.Println(req.StatusCode)
 
 	defer req.Body.Close()
 }
