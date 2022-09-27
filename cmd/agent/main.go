@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 	"net/http"
 	"os"
 	"reflect"
 	"runtime"
 	"time"
+
+	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 )
 
 type Arg struct {

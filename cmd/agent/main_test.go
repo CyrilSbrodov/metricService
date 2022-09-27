@@ -1,11 +1,12 @@
 package main
 
 import (
-	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 	"net/http"
 	"reflect"
 	"runtime"
 	"testing"
+
+	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 )
 
 func Test_getURL(t *testing.T) {

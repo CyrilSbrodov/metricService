@@ -3,13 +3,15 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/CyrilSbrodov/metricService.git/internal/storage"
-	"github.com/go-chi/chi/v5"
 	"html/template"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/go-chi/chi/v5"
+
+	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 )
 
 type Handlers interface {
@@ -67,14 +69,6 @@ func (h Handler) UserViewHandler(users map[string]storage.User) http.HandlerFunc
 //хендлер получения метрики Gauge
 func (h Handler) GaugeHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		//_, err := ioutil.ReadAll(r.Body)
-		//if err != nil {
-		//	rw.WriteHeader(http.StatusInternalServerError)
-		//	rw.Write([]byte(err.Error()))
-		//	return
-		//}
-		//
-		//defer r.Body.Close()
 
 		//проверка и разбивка URL
 		url := strings.Split(r.URL.Path, "/")
@@ -120,15 +114,6 @@ func (h Handler) GaugeHandler() http.HandlerFunc {
 func (h Handler) CounterHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
-		//_, err := ioutil.ReadAll(r.Body)
-		//if err != nil {
-		//	rw.WriteHeader(http.StatusInternalServerError)
-		//	rw.Write([]byte(err.Error()))
-		//	return
-		//}
-		//
-		//defer r.Body.Close()
-
 		//проверка и разбивка URL
 		url := strings.Split(r.URL.Path, "/")
 
@@ -159,7 +144,7 @@ func (h Handler) CounterHandler() http.HandlerFunc {
 		}
 
 		//отправка значений в БД
-		err = h.CollectCounter(name, int64(value))
+		err = h.CollectOrIncreaseCounter(name, int64(value))
 		if err != nil {
 			rw.WriteHeader(http.StatusBadRequest)
 			rw.Write([]byte(err.Error()))
@@ -172,14 +157,6 @@ func (h Handler) CounterHandler() http.HandlerFunc {
 //проверка на правильность заполнения update and gauge and counter
 func (h Handler) OtherHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		//_, err := ioutil.ReadAll(r.Body)
-		//if err != nil {
-		//	rw.WriteHeader(http.StatusInternalServerError)
-		//	rw.Write([]byte(err.Error()))
-		//	return
-		//}
-		//
-		//defer r.Body.Close()
 
 		//проверка и разбивка URL
 		url := strings.Split(r.URL.Path, "/")
@@ -272,6 +249,5 @@ func (h Handler) GetAllHandler() http.HandlerFunc {
 		result := h.GetAll()
 		rw.WriteHeader(http.StatusOK)
 		rw.Write([]byte(result))
-
 	}
 }

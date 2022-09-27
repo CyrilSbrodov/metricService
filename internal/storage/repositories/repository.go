@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"fmt"
+
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 )
 
@@ -26,14 +27,13 @@ func (r *Repository) CollectGauge(name string, value float64) error {
 	return nil
 }
 
-func (r *Repository) CollectCounter(name string, value int64) error {
+func (r *Repository) CollectOrIncreaseCounter(name string, value int64) error {
 	val, ok := r.Counter[name]
 	if !ok {
 		r.Counter[name] = value
 		return nil
 	}
 	r.Counter[name] = value + val
-	//fmt.Println(r.Counter)
 
 	return nil
 }
