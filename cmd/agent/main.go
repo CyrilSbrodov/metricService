@@ -67,7 +67,6 @@ func main() {
 		select {
 		//отправка метрики 10 сек
 		case <-tickerUpload.C:
-
 			val := reflect.ValueOf(gauge)
 			for i := 0; i < val.NumField(); i++ {
 				//отправка данных по адресу
@@ -76,16 +75,13 @@ func main() {
 			}
 			//отправка данных по адресу
 			value := strconv.FormatInt(counter.PollCount.Value, 32)
-
 			uploadCounter(client, getURL(urlCounter, counter.PollCount.Name, value))
-
 			//обновление метрики 2 сек
 		case <-tickerUpdate.C:
 			gauge, counter = update(&memory, gauge, counter)
-			fmt.Println(counter)
+			fmt.Println(gauge)
 		}
 	}
-
 }
 
 func update(memory *runtime.MemStats, gauge storage.Gauge, counter storage.Counter) (storage.Gauge, storage.Counter) {
@@ -118,7 +114,7 @@ func update(memory *runtime.MemStats, gauge storage.Gauge, counter storage.Count
 	gauge.StackSys.Value = float64(memory.StackSys)
 	gauge.Sys.Value = float64(memory.Sys)
 	gauge.TotalAlloc.Value = float64(memory.TotalAlloc)
-	counter.PollCount.Value += 1
+	counter.PollCount.Value++
 	gauge.RandomValue.Value = 1
 
 	return gauge, counter
