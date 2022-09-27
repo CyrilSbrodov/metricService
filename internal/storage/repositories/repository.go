@@ -33,7 +33,7 @@ func (r *Repository) CollectCounter(name string, value int64) error {
 		return nil
 	}
 	r.Counter[name] = value + val
-	fmt.Println(r.Counter)
+	//fmt.Println(r.Counter)
 
 	return nil
 }
@@ -52,4 +52,16 @@ func (r *Repository) GetCounter(name string) (int64, error) {
 		return value, fmt.Errorf("missing metric %s", name)
 	}
 	return value, nil
+}
+
+func (r *Repository) GetAll() string {
+	result := "Gauge:\n"
+	for s, f := range r.Gauge {
+		result += fmt.Sprintf("%s : %f\n", s, f)
+	}
+	result = result + "Counter:\n"
+	for s, i := range r.Counter {
+		result += fmt.Sprintf("%s : %d\n", s, i)
+	}
+	return result
 }

@@ -78,7 +78,7 @@ func main() {
 			//обновление метрики 2 сек
 		case <-tickerUpdate.C:
 			gauge, counter = update(&memory, gauge, counter)
-			fmt.Println(gauge)
+			//fmt.Println(gauge)
 		}
 	}
 }

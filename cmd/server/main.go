@@ -73,6 +73,7 @@ func Abs(value float64) float64 {
 }
 
 func main() {
+
 	//f := Family{}
 	//err := f.AddNew(Father, Person{
 	//	FirstName: "Misha",

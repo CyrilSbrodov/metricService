@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 	"github.com/go-chi/chi/v5"
+	"html/template"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -26,6 +28,7 @@ func (h Handler) Register(r *chi.Mux) {
 	r.Post("/update/counter/*", h.CounterHandler())
 	r.Post("/*", h.OtherHandler())
 	r.Get("/value/*", h.GetHandler())
+	r.Get("/", h.GetAllHandler())
 
 }
 
@@ -255,6 +258,20 @@ func (h Handler) GetHandler() http.HandlerFunc {
 			rw.Write([]byte("incorrect type"))
 			return
 		}
+	}
+}
+
+//хендлер получения всех данных из gauge and counter
+func (h Handler) GetAllHandler() http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		t, err := template.ParseFiles("index.html")
+		if err != nil {
+			log.Print("template parsing error: ", err)
+		}
+		t.Execute(rw, nil)
+		result := h.GetAll()
+		rw.WriteHeader(http.StatusOK)
+		rw.Write([]byte(result))
 
 	}
 }
