@@ -110,21 +110,21 @@ func (h Handler) GetAllHandler() http.HandlerFunc {
 	}
 }
 
-//проверка на правильность заполнения url
-func (h Handler) OtherHandler() http.HandlerFunc {
-	return func(rw http.ResponseWriter, r *http.Request) {
-
-		//проверка и разбивка URL
-		url := strings.Split(r.URL.Path, "/")
-		method := url[1]
-		if method != "update" || method != "value" {
-			rw.WriteHeader(http.StatusNotFound)
-			rw.Write([]byte("method is wrong"))
-			return
-		}
-		rw.WriteHeader(http.StatusBadRequest)
-	}
-}
+////проверка на правильность заполнения url
+//func (h Handler) OtherHandler() http.HandlerFunc {
+//	return func(rw http.ResponseWriter, r *http.Request) {
+//
+//		//проверка и разбивка URL
+//		url := strings.Split(r.URL.Path, "/")
+//		method := url[1]
+//		if method != "update" || method != "value" {
+//			rw.WriteHeader(http.StatusNotFound)
+//			rw.Write([]byte("method is wrong"))
+//			return
+//		}
+//		rw.WriteHeader(http.StatusBadRequest)
+//	}
+//}
 
 //// создание роутеров
 //func (h Handler) Register(r *chi.Mux) {
@@ -172,7 +172,7 @@ func (h Handler) GaugeHandler() http.HandlerFunc {
 		}
 
 		//отправка значений в БД
-		err = h.CollectGauge(name, value)
+		err = h.CollectorChangeGauge(name, value)
 		if err != nil {
 			rw.WriteHeader(http.StatusBadRequest)
 			rw.Write([]byte(err.Error()))
@@ -226,40 +226,39 @@ func (h Handler) CounterHandler() http.HandlerFunc {
 	}
 }
 
-//
-////проверка на правильность заполнения update and gauge and counter
-//func (h Handler) OtherHandler() http.HandlerFunc {
-//	return func(rw http.ResponseWriter, r *http.Request) {
-//
-//		//проверка и разбивка URL
-//		url := strings.Split(r.URL.Path, "/")
-//
-//		if len(url) < 3 {
-//			rw.WriteHeader(http.StatusNotFound)
-//			rw.Write([]byte("not value"))
-//			return
-//		}
-//		method := url[1]
-//		if method != "update" {
-//			rw.WriteHeader(http.StatusNotFound)
-//			rw.Write([]byte("method is wrong"))
-//			return
-//		}
-//		types := url[2]
-//		if types != "counter" {
-//			rw.WriteHeader(http.StatusNotImplemented)
-//			rw.Write([]byte("incorrect type"))
-//			return
-//		} else if types != "gauge" {
-//			rw.WriteHeader(http.StatusNotImplemented)
-//			rw.Write([]byte("incorrect type"))
-//			return
-//		}
-//
-//		rw.WriteHeader(http.StatusBadRequest)
-//	}
-//}
-//
+//проверка на правильность заполнения update and gauge and counter
+func (h Handler) OtherHandler() http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+
+		//проверка и разбивка URL
+		url := strings.Split(r.URL.Path, "/")
+
+		if len(url) < 3 {
+			rw.WriteHeader(http.StatusNotFound)
+			rw.Write([]byte("not value"))
+			return
+		}
+		method := url[1]
+		if method != "update" {
+			rw.WriteHeader(http.StatusNotFound)
+			rw.Write([]byte("method is wrong"))
+			return
+		}
+		types := url[2]
+		if types != "counter" {
+			rw.WriteHeader(http.StatusNotImplemented)
+			rw.Write([]byte("incorrect type"))
+			return
+		} else if types != "gauge" {
+			rw.WriteHeader(http.StatusNotImplemented)
+			rw.Write([]byte("incorrect type"))
+			return
+		}
+
+		rw.WriteHeader(http.StatusBadRequest)
+	}
+}
+
 //хендлер получения данных из gauge and counter
 func (h Handler) GetHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
