@@ -8,6 +8,7 @@ import (
 
 type Repository struct {
 	Metrics map[string]storage.Metrics
+	gauge
 }
 
 func NewRepository() *Repository {
