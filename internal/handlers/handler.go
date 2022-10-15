@@ -52,12 +52,12 @@ func (h Handler) CollectHandler() http.HandlerFunc {
 			rw.Write([]byte(err.Error()))
 		}
 		defer r.Body.Close()
-		var store map[string]storage.Metrics
-		if err := json.Unmarshal(content, &store); err != nil {
+		var m storage.Metrics
+		if err := json.Unmarshal(content, &m); err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Write([]byte(err.Error()))
 		}
-		h.Storage.CollectMetrics(store)
+		h.Storage.CollectMetrics(m)
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
 	}

@@ -23,10 +23,8 @@ func NewRepository() *Repository {
 	}
 }
 
-func (r *Repository) CollectMetrics(store map[string]storage.Metrics) error {
-	for id, m := range store {
-		r.Metrics[id] = m
-	}
+func (r *Repository) CollectMetrics(m storage.Metrics) error {
+	r.Metrics[m.ID] = m
 	return nil
 }
 
