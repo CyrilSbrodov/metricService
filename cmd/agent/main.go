@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -53,13 +52,13 @@ func update(store map[string]storage.Metrics, count int64) map[string]storage.Me
 	runtime.ReadMemStats(&memory)
 	val := reflect.ValueOf(memory)
 	for i := 0; i < val.NumField(); i++ {
-		var metricValue interface{}
+		//var metricValue interface{}
 		var value float64
 		var m storage.Metrics
 		m.ID = reflect.TypeOf(memory).Field(i).Name
 		m.MType = "gauge"
 
-		metricValue = val.Field(i).Interface()
+		metricValue := val.Field(i).Interface()
 		switch metricValue.(type) {
 		case float64:
 			value = metricValue.(float64)
@@ -91,7 +90,7 @@ func upload(client *http.Client, url string, store map[string]storage.Metrics) {
 
 	metricsJSON, err := json.Marshal(store)
 	if err != nil {
-		errors.New(fmt.Sprintf("не удалось перекодировать данные. ошибка: %v", err))
+		fmt.Errorf("не удалось перекодировать данные. ошибка: %v", err)
 	}
 
 	req, err := http.Post(url, "application/json", bytes.NewBuffer(metricsJSON))

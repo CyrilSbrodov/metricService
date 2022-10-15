@@ -137,7 +137,7 @@ func (h Handler) CounterHandler() http.HandlerFunc {
 		method := url[1]
 		if method != "update" {
 			rw.WriteHeader(http.StatusNotFound)
-			rw.Write([]byte("wrong method"))
+			rw.Write([]byte("not value"))
 			return
 		}
 		types := url[2]
@@ -180,8 +180,6 @@ func (h Handler) OtherHandler() http.HandlerFunc {
 		}
 		method := url[1]
 		if method != "update" {
-			fmt.Println(method)
-
 			rw.WriteHeader(http.StatusNotFound)
 			rw.Write([]byte("method is wrong"))
 			return
@@ -246,8 +244,6 @@ func (h Handler) GetHandler() http.HandlerFunc {
 			return
 		}
 		method := url[1]
-		fmt.Println(method)
-
 		if method != "value" {
 			rw.WriteHeader(http.StatusNotFound)
 			rw.Write([]byte("method is wrong"))
@@ -264,7 +260,6 @@ func (h Handler) GetHandler() http.HandlerFunc {
 				rw.Write([]byte("incorrect name"))
 				return
 			}
-			fmt.Println(value)
 			rw.WriteHeader(http.StatusOK)
 			rw.Write([]byte(fmt.Sprintf("%v", value)))
 			return
@@ -287,18 +282,3 @@ func (h Handler) GetHandler() http.HandlerFunc {
 		}
 	}
 }
-
-//
-////хендлер получения всех данных из gauge and counter
-//func (h Handler) GetAllHandler() http.HandlerFunc {
-//	return func(rw http.ResponseWriter, r *http.Request) {
-//		t, err := template.ParseFiles("index.html")
-//		if err != nil {
-//			log.Print("template parsing error: ", err)
-//		}
-//		t.Execute(rw, nil)
-//		result := h.GetAll()
-//		rw.WriteHeader(http.StatusOK)
-//		rw.Write([]byte(result))
-//	}
-//}
