@@ -74,6 +74,11 @@ func (r *Repository) CollectOrChangeGauge(name string, value float64) error {
 
 	r.Gauge[name] = value
 
+	var m storage.Metrics
+	m.ID = name
+	m.Value = &value
+	r.Metrics[name] = m
+
 	return nil
 }
 
