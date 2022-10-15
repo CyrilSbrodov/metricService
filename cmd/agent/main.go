@@ -52,25 +52,24 @@ func update(store map[string]storage.Metrics, count int64) map[string]storage.Me
 	runtime.ReadMemStats(&memory)
 	val := reflect.ValueOf(memory)
 	for i := 0; i < val.NumField(); i++ {
-		//var metricValue interface{}
 		var value float64
 		var m storage.Metrics
 		m.ID = reflect.TypeOf(memory).Field(i).Name
 		m.MType = "gauge"
 
 		metricValue := val.Field(i).Interface()
-		switch metricValue.(type) {
+		switch valueType := metricValue.(type) {
 		case float64:
-			value = metricValue.(float64)
+			value = valueType
 			m.Value = &value
 		case uint64:
 			var x uint64
-			x = metricValue.(uint64)
+			x = valueType
 			value = float64(x)
 			m.Value = &value
 		case uint32:
 			var x uint32
-			x = metricValue.(uint32)
+			x = valueType
 			value = float64(x)
 			m.Value = &value
 		}
