@@ -89,7 +89,7 @@ func upload(client *http.Client, url string, store map[string]storage.Metrics) {
 
 	metricsJSON, err := json.Marshal(store)
 	if err != nil {
-		fmt.Errorf("не удалось перекодировать данные. ошибка: %v", err)
+		err = fmt.Errorf("не удалось перекодировать данные")
 	}
 
 	req, err := http.Post(url, "application/json", bytes.NewBuffer(metricsJSON))
