@@ -26,7 +26,8 @@ type Handler struct {
 
 // создание роутеров
 func (h Handler) Register(r *chi.Mux) {
-	r.Post("/value", h.GetHandler())
+	r.Post("/value", h.GetHandlerJSON())
+	r.Post("/value/*", h.GetHandler())
 	r.Get("/", h.GetAllHandler())
 	r.Post("/update", h.CollectHandler())
 	r.Post("/update/gauge/*", h.GaugeHandler())
@@ -44,6 +45,7 @@ func NewHandler(storage storage.Storage) Handlers {
 //хендлер получения метрик
 func (h Handler) CollectHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
+		fmt.Println("CollectHandler")
 		content, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
@@ -64,6 +66,7 @@ func (h Handler) CollectHandler() http.HandlerFunc {
 //хендлер получения всех данных
 func (h Handler) GetAllHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
+		fmt.Println("GetAllHandler")
 		t, err := template.ParseFiles("index.html")
 		if err != nil {
 			log.Print("template parsing error: ", err)
@@ -75,38 +78,10 @@ func (h Handler) GetAllHandler() http.HandlerFunc {
 	}
 }
 
-////проверка на правильность заполнения url
-//func (h Handler) OtherHandler() http.HandlerFunc {
-//	return func(rw http.ResponseWriter, r *http.Request) {
-//
-//		//проверка и разбивка URL
-//		url := strings.Split(r.URL.Path, "/")
-//		method := url[1]
-//		if method != "update" || method != "value" {
-//			rw.WriteHeader(http.StatusNotFound)
-//			rw.Write([]byte("method is wrong"))
-//			return
-//		}
-//		rw.WriteHeader(http.StatusBadRequest)
-//	}
-//}
-
-//// создание роутеров
-//func (h Handler) Register(r *chi.Mux) {
-//
-//	r.Post("/update/gauge/*", h.GaugeHandler())
-//	r.Post("/update/counter/*", h.CounterHandler())
-//	r.Post("/*", h.OtherHandler())
-//	r.Get("/value/*", h.GetHandler())
-//	r.Get("/", h.GetAllHandler())
-//
-//}
-//
-
 //хендлер получения метрики Gauge
 func (h Handler) GaugeHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-
+		fmt.Println("GaugeHandler")
 		//проверка и разбивка URL
 		url := strings.Split(r.URL.Path, "/")
 		if len(url) < 5 {
@@ -150,7 +125,7 @@ func (h Handler) GaugeHandler() http.HandlerFunc {
 //хендлер получения метрики Counter
 func (h Handler) CounterHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-
+		fmt.Println("CounterHandler")
 		//проверка и разбивка URL
 		url := strings.Split(r.URL.Path, "/")
 
@@ -162,7 +137,7 @@ func (h Handler) CounterHandler() http.HandlerFunc {
 		method := url[1]
 		if method != "update" {
 			rw.WriteHeader(http.StatusNotFound)
-			rw.Write([]byte("not value"))
+			rw.Write([]byte("wrong method"))
 			return
 		}
 		types := url[2]
@@ -194,7 +169,7 @@ func (h Handler) CounterHandler() http.HandlerFunc {
 //проверка на правильность заполнения update and gauge and counter
 func (h Handler) OtherHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-
+		fmt.Println("OtherHandler")
 		//проверка и разбивка URL
 		url := strings.Split(r.URL.Path, "/")
 
@@ -227,82 +202,88 @@ func (h Handler) OtherHandler() http.HandlerFunc {
 }
 
 //хендлер получения данных из gauge and counter
+func (h Handler) GetHandlerJSON() http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		fmt.Println("GetHandlerJSON")
+		content, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			rw.WriteHeader(http.StatusInternalServerError)
+			rw.Write([]byte(err.Error()))
+		}
+		defer r.Body.Close()
+		var m storage.Metrics
+		if err := json.Unmarshal(content, &m); err != nil {
+			rw.WriteHeader(http.StatusInternalServerError)
+			rw.Write([]byte(err.Error()))
+		}
+		m, err = h.Storage.GetMetric(&m)
+		if err != nil {
+			rw.WriteHeader(http.StatusBadRequest)
+			rw.Write([]byte(err.Error()))
+		}
+		rw.Header().Set("Content-Type", "application/json")
+		rw.WriteHeader(http.StatusOK)
+		//TODO
+		if m.Value != nil {
+			rw.Write([]byte(fmt.Sprintf("%s : %f", m.ID, *m.Value)))
+		} else if m.Delta != nil {
+			rw.Write([]byte(fmt.Sprintf("%s : %d", m.ID, *m.Delta)))
+		} else {
+			rw.Write([]byte(fmt.Sprintf("%s : %d, %d", m.ID, m.Value, m.Delta)))
+		}
+	}
+}
+
+//хендлер получения данных из gauge and counter
 func (h Handler) GetHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Content-Type") == "application/json" {
-			content, err := ioutil.ReadAll(r.Body)
-			if err != nil {
-				rw.WriteHeader(http.StatusInternalServerError)
-				rw.Write([]byte(err.Error()))
-			}
-			defer r.Body.Close()
-			var m storage.Metrics
-			if err := json.Unmarshal(content, &m); err != nil {
-				rw.WriteHeader(http.StatusInternalServerError)
-				rw.Write([]byte(err.Error()))
-			}
-			m, err = h.Storage.GetMetric(&m)
-			if err != nil {
-				rw.WriteHeader(http.StatusBadRequest)
-				rw.Write([]byte(err.Error()))
-			}
-			rw.Header().Set("Content-Type", "application/json")
-			rw.WriteHeader(http.StatusOK)
-			//TODO
-			if m.Value != nil {
-				rw.Write([]byte(fmt.Sprintf("%s : %f", m.ID, *m.Value)))
-			} else if m.Delta != nil {
-				rw.Write([]byte(fmt.Sprintf("%s : %d", m.ID, *m.Delta)))
-			} else {
-				rw.Write([]byte(fmt.Sprintf("%s : %d, %d", m.ID, m.Value, m.Delta)))
-			}
-		} else {
-			//проверка и разбивка URL
-			url := strings.Split(r.URL.Path, "/")
-			if len(url) < 3 {
-				rw.WriteHeader(http.StatusBadRequest)
-				rw.Write([]byte("incorrect request"))
-				return
-			}
-			method := url[1]
-			fmt.Println(method)
+		fmt.Println("GetHandler")
+		//проверка и разбивка URL
+		url := strings.Split(r.URL.Path, "/")
+		if len(url) < 3 {
+			rw.WriteHeader(http.StatusBadRequest)
+			rw.Write([]byte("incorrect request"))
+			return
+		}
+		method := url[1]
+		fmt.Println(method)
 
-			if method != "value" {
+		if method != "value" {
+			rw.WriteHeader(http.StatusNotFound)
+			rw.Write([]byte("method is wrong"))
+			return
+		}
+		name := url[3]
+		types := url[2]
+		if types == "gauge" {
+
+			//получение значений из gauge
+			value, err := h.GetGauge(name)
+			if err != nil {
 				rw.WriteHeader(http.StatusNotFound)
-				rw.Write([]byte("method is wrong"))
+				rw.Write([]byte("incorrect name"))
 				return
 			}
-			name := url[3]
-			types := url[2]
-			if types == "gauge" {
+			fmt.Println(value)
+			rw.WriteHeader(http.StatusOK)
+			rw.Write([]byte(fmt.Sprintf("%v", value)))
+			return
+		} else if types == "counter" {
 
-				//получение значений из gauge
-				value, err := h.GetGauge(name)
-				if err != nil {
-					rw.WriteHeader(http.StatusNotFound)
-					rw.Write([]byte("incorrect name"))
-					return
-				}
-				rw.WriteHeader(http.StatusOK)
-				rw.Write([]byte(fmt.Sprintf("%v", value)))
-				return
-			} else if types == "counter" {
-
-				//получение значений из counter
-				value, err := h.GetCounter(name)
-				if err != nil {
-					rw.WriteHeader(http.StatusNotFound)
-					rw.Write([]byte("incorrect name"))
-					return
-				}
-				rw.WriteHeader(http.StatusOK)
-				rw.Write([]byte(fmt.Sprintf("%v", value)))
-				return
-			} else {
-				rw.WriteHeader(http.StatusNotImplemented)
-				rw.Write([]byte("incorrect type"))
+			//получение значений из counter
+			value, err := h.GetCounter(name)
+			if err != nil {
+				rw.WriteHeader(http.StatusNotFound)
+				rw.Write([]byte("incorrect name"))
 				return
 			}
+			rw.WriteHeader(http.StatusOK)
+			rw.Write([]byte(fmt.Sprintf("%v", value)))
+			return
+		} else {
+			rw.WriteHeader(http.StatusNotImplemented)
+			rw.Write([]byte("incorrect type"))
+			return
 		}
 	}
 }

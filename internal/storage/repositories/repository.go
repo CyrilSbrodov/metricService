@@ -89,11 +89,11 @@ func (r *Repository) CollectOrIncreaseCounter(name string, value int64) error {
 }
 
 func (r *Repository) GetGauge(name string) (float64, error) {
-	value, ok := r.Gauge[name]
+	value, ok := r.Metrics[name]
 	if !ok {
-		return value, fmt.Errorf("missing metric %s", name)
+		return 0, fmt.Errorf("missing metric %s", name)
 	}
-	return value, nil
+	return *value.Value, nil
 }
 
 func (r *Repository) GetCounter(name string) (int64, error) {
