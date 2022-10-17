@@ -35,22 +35,13 @@ func (r *Repository) CollectMetrics(m storage.Metrics) error {
 }
 
 func (r *Repository) GetMetric(metric *storage.Metrics) (storage.Metrics, error) {
-	if metric.MType == "gauge" {
+	if metric.MType == "gauge" || metric.MType == "counter" {
 		m, ok := r.Metrics[metric.ID]
 		if !ok {
 			err := fmt.Errorf("id not found %s", metric.ID)
 			return *metric, err
 		}
-		metric.Value = m.Value
-		return *metric, nil
-	} else if metric.MType == "counter" {
-		m, ok := r.Metrics[metric.ID]
-		if !ok {
-			err := fmt.Errorf("id not found %s", metric.ID)
-			return *metric, err
-		}
-		metric.Delta = m.Delta
-		return *metric, nil
+		return m, nil
 	} else {
 		err := fmt.Errorf("type %s is wrong", metric.MType)
 		return *metric, err
