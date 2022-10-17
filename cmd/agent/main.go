@@ -103,13 +103,13 @@ func update(store map[string]storage.Metrics, count int64) map[string]storage.Me
 func upload(client *http.Client, url string, store map[string]storage.Metrics) {
 
 	for _, m := range store {
-
+		fmt.Println("перед маршалом")
 		metricsJSON, err := json.Marshal(m)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-
+		fmt.Println("перед реквестом")
 		req, err := http.NewRequest("POST", url, bytes.NewBuffer(metricsJSON))
 		if err != nil {
 			fmt.Println(err)
@@ -118,16 +118,15 @@ func upload(client *http.Client, url string, store map[string]storage.Metrics) {
 		//req.Close = true
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Add("Accept", "application/json")
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+
+		fmt.Println("перед ду")
 		resp, err := client.Do(req)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
 
+		fmt.Println("перед прочтением")
 		_, err = ioutil.ReadAll(resp.Body)
 		if err != nil {
 			fmt.Println(err)
