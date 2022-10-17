@@ -25,6 +25,7 @@ func main() {
 		2 * time.Second,
 		10 * time.Second,
 	}
+
 	var count int64
 	metricsStore := storage.MetricsStore
 

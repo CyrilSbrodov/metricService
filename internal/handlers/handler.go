@@ -236,13 +236,19 @@ func (h Handler) GetHandlerJSON() http.HandlerFunc {
 		}
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
-		mJSON, errJSON := json.Marshal(m)
-		if errJSON != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
-			rw.Write([]byte(errJSON.Error()))
+		//mJSON, errJSON := json.Marshal(m)
+		//if errJSON != nil {
+		//	rw.WriteHeader(http.StatusInternalServerError)
+		//	rw.Write([]byte(errJSON.Error()))
+		//	return
+		//}
+		if m.MType == "counter" {
+			rw.Write([]byte(fmt.Sprintf("'id' : %s 'value' : %d", m.ID, *m.Delta)))
 			return
+		} else {
+			rw.Write([]byte(fmt.Sprintf("'id' : %s 'value' : %f", m.ID, *m.Value)))
 		}
-		rw.Write(mJSON)
+
 	}
 }
 
