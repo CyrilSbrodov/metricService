@@ -20,6 +20,8 @@ type Arg struct {
 }
 
 func main() {
+	fmt.Println("запущен")
+
 	url := "http://localhost:8080/update/"
 	var arg = Arg{
 		2 * time.Second,

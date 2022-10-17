@@ -243,6 +243,8 @@ func (h Handler) GetHandlerJSON() http.HandlerFunc {
 			rw.Write([]byte(err.Error()))
 			return
 		}
+		fmt.Println("запрос метрики:")
+		fmt.Println(m)
 		m, err = h.Storage.GetMetric(m)
 		fmt.Println("ответ")
 		fmt.Println(m)
