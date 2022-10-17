@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"math/rand"
 	"net/http"
-	"os"
 	"reflect"
 	"runtime"
 	"time"
@@ -103,36 +103,35 @@ func update(store map[string]storage.Metrics, count int64) map[string]storage.Me
 func upload(client *http.Client, url string, store map[string]storage.Metrics) {
 
 	for _, m := range store {
-		fmt.Println("перед маршалом")
 		metricsJSON, errJSON := json.Marshal(m)
 		if errJSON != nil {
 			fmt.Println(errJSON)
-			os.Exit(1)
+			log.Fatal(errJSON)
 		}
-		fmt.Println("перед реквестом")
+
 		req, err := http.Post(url, "application/json", bytes.NewBuffer(metricsJSON))
 		if err != nil {
 			fmt.Println(err)
-			os.Exit(1)
+			log.Fatal(err)
 		}
-		//req.Close = true
-		//req.Header.Set("Content-Type", "application/json")
-		//req.Header.Add("Accept", "application/json")
 
-		//fmt.Println("перед ду")
-		//resp, err := client.Do(req)
-		//if err != nil {
-		//	fmt.Println(err)
-		//	os.Exit(1)
-		//}
-
-		fmt.Println("перед прочтением")
 		_, err = ioutil.ReadAll(req.Body)
 		if err != nil {
 			fmt.Println(err)
-			os.Exit(1)
+			log.Fatal(err)
 		}
-		fmt.Println("отправил")
+		fmt.Println("send")
 		req.Body.Close()
 	}
 }
+
+//req.Close = true
+//req.Header.Set("Content-Type", "application/json")
+//req.Header.Add("Accept", "application/json")
+
+//fmt.Println("перед ду")
+//resp, err := client.Do(req)
+//if err != nil {
+//	fmt.Println(err)
+//	os.Exit(1)
+//}
