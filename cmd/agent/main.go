@@ -22,7 +22,7 @@ type Arg struct {
 
 func main() {
 	fmt.Println("запущен")
-
+	client := &http.Client{}
 	url := "http://localhost:8080/update/"
 	var arg = Arg{
 		2 * time.Second,
@@ -41,7 +41,7 @@ func main() {
 		//отправка метрики 10 сек
 		case <-tickerUpload.C:
 			//отправка данных по адресу
-			upload(url, metricsStore)
+			upload(client, url, metricsStore)
 			//обновление метрики 2 сек
 		case <-tickerUpdate.C:
 			count++
@@ -52,7 +52,7 @@ func main() {
 
 func update(store map[string]storage.Metrics, count int64) map[string]storage.Metrics {
 	//сбор метрики
-	fmt.Println("зашел")
+
 	var memory runtime.MemStats
 	runtime.ReadMemStats(&memory)
 	val := reflect.ValueOf(memory)
@@ -96,13 +96,12 @@ func update(store map[string]storage.Metrics, count int64) map[string]storage.Me
 		Value: &v,
 	}
 	store[randomValue.ID] = randomValue
-	fmt.Println(store)
+
 	return store
 }
 
-func upload(url string, store map[string]storage.Metrics) {
-	client := &http.Client{}
-	fmt.Println("отправка")
+func upload(client *http.Client, url string, store map[string]storage.Metrics) {
+
 	for _, m := range store {
 
 		metricsJSON, err := json.Marshal(m)
@@ -116,7 +115,7 @@ func upload(url string, store map[string]storage.Metrics) {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		req.Close = true
+		//req.Close = true
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Add("Accept", "application/json")
 		if err != nil {
