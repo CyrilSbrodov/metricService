@@ -67,7 +67,7 @@ func (h Handler) CollectHandler() http.HandlerFunc {
 			return
 		}
 
-		m, err = h.Storage.GetMetric(&m)
+		m, err = h.Storage.GetMetric(m)
 		if err != nil {
 			rw.WriteHeader(http.StatusNotFound)
 			rw.Write([]byte(err.Error()))
@@ -241,7 +241,7 @@ func (h Handler) GetHandlerJSON() http.HandlerFunc {
 			rw.Write([]byte(err.Error()))
 			return
 		}
-		m, err = h.Storage.GetMetric(&m)
+		m, err = h.Storage.GetMetric(m)
 		if err != nil {
 			rw.WriteHeader(http.StatusNotFound)
 			rw.Write([]byte(err.Error()))
