@@ -24,13 +24,13 @@ func NewRepository() *Repository {
 }
 
 func (r *Repository) CollectMetrics(m storage.Metrics) error {
-	_, ok := storage.AllMetrics[m.ID]
-	if !ok {
-		err := fmt.Errorf("missing metric")
-		return err
-	}
+	//_, ok := storage.AllMetrics[m.ID]
+	//if !ok {
+	//	err := fmt.Errorf("missing metric")
+	//	return err
+	//}
 	r.Metrics[m.ID] = m
-	fmt.Println(r.Metrics)
+	//fmt.Println(r.Metrics)
 	return nil
 }
 

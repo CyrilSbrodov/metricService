@@ -234,8 +234,13 @@ func (h Handler) GetHandlerJSON() http.HandlerFunc {
 		}
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
-		mJson, err := json.Marshal(m)
-		rw.Write(mJson)
+		mJSON, errJSON := json.Marshal(m)
+		if errJSON != nil {
+			rw.WriteHeader(http.StatusInternalServerError)
+			rw.Write([]byte(err.Error()))
+			return
+		}
+		rw.Write(mJSON)
 	}
 }
 
