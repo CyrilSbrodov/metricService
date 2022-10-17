@@ -50,17 +50,20 @@ func (h Handler) CollectHandler() http.HandlerFunc {
 		if err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Write([]byte(err.Error()))
+			return
 		}
 		defer r.Body.Close()
 		var m storage.Metrics
 		if err := json.Unmarshal(content, &m); err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Write([]byte(err.Error()))
+			return
 		}
 		err = h.Storage.CollectMetrics(m)
 		if err != nil {
 			rw.WriteHeader(http.StatusNotFound)
 			rw.Write([]byte(err.Error()))
+			return
 		}
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
@@ -74,6 +77,7 @@ func (h Handler) GetAllHandler() http.HandlerFunc {
 		t, err := template.ParseFiles("index.html")
 		if err != nil {
 			log.Print("template parsing error: ", err)
+			return
 		}
 		t.Execute(rw, nil)
 		result := h.GetAll()
@@ -213,26 +217,25 @@ func (h Handler) GetHandlerJSON() http.HandlerFunc {
 		if err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Write([]byte(err.Error()))
+			return
 		}
 		defer r.Body.Close()
 		var m storage.Metrics
 		if err := json.Unmarshal(content, &m); err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Write([]byte(err.Error()))
+			return
 		}
 		m, err = h.Storage.GetMetric(&m)
 		if err != nil {
 			rw.WriteHeader(http.StatusNotFound)
 			rw.Write([]byte(err.Error()))
+			return
 		}
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
-
-		if m.MType == "gauge" {
-			rw.Write([]byte(fmt.Sprintf("%s : %f", m.ID, *m.Value)))
-		} else if m.MType == "counter" {
-			rw.Write([]byte(fmt.Sprintf("%s : %d", m.ID, *m.Delta)))
-		}
+		mJson, err := json.Marshal(m)
+		rw.Write(mJson)
 	}
 }
 
