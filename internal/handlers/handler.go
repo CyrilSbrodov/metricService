@@ -250,6 +250,13 @@ func (h Handler) GetHandlerJSON() http.HandlerFunc {
 		if err != nil {
 			rw.WriteHeader(http.StatusNotFound)
 			rw.Write([]byte(err.Error()))
+			mJSON, errJSON := json.Marshal(m)
+			if errJSON != nil {
+				rw.WriteHeader(http.StatusInternalServerError)
+				rw.Write([]byte(errJSON.Error()))
+				return
+			}
+			rw.Write(mJSON)
 			fmt.Println("ответ")
 			fmt.Println(http.StatusNotFound)
 			return
