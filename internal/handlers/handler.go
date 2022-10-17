@@ -222,18 +222,16 @@ func (h Handler) GetHandlerJSON() http.HandlerFunc {
 		}
 		m, err = h.Storage.GetMetric(&m)
 		if err != nil {
-			rw.WriteHeader(http.StatusBadRequest)
+			rw.WriteHeader(http.StatusNotFound)
 			rw.Write([]byte(err.Error()))
 		}
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
 
-		if m.Value != nil {
+		if m.MType == "gauge" {
 			rw.Write([]byte(fmt.Sprintf("%s : %f", m.ID, *m.Value)))
-		} else if m.Delta != nil {
+		} else if m.MType == "counter" {
 			rw.Write([]byte(fmt.Sprintf("%s : %d", m.ID, *m.Delta)))
-		} else {
-			rw.Write([]byte(fmt.Sprintf("%s : %d, %d", m.ID, m.Value, m.Delta)))
 		}
 	}
 }
