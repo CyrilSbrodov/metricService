@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"os"
@@ -34,14 +35,13 @@ func main() {
 	//запуск тикера
 	tickerUpload := time.NewTicker(arg.reportInterval)
 	tickerUpdate := time.NewTicker(arg.pollInterval)
-	client := &http.Client{}
 
 	for {
 		select {
 		//отправка метрики 10 сек
 		case <-tickerUpload.C:
 			//отправка данных по адресу
-			upload(client, url, metricsStore)
+			upload(url, metricsStore)
 			//обновление метрики 2 сек
 		case <-tickerUpdate.C:
 			count++
@@ -100,7 +100,8 @@ func update(store map[string]storage.Metrics, count int64) map[string]storage.Me
 	return store
 }
 
-func upload(client *http.Client, url string, store map[string]storage.Metrics) {
+func upload(url string, store map[string]storage.Metrics) {
+	client := &http.Client{}
 	fmt.Println("отправка")
 	for _, m := range store {
 
@@ -117,11 +118,18 @@ func upload(client *http.Client, url string, store map[string]storage.Metrics) {
 		}
 		req.Close = true
 		req.Header.Set("Content-Type", "application/json")
+		req.Header.Add("Accept", "application/json")
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
 		resp, err := client.Do(req)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		_, err = ioutil.ReadAll(resp.Body)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
