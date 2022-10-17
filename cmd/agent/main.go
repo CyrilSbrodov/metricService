@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"os"
 	"reflect"
@@ -19,7 +20,7 @@ type Arg struct {
 }
 
 func main() {
-	url := "http://localhost:8080/update"
+	url := "http://localhost:8080/update/"
 	var arg = Arg{
 		2 * time.Second,
 		10 * time.Second,
@@ -82,6 +83,16 @@ func update(store map[string]storage.Metrics, count int64) map[string]storage.Me
 		Delta: &count,
 	}
 	store[m.ID] = m
+
+	value := rand.Intn(256)
+	var v float64
+	v = float64(value)
+	var randomValue = storage.Metrics{
+		ID:    "RandomValue",
+		MType: "gauge",
+		Value: &v,
+	}
+	store[randomValue.ID] = randomValue
 	return store
 }
 
@@ -101,18 +112,4 @@ func upload(client *http.Client, url string, store map[string]storage.Metrics) {
 
 		req.Body.Close()
 	}
-	//metricsJSON, err := json.Marshal(store)
-	//if err != nil {
-	//	fmt.Println(err)
-	//	os.Exit(1)
-	//}
-	//
-	//req, err := http.Post(url, "application/json", bytes.NewBuffer(metricsJSON))
-	//if err != nil {
-	//	fmt.Println(err)
-	//	os.Exit(1)
-	//}
-	//
-	//defer req.Body.Close()
-
 }

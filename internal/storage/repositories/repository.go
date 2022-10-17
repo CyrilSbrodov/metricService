@@ -25,6 +25,7 @@ func NewRepository() *Repository {
 
 func (r *Repository) CollectMetrics(m storage.Metrics) error {
 	r.Metrics[m.ID] = m
+	fmt.Println(r.Metrics)
 	return nil
 }
 
