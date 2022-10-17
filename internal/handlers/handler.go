@@ -243,25 +243,12 @@ func (h Handler) GetHandlerJSON() http.HandlerFunc {
 			rw.Write([]byte(err.Error()))
 			return
 		}
-		fmt.Println("запрос метрики:")
-		fmt.Println(m)
 		m, err = h.Storage.GetMetric(m)
-		fmt.Println("ответ")
 		if err != nil {
 			rw.WriteHeader(http.StatusNotFound)
 			rw.Write([]byte(err.Error()))
-			mJSON, errJSON := json.Marshal(m)
-			if errJSON != nil {
-				rw.WriteHeader(http.StatusInternalServerError)
-				rw.Write([]byte(errJSON.Error()))
-				return
-			}
-			rw.Write(mJSON)
-			fmt.Println("ответ")
-			fmt.Println(http.StatusNotFound)
 			return
 		}
-		fmt.Println(m)
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
 		mJSON, errJSON := json.Marshal(m)
