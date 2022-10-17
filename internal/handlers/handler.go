@@ -59,6 +59,8 @@ func (h Handler) CollectHandler() http.HandlerFunc {
 			rw.Write([]byte(err.Error()))
 			return
 		}
+		fmt.Println("передача метрики:")
+		fmt.Println(m)
 
 		err = h.Storage.CollectMetrics(m)
 		if err != nil {
@@ -242,6 +244,8 @@ func (h Handler) GetHandlerJSON() http.HandlerFunc {
 			return
 		}
 		m, err = h.Storage.GetMetric(m)
+		fmt.Println("ответ")
+		fmt.Println(m)
 		if err != nil {
 			rw.WriteHeader(http.StatusNotFound)
 			rw.Write([]byte(err.Error()))
