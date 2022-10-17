@@ -247,12 +247,14 @@ func (h Handler) GetHandlerJSON() http.HandlerFunc {
 		fmt.Println(m)
 		m, err = h.Storage.GetMetric(m)
 		fmt.Println("ответ")
-		fmt.Println(m)
 		if err != nil {
 			rw.WriteHeader(http.StatusNotFound)
 			rw.Write([]byte(err.Error()))
+			fmt.Println("ответ")
+			fmt.Println(http.StatusNotFound)
 			return
 		}
+		fmt.Println(m)
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
 		mJSON, errJSON := json.Marshal(m)
