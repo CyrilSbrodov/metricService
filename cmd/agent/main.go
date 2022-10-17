@@ -52,6 +52,7 @@ func main() {
 
 func update(store map[string]storage.Metrics, count int64) map[string]storage.Metrics {
 	//сбор метрики
+	fmt.Println("зашел")
 	var memory runtime.MemStats
 	runtime.ReadMemStats(&memory)
 	val := reflect.ValueOf(memory)
@@ -111,7 +112,7 @@ func upload(client *http.Client, url string, store map[string]storage.Metrics) {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-
+		fmt.Println("отправил")
 		req.Body.Close()
 	}
 }
