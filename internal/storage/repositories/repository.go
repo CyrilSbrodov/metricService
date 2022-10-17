@@ -29,9 +29,17 @@ func (r *Repository) CollectMetrics(m storage.Metrics) error {
 	//	err := fmt.Errorf("missing metric")
 	//	return err
 	//}
-	r.Metrics[m.ID] = m
-	//fmt.Println(r.Metrics)
-	return nil
+	if m.MType == "counter" && r.Metrics[m.ID].Delta != nil {
+		var val int64
+		val = *r.Metrics[m.ID].Delta
+		val += *m.Delta
+		*r.Metrics[m.ID].Delta = val
+		return nil
+	} else {
+		r.Metrics[m.ID] = m
+		//fmt.Println(r.Metrics)
+		return nil
+	}
 }
 
 func (r *Repository) GetMetric(metric *storage.Metrics) (storage.Metrics, error) {

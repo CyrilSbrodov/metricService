@@ -46,6 +46,7 @@ func NewHandler(storage storage.Storage) Handlers {
 func (h Handler) CollectHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		//fmt.Println("CollectHandler")
+		//fmt.Println(con)
 		content, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
@@ -59,6 +60,7 @@ func (h Handler) CollectHandler() http.HandlerFunc {
 			rw.Write([]byte(err.Error()))
 			return
 		}
+
 		err = h.Storage.CollectMetrics(m)
 		if err != nil {
 			rw.WriteHeader(http.StatusNotFound)
