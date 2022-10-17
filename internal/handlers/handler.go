@@ -57,7 +57,11 @@ func (h Handler) CollectHandler() http.HandlerFunc {
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Write([]byte(err.Error()))
 		}
-		h.Storage.CollectMetrics(m)
+		err = h.Storage.CollectMetrics(m)
+		if err != nil {
+			rw.WriteHeader(http.StatusNotFound)
+			rw.Write([]byte(err.Error()))
+		}
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
 	}
@@ -74,6 +78,7 @@ func (h Handler) GetAllHandler() http.HandlerFunc {
 		t.Execute(rw, nil)
 		result := h.GetAll()
 		rw.WriteHeader(http.StatusOK)
+		rw.Header().Set("Content-Type", "application/json")
 		rw.Write([]byte(result))
 	}
 }

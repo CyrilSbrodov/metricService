@@ -85,8 +85,7 @@ func update(store map[string]storage.Metrics, count int64) map[string]storage.Me
 	store[m.ID] = m
 
 	value := rand.Intn(256)
-	var v float64
-	v = float64(value)
+	v := float64(value)
 	var randomValue = storage.Metrics{
 		ID:    "RandomValue",
 		MType: "gauge",
