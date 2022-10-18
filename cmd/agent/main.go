@@ -52,6 +52,7 @@ func main() {
 			metricsStore = update(metricsStore, count)
 		default:
 			time.Sleep(1 * time.Second)
+			count++
 			metricsStore = update(metricsStore, count)
 			upload(client, url, metricsStore)
 		}
