@@ -26,11 +26,10 @@ type Handler struct {
 
 // создание роутеров
 func (h Handler) Register(r *chi.Mux) {
-	r.HandleFunc("/update/", h.CollectHandler())
 	r.Post("/value/", h.GetHandlerJSON())
 	r.Get("/value/*", h.GetHandler())
 	r.Get("/", h.GetAllHandler())
-	//r.Post("/update/", h.CollectHandler())
+	r.Post("/update/", h.CollectHandler())
 	r.Post("/update/gauge/*", h.GaugeHandler())
 	r.Post("/update/counter/*", h.CounterHandler())
 	r.Post("/*", h.OtherHandler())
@@ -60,7 +59,7 @@ func (h Handler) CollectHandler() http.HandlerFunc {
 			rw.Write([]byte(err.Error()))
 			return
 		}
-
+		fmt.Println(m)
 		err = h.Storage.CollectMetrics(m)
 		if err != nil {
 			rw.WriteHeader(http.StatusNotFound)
