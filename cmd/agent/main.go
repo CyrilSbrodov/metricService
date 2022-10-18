@@ -109,7 +109,7 @@ func upload(client *http.Client, URL string, store map[string]storage.Metrics) {
 			fmt.Println(errJSON)
 			log.Fatal(errJSON)
 		}
-
+		time.Sleep(1 * time.Millisecond)
 		req, err := http.Post(URL, "application/json", bytes.NewBuffer(metricsJSON))
 		if err != nil {
 			fmt.Println(err)
