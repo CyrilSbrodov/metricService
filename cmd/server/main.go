@@ -15,7 +15,15 @@ import (
 	"github.com/CyrilSbrodov/metricService.git/internal/storage/repositories"
 )
 
+type Config struct {
+	Addr string `env:"ADDRESS" envDefault:"localhost:8080"`
+}
+
 func main() {
+
+	var cfg = Config{
+		Addr: "localhost:8080",
+	}
 
 	//определение роутера
 	router := chi.NewRouter()
@@ -28,7 +36,7 @@ func main() {
 	handler.Register(router)
 
 	srv := http.Server{
-		Addr:    "localhost:8080",
+		Addr:    cfg.Addr,
 		Handler: router,
 	}
 
