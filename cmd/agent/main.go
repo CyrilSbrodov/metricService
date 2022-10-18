@@ -107,7 +107,7 @@ func upload(client *http.Client, URL string, store map[string]storage.Metrics) {
 			break
 		}
 		req, err := http.NewRequest(http.MethodPost, URL, bytes.NewBuffer(metricsJSON))
-		//req, err := http.Post(URL, "application/json", bytes.NewBuffer(metricsJSON))
+
 		if err != nil {
 			fmt.Println(err)
 			break
@@ -120,13 +120,11 @@ func upload(client *http.Client, URL string, store map[string]storage.Metrics) {
 			fmt.Println(err)
 			break
 		}
-
 		_, err = ioutil.ReadAll(resp.Body)
 		if err != nil {
 			fmt.Println(err)
 			break
 		}
-		fmt.Println("send")
 		resp.Body.Close()
 	}
 }

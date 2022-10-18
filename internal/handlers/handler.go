@@ -59,7 +59,7 @@ func (h Handler) CollectHandler() http.HandlerFunc {
 			rw.Write([]byte(err.Error()))
 			return
 		}
-		fmt.Println(m)
+
 		err = h.Storage.CollectMetrics(m)
 		if err != nil {
 			rw.WriteHeader(http.StatusNotFound)
