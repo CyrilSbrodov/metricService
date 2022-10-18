@@ -101,7 +101,7 @@ func update(store map[string]storage.Metrics, count int64) map[string]storage.Me
 	return store
 }
 
-func upload(client *http.Client, url string, store map[string]storage.Metrics) {
+func upload(client *http.Client, URL string, store map[string]storage.Metrics) {
 
 	for _, m := range store {
 		metricsJSON, errJSON := json.Marshal(m)
@@ -110,18 +110,19 @@ func upload(client *http.Client, url string, store map[string]storage.Metrics) {
 			log.Fatal(errJSON)
 		}
 
-		req, err := http.Post(url, "application/json", bytes.NewBuffer([]byte("snd")))
+		req, err := http.Post(URL, "application/json", bytes.NewBuffer(metricsJSON))
 		if err != nil {
 			fmt.Println(err)
 			log.Fatal(err)
 		}
+		//req.Header.Set("Content-Type", "application/json")
+		//req.Header.Add("Accept", "application/json")
 
 		_, err = ioutil.ReadAll(req.Body)
 		if err != nil {
 			fmt.Println(err)
 			log.Fatal(err)
 		}
-		fmt.Println(metricsJSON)
 		fmt.Println("send")
 		req.Body.Close()
 	}
