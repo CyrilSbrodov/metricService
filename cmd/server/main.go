@@ -26,7 +26,7 @@ func main() {
 	//	Addr:    ":8080",
 	//	Handler: router,
 	//}
-	if err := http.ListenAndServe(":8080", router); err != nil && err != http.ErrServerClosed {
+	if err := http.ListenAndServe("localhost:8080", router); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("listen: %s\n", err)
 	}
 
