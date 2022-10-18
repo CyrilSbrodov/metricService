@@ -30,8 +30,8 @@ func main() {
 	srv := http.Server{
 		Addr:         ":8080",
 		Handler:      router,
-		WriteTimeout: 1 * time.Second,
-		ReadTimeout:  1 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
 	}
 
 	//gracefullshutdown
