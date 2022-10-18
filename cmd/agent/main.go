@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"math/rand"
 	"net/http"
 	"reflect"
@@ -105,13 +104,13 @@ func upload(client *http.Client, URL string, store map[string]storage.Metrics) {
 		metricsJSON, errJSON := json.Marshal(m)
 		if errJSON != nil {
 			fmt.Println(errJSON)
-			log.Fatal(errJSON)
+			break
 		}
 		req, err := http.NewRequest(http.MethodPost, URL, bytes.NewBuffer(metricsJSON))
 		//req, err := http.Post(URL, "application/json", bytes.NewBuffer(metricsJSON))
 		if err != nil {
 			fmt.Println(err)
-			log.Fatal(err)
+			break
 		}
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Add("Accept", "application/json")
@@ -119,13 +118,13 @@ func upload(client *http.Client, URL string, store map[string]storage.Metrics) {
 		resp, err := client.Do(req)
 		if err != nil {
 			fmt.Println(err)
-			log.Fatal(err)
+			break
 		}
 
 		_, err = ioutil.ReadAll(resp.Body)
 		if err != nil {
 			fmt.Println(err)
-			log.Fatal(err)
+			break
 		}
 		fmt.Println("send")
 		resp.Body.Close()
