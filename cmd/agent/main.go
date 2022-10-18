@@ -22,6 +22,7 @@ type Arg struct {
 
 func main() {
 	fmt.Println("запущен")
+
 	client := &http.Client{}
 	url := "http://localhost:8080/update/"
 	var arg = Arg{
@@ -109,7 +110,7 @@ func upload(client *http.Client, url string, store map[string]storage.Metrics) {
 			log.Fatal(errJSON)
 		}
 
-		req, err := http.Post(url, "application/json", bytes.NewBuffer(metricsJSON))
+		req, err := http.Post(url, "application/json", bytes.NewBuffer([]byte("snd")))
 		if err != nil {
 			fmt.Println(err)
 			log.Fatal(err)
@@ -120,6 +121,7 @@ func upload(client *http.Client, url string, store map[string]storage.Metrics) {
 			fmt.Println(err)
 			log.Fatal(err)
 		}
+		fmt.Println(metricsJSON)
 		fmt.Println("send")
 		req.Body.Close()
 	}

@@ -1,5 +1,14 @@
 package main
 
+import (
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/CyrilSbrodov/metricService.git/internal/storage"
+)
+
 //import (
 //	"net/http"
 //	"reflect"
@@ -110,3 +119,46 @@ package main
 //		})
 //	}
 //}
+
+func Test_upload(t *testing.T) {
+	type args struct {
+		client *http.Client
+		url    string
+		store  map[string]storage.Metrics
+	}
+	var value float64 = 12
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "ok",
+			args: args{
+				client: http.DefaultClient,
+				url:    "http://localhost:8080/update/",
+				store: map[string]storage.Metrics{
+					"Alloc": {
+						ID:    "Alloc",
+						MType: "gauge",
+						Delta: nil,
+						Value: &value,
+					},
+				},
+			},
+		},
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler := func(w http.ResponseWriter, r *http.Request) {
+
+				w.Header().Set("Content-Type", "application/json")
+				io.WriteString(w, "request.body")
+			}
+
+			server := httptest.NewServer(http.HandlerFunc(handler))
+			defer server.Close()
+			upload(tt.args.client, tt.args.url, tt.args.store)
+		})
+	}
+}
