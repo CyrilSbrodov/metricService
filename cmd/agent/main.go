@@ -37,8 +37,8 @@ func main() {
 	tickerUpload := time.NewTicker(arg.reportInterval)
 	tickerUpdate := time.NewTicker(arg.pollInterval)
 
-	metricsStore = update(metricsStore, count)
-	upload(client, url, metricsStore)
+	//metricsStore = update(metricsStore, count)
+	//upload(client, url, metricsStore)
 
 	for {
 		select {
