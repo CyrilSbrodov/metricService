@@ -21,8 +21,6 @@ type Arg struct {
 }
 
 func main() {
-	fmt.Println("запущен")
-
 	client := &http.Client{}
 	url := "http://localhost:8080/update/"
 	var arg = Arg{
@@ -36,9 +34,6 @@ func main() {
 	//запуск тикера
 	tickerUpload := time.NewTicker(arg.reportInterval)
 	tickerUpdate := time.NewTicker(arg.pollInterval)
-
-	//metricsStore = update(metricsStore, count)
-	//upload(client, url, metricsStore)
 
 	for {
 		select {
