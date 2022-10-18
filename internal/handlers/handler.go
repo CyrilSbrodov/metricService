@@ -27,12 +27,12 @@ type Handler struct {
 // создание роутеров
 func (h Handler) Register(r *chi.Mux) {
 	r.Post("/value/", h.GetHandlerJSON())
-	r.Get("/value/*", h.GetHandler())
-	r.Get("/", h.GetAllHandler())
+	//r.Get("/value/*", h.GetHandler())
+	//r.Get("/", h.GetAllHandler())
 	r.Post("/update/", h.CollectHandler())
-	r.Post("/update/gauge/*", h.GaugeHandler())
-	r.Post("/update/counter/*", h.CounterHandler())
-	r.Post("/*", h.OtherHandler())
+	//r.Post("/update/gauge/*", h.GaugeHandler())
+	//r.Post("/update/counter/*", h.CounterHandler())
+	//r.Post("/*", h.OtherHandler())
 
 }
 
@@ -59,8 +59,6 @@ func (h Handler) CollectHandler() http.HandlerFunc {
 			rw.Write([]byte(err.Error()))
 			return
 		}
-		fmt.Println("передача метрики:")
-		fmt.Println(m)
 
 		err = h.Storage.CollectMetrics(m)
 		if err != nil {
@@ -69,21 +67,21 @@ func (h Handler) CollectHandler() http.HandlerFunc {
 			return
 		}
 
-		//m, err = h.Storage.GetMetric(m)
-		//if err != nil {
-		//	rw.WriteHeader(http.StatusNotFound)
-		//	rw.Write([]byte(err.Error()))
-		//	return
-		//}
-		//mJSON, errJSON := json.Marshal(m)
-		//if errJSON != nil {
-		//	rw.WriteHeader(http.StatusInternalServerError)
-		//	rw.Write([]byte(errJSON.Error()))
-		//	return
-		//}
+		m, err = h.Storage.GetMetric(m)
+		if err != nil {
+			rw.WriteHeader(http.StatusNotFound)
+			rw.Write([]byte(err.Error()))
+			return
+		}
+		mJSON, errJSON := json.Marshal(m)
+		if errJSON != nil {
+			rw.WriteHeader(http.StatusInternalServerError)
+			rw.Write([]byte(errJSON.Error()))
+			return
+		}
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
-		//rw.Write(mJSON)
+		rw.Write(mJSON)
 	}
 }
 
