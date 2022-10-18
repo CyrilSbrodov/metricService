@@ -109,22 +109,28 @@ func upload(client *http.Client, URL string, store map[string]storage.Metrics) {
 			fmt.Println(errJSON)
 			log.Fatal(errJSON)
 		}
-		time.Sleep(1 * time.Millisecond)
-		req, err := http.Post(URL, "application/json", bytes.NewBuffer(metricsJSON))
+		req, err := http.NewRequest(http.MethodPost, URL, bytes.NewBuffer(metricsJSON))
+		//req, err := http.Post(URL, "application/json", bytes.NewBuffer(metricsJSON))
 		if err != nil {
 			fmt.Println(err)
 			log.Fatal(err)
 		}
-		//req.Header.Set("Content-Type", "application/json")
-		//req.Header.Add("Accept", "application/json")
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Add("Accept", "application/json")
 
-		_, err = ioutil.ReadAll(req.Body)
+		resp, err := client.Do(req)
+		if err != nil {
+			fmt.Println(err)
+			log.Fatal(err)
+		}
+
+		_, err = ioutil.ReadAll(resp.Body)
 		if err != nil {
 			fmt.Println(err)
 			log.Fatal(err)
 		}
 		fmt.Println("send")
-		req.Body.Close()
+		resp.Body.Close()
 	}
 }
 
