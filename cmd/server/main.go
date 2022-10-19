@@ -31,6 +31,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	cfg.Addr = os.Getenv("ADDRESS")
 	fmt.Println(cfg.Addr)
 
 	//определение роутера

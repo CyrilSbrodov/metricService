@@ -8,6 +8,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"os"
 	"reflect"
 	"runtime"
 	"time"
@@ -19,8 +20,8 @@ import (
 
 type Config struct {
 	Addr           string        `env:"ADDRESS" envDefault:"http://localhost:8080"`
-	pollInterval   time.Duration `env:"REPORT_INTERVAL,required"`
-	reportInterval time.Duration `env:"POLL_INTERVAL,required"`
+	pollInterval   time.Duration `env:"REPORT_INTERVAL"`
+	reportInterval time.Duration `env:"POLL_INTERVAL"`
 }
 
 //type Arg struct {
@@ -33,6 +34,7 @@ func main() {
 	//	pollInterval:   2 * time.Second,
 	//	reportInterval: 10 * time.Second,
 	//}
+
 	var cfg = Config{
 		pollInterval:   2 * time.Second,
 		reportInterval: 10 * time.Second,
@@ -41,7 +43,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println(cfg.pollInterval)
+	cfg.Addr = os.Getenv("ADDRESS")
+
 	client := &http.Client{}
 	//url := "http://localhost:8080/update/"
 
