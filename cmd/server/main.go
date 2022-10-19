@@ -17,6 +17,17 @@ import (
 	"github.com/CyrilSbrodov/metricService.git/internal/storage/repositories"
 )
 
+var (
+	flagAddress       string
+	flagRestore       string
+	flagStoreInterval string
+	flagStoreFile     string
+)
+
+func init() {
+
+}
+
 func main() {
 
 	cfg := config.NewConfig()
