@@ -5,55 +5,28 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"math/rand"
 	"net/http"
-	"os"
 	"reflect"
 	"runtime"
 	"time"
 
-	"github.com/caarlos0/env/v6"
-
+	"github.com/CyrilSbrodov/metricService.git/cmd/config"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 )
 
-type Config struct {
-	Addr           string        `env:"ADDRESS" envDefault:"http://localhost:8080"`
-	pollInterval   time.Duration `env:"REPORT_INTERVAL"`
-	reportInterval time.Duration `env:"POLL_INTERVAL"`
-}
-
-//type Arg struct {
-//	pollInterval   time.Duration
-//	reportInterval time.Duration
-//}
-
 func main() {
-	//var arg = Arg{
-	//	pollInterval:   2 * time.Second,
-	//	reportInterval: 10 * time.Second,
-	//}
-
-	var cfg = Config{
-		pollInterval:   2 * time.Second,
-		reportInterval: 10 * time.Second,
-	}
-	err := env.Parse(&cfg)
-	if err != nil {
-		log.Fatal(err)
-	}
-	cfg.Addr = os.Getenv("ADDRESS")
+	cfg := config.NewConfig()
+	fmt.Println(cfg)
 
 	client := &http.Client{}
-	//url := "http://localhost:8080/update/"
 
 	var count int64
 	metricsStore := storage.MetricsStore
 
 	//запуск тикера
-	tickerUpload := time.NewTicker(cfg.reportInterval)
-	tickerUpdate := time.NewTicker(cfg.pollInterval)
+	tickerUpload := time.NewTicker(cfg.ReportInterval)
+	tickerUpdate := time.NewTicker(cfg.PollInterval)
 
 	for {
 		select {
@@ -127,7 +100,7 @@ func upload(client *http.Client, url string, store map[string]storage.Metrics) {
 			fmt.Println(errJSON)
 			break
 		}
-		req, err := http.NewRequest(http.MethodPost, url+"/update/", bytes.NewBuffer(metricsJSON))
+		req, err := http.NewRequest(http.MethodPost, "http://"+url+"/update/", bytes.NewBuffer(metricsJSON))
 
 		if err != nil {
 			fmt.Println(err)
