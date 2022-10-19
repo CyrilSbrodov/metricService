@@ -5,11 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"math/rand"
 	"net/http"
 	"reflect"
 	"runtime"
 	"time"
+
+	"github.com/caarlos0/env/v6"
 
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 )
@@ -20,41 +23,41 @@ type Config struct {
 	reportInterval time.Duration `env:"POLL_INTERVAL,required"`
 }
 
-type Arg struct {
-	pollInterval   time.Duration
-	reportInterval time.Duration
-}
+//type Arg struct {
+//	pollInterval   time.Duration
+//	reportInterval time.Duration
+//}
 
 func main() {
-	var arg = Arg{
-		pollInterval:   2 * time.Second,
-		reportInterval: 10 * time.Second,
-	}
-	//var cfg = Config{
+	//var arg = Arg{
 	//	pollInterval:   2 * time.Second,
 	//	reportInterval: 10 * time.Second,
 	//}
-	//err := env.Parse(&cfg)
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//log.Println(cfg)
+	var cfg = Config{
+		pollInterval:   2 * time.Second,
+		reportInterval: 10 * time.Second,
+	}
+	err := env.Parse(&cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println(cfg.pollInterval)
 	client := &http.Client{}
-	url := "http://localhost:8080/update/"
+	//url := "http://localhost:8080/update/"
 
 	var count int64
 	metricsStore := storage.MetricsStore
 
 	//запуск тикера
-	tickerUpload := time.NewTicker(arg.reportInterval)
-	tickerUpdate := time.NewTicker(arg.pollInterval)
+	tickerUpload := time.NewTicker(cfg.reportInterval)
+	tickerUpdate := time.NewTicker(cfg.pollInterval)
 
 	for {
 		select {
 		//отправка метрики 10 сек
 		case <-tickerUpload.C:
 			//отправка данных по адресу
-			upload(client, url, metricsStore)
+			upload(client, cfg.Addr, metricsStore)
 			//обновление метрики 2 сек
 		case <-tickerUpdate.C:
 			count++
@@ -121,7 +124,7 @@ func upload(client *http.Client, url string, store map[string]storage.Metrics) {
 			fmt.Println(errJSON)
 			break
 		}
-		req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(metricsJSON))
+		req, err := http.NewRequest(http.MethodPost, url+"/update/", bytes.NewBuffer(metricsJSON))
 
 		if err != nil {
 			fmt.Println(err)
