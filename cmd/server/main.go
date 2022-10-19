@@ -43,18 +43,7 @@ func main() {
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
-	go func() {
-		for {
-			select {
-			case <-tickerUpload.C:
-				//отправка данных на диск
-				errUpload := repo.Upload()
-				if errUpload != nil {
-					fmt.Println(errUpload)
-				}
-			}
-		}
-	}()
+	go uploadWithTicker(tickerUpload, repo)
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -76,4 +65,17 @@ func main() {
 		log.Fatalf("Server Shutdown Failed:%+v", err)
 	}
 	log.Print("Server Exited Properly")
+}
+
+func uploadWithTicker(ticker *time.Ticker, repo *repositories.Repository) {
+	for {
+		select {
+		case <-ticker.C:
+			//отправка данных на диск
+			errUpload := repo.Upload()
+			if errUpload != nil {
+				fmt.Println(errUpload)
+			}
+		}
+	}
 }
