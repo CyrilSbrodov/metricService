@@ -17,19 +17,21 @@ import (
 )
 
 var (
-	flagAddress        = "ADDRESS"
-	flagPollInterval   = "REPORT_INTERVAL"
-	flagReportInterval = "POLL_INTERVAL"
+	flagAddress        *string
+	flagPollInterval   *string
+	flagReportInterval *string
 )
 
 func init() {
-	flag.StringVar(&flagAddress, "a", "localhost:8080", "address of service")
-	flag.StringVar(&flagPollInterval, "p", "2", "update interval")
-	flag.StringVar(&flagReportInterval, "r", "10", "upload interval to server")
+	flagAddress = flag.String("a", "localhost:8080", "address of service")
+	flagPollInterval = flag.String("p", "2s", "update interval")
+	flagReportInterval = flag.String("r", "10s", "upload interval to server")
+
 }
 
 func main() {
-	cfg := config.NewConfigAgent(flagAddress, flagPollInterval, flagReportInterval)
+	flag.Parse()
+	cfg := config.NewConfigAgent(*flagAddress, *flagPollInterval, *flagReportInterval)
 	fmt.Println(cfg)
 
 	client := &http.Client{}

@@ -19,22 +19,22 @@ import (
 )
 
 var (
-	flagAddress       = "ADDRESS"
-	flagRestore       = "RESTORE"
-	flagStoreInterval = "STORE_INTERVAL"
-	flagStoreFile     = "STORE_FILE"
+	flagAddress       *string
+	flagRestore       *string
+	flagStoreInterval *string
+	flagStoreFile     *string
 )
 
 func init() {
-	flag.StringVar(&flagAddress, "a", "localhost:8080", "address of service")
-	flag.StringVar(&flagRestore, "r", "true", "restore from file")
-	flag.StringVar(&flagStoreInterval, "i", "300", "upload interval")
-	flag.StringVar(&flagStoreFile, "f", "/tmp/devops-metrics-db.json", "name of file")
+	flagAddress = flag.String("a", "localhost:8080", "address of service")
+	flagRestore = flag.String("r", "true", "restore from file")
+	flagStoreInterval = flag.String("i", "300s", "upload interval")
+	flagStoreFile = flag.String("f", "/tmp/devops-metrics-db.json", "name of file")
 }
 
 func main() {
-
-	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore)
+	flag.Parse()
+	cfg := config.NewConfigServer(*flagAddress, *flagStoreInterval, *flagStoreFile, *flagRestore)
 	tickerUpload := time.NewTicker(cfg.StoreInterval)
 	//определение роутера
 	router := chi.NewRouter()
@@ -68,7 +68,7 @@ func main() {
 			log.Fatalf("listen: %s\n", err)
 		}
 	}()
-	log.Println("server is listen on port 8080")
+	log.Println("server is listen on", cfg.Addr)
 
 	<-done
 
