@@ -41,7 +41,7 @@ func NewRepository(cfg *config.Config) (*Repository, error) {
 			StoreInterval: cfg.StoreInterval,
 		}, nil
 	} else {
-		file, err := os.OpenFile(cfg.StoreFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0777)
+		file, err := os.OpenFile(cfg.StoreFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
 		if err != nil {
 			return nil, err
 		}
@@ -144,14 +144,13 @@ func Restore(store *map[string]storage.Metrics, cfg *config.Config) error {
 		return err
 	}
 	scanner := bufio.NewScanner(file)
-	scanner.Scan()
-	data := scanner.Bytes()
-
-	//var m storage.Metrics
-	err = json.Unmarshal(data, &store)
-	if err != nil {
-		fmt.Println(err)
-		return err
+	for scanner.Scan() {
+		data := scanner.Bytes()
+		err = json.Unmarshal(data, &store)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
 	}
 
 	defer file.Close()

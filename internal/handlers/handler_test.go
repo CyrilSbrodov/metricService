@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/CyrilSbrodov/metricService.git/cmd/config"
 	"github.com/CyrilSbrodov/metricService.git/internal/handlers"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage/repositories"
@@ -20,7 +21,8 @@ func TestHandler_GaugeHandler(t *testing.T) {
 	type want struct {
 		statusCode int
 	}
-	repo := repositories.NewRepository()
+	cfg := config.NewConfig()
+	repo, _ := repositories.NewRepository(cfg)
 
 	type fields struct {
 		Storage storage.Storage
@@ -91,7 +93,8 @@ func TestHandler_CounterHandler(t *testing.T) {
 	type want struct {
 		statusCode int
 	}
-	repo := repositories.NewRepository()
+	cfg := config.NewConfig()
+	repo, _ := repositories.NewRepository(cfg)
 
 	type fields struct {
 		Storage storage.Storage
@@ -162,7 +165,8 @@ func TestHandler_OtherHandler(t *testing.T) {
 	type want struct {
 		statusCode int
 	}
-	repo := repositories.NewRepository()
+	cfg := config.NewConfig()
+	repo, _ := repositories.NewRepository(cfg)
 
 	type fields struct {
 		Storage storage.Storage
@@ -214,8 +218,8 @@ func TestHandler_CollectHandler(t *testing.T) {
 		statusCode int
 	}
 	var value float64 = 123123
-
-	repo := repositories.NewRepository()
+	cfg := config.NewConfig()
+	repo, _ := repositories.NewRepository(cfg)
 
 	type fields struct {
 		Storage storage.Storage
