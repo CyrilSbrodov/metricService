@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -10,29 +9,16 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/caarlos0/env/v6"
 	"github.com/go-chi/chi/v5"
 
+	"github.com/CyrilSbrodov/metricService.git/cmd/config"
 	"github.com/CyrilSbrodov/metricService.git/internal/handlers"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage/repositories"
 )
 
-type Config struct {
-	Addr string `env:"ADDRESS" envDefault:"localhost:8080"`
-}
-
 func main() {
 
-	var cfg = Config{
-		//Addr: "localhost:8080",
-	}
-
-	err := env.Parse(&cfg)
-	if err != nil {
-		log.Fatal(err)
-	}
-	cfg.Addr = os.Getenv("ADDRESS")
-	fmt.Println(cfg.Addr)
+	cfg := config.NewConfig()
 
 	//определение роутера
 	router := chi.NewRouter()
