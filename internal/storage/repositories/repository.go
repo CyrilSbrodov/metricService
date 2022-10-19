@@ -1,34 +1,63 @@
 package repositories
 
 import (
+	"bufio"
+	"encoding/json"
 	"fmt"
+	"os"
+	"time"
 
+	"github.com/CyrilSbrodov/metricService.git/cmd/config"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 )
 
 type Repository struct {
-	Metrics map[string]storage.Metrics
-	Gauge   map[string]float64
-	Counter map[string]int64
+	Metrics       map[string]storage.Metrics
+	Gauge         map[string]float64
+	Counter       map[string]int64
+	file          *os.File
+	check         bool
+	StoreInterval time.Duration
 }
 
-func NewRepository() *Repository {
+func NewRepository(cfg *config.Config) (*Repository, error) {
 	metrics := storage.MetricsStore
 	gauge := storage.GaugeData
 	counter := storage.CounterData
-	return &Repository{
-		Metrics: metrics,
-		Gauge:   gauge,
-		Counter: counter,
+	if cfg.Restore {
+		err := Restore(&metrics, cfg)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if cfg.StoreFile == "" {
+		return &Repository{
+			Metrics:       metrics,
+			Gauge:         gauge,
+			Counter:       counter,
+			file:          nil,
+			check:         false,
+			StoreInterval: cfg.StoreInterval,
+		}, nil
+	} else {
+		file, err := os.OpenFile(cfg.StoreFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0777)
+		if err != nil {
+			return nil, err
+		}
+		return &Repository{
+			Metrics:       metrics,
+			Gauge:         gauge,
+			Counter:       counter,
+			file:          file,
+			check:         true,
+			StoreInterval: cfg.StoreInterval,
+		}, nil
 	}
 }
 
 func (r *Repository) CollectMetrics(m storage.Metrics) error {
-	//_, ok := storage.AllMetrics[m.ID]
-	//if !ok {
-	//	err := fmt.Errorf("missing metric")
-	//	return err
-	//}
+
 	if m.MType == "counter" && r.Metrics[m.ID].Delta != nil {
 		var val int64
 		val = *r.Metrics[m.ID].Delta
@@ -37,7 +66,6 @@ func (r *Repository) CollectMetrics(m storage.Metrics) error {
 		return nil
 	} else {
 		r.Metrics[m.ID] = m
-		//fmt.Println(r.Metrics)
 		return nil
 	}
 }
@@ -59,7 +87,6 @@ func (r *Repository) GetMetric(metric storage.Metrics) (storage.Metrics, error) 
 //получение всех метрик
 func (r *Repository) GetAll() string {
 	result := ""
-
 	for s, f := range r.Metrics {
 		if f.MType == "gauge" {
 			if f.Value != nil {
@@ -74,9 +101,7 @@ func (r *Repository) GetAll() string {
 }
 
 func (r *Repository) CollectOrChangeGauge(name string, value float64) error {
-
 	r.Gauge[name] = value
-
 	var m storage.Metrics
 	m.ID = name
 	m.Value = &value
@@ -112,14 +137,40 @@ func (r *Repository) GetCounter(name string) (int64, error) {
 	return value, nil
 }
 
-//func (r *Repository) GetAll() string {
-//	result := "Gauge:\n"
-//	for s, f := range r.Gauge {
-//		result += fmt.Sprintf("%s : %f\n", s, f)
-//	}
-//	result = result + "Counter:\n"
-//	for s, i := range r.Counter {
-//		result += fmt.Sprintf("%s : %d\n", s, i)
-//	}
-//	return result
-//}
+func Restore(store *map[string]storage.Metrics, cfg *config.Config) error {
+
+	file, err := os.OpenFile(cfg.StoreFile, os.O_RDONLY|os.O_CREATE, 0777)
+	if err != nil {
+		return err
+	}
+	scanner := bufio.NewScanner(file)
+	scanner.Scan()
+	data := scanner.Bytes()
+
+	//var m storage.Metrics
+	err = json.Unmarshal(data, &store)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	defer file.Close()
+	return nil
+}
+
+func (r *Repository) Upload() error {
+	data, err := json.Marshal(&r.Metrics)
+	if err != nil {
+		return err
+	}
+	// записываем событие в буфер
+	writer := bufio.NewWriter(r.file)
+	if _, err := writer.Write(data); err != nil {
+		return err
+	}
+	if err := writer.WriteByte('\n'); err != nil {
+		return err
+	}
+	writer.Flush()
+	return nil
+}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -19,11 +20,14 @@ import (
 func main() {
 
 	cfg := config.NewConfig()
-
+	tickerUpload := time.NewTicker(cfg.StoreInterval)
 	//определение роутера
 	router := chi.NewRouter()
 	//определение БД
-	repo := repositories.NewRepository()
+	repo, err := repositories.NewRepository(cfg)
+	if err != nil {
+		fmt.Println(err)
+	}
 	//service := storage.NewService(repo)
 	//определение хендлера
 	handler := handlers.NewHandler(repo)
@@ -38,6 +42,20 @@ func main() {
 	//gracefullshutdown
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		for {
+			select {
+			case <-tickerUpload.C:
+				//отправка данных на диск
+				errUpload := repo.Upload()
+				if errUpload != nil {
+					fmt.Println(errUpload)
+				}
+			}
+		}
+	}()
+
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("listen: %s\n", err)
