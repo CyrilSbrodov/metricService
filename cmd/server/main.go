@@ -71,15 +71,10 @@ func main() {
 }
 
 func uploadWithTicker(ticker *time.Ticker, repo *repositories.Repository) {
-	for {
-		select {
-		//отправка метрики (сек)
-		case <-ticker.C:
-			//отправка данных на диск
-			err := repo.Upload()
-			if err != nil {
-				fmt.Println(err)
-			}
+	for range ticker.C {
+		err := repo.Upload()
+		if err != nil {
+			fmt.Println(err)
 		}
 	}
 }
