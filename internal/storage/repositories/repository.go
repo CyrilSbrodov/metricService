@@ -20,7 +20,7 @@ type Repository struct {
 	StoreInterval time.Duration
 }
 
-func NewRepository(cfg *config.Config) (*Repository, error) {
+func NewRepository(cfg *config.ServerConfig) (*Repository, error) {
 	metrics := storage.MetricsStore
 	gauge := storage.GaugeData
 	counter := storage.CounterData
@@ -137,7 +137,7 @@ func (r *Repository) GetCounter(name string) (int64, error) {
 	return value, nil
 }
 
-func Restore(store *map[string]storage.Metrics, cfg *config.Config) error {
+func Restore(store *map[string]storage.Metrics, cfg *config.ServerConfig) error {
 
 	file, err := os.OpenFile(cfg.StoreFile, os.O_RDONLY|os.O_CREATE, 0777)
 	if err != nil {

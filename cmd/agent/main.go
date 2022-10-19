@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -15,8 +16,20 @@ import (
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 )
 
+var (
+	flagAddress        = "ADDRESS"
+	flagPollInterval   = "REPORT_INTERVAL"
+	flagReportInterval = "POLL_INTERVAL"
+)
+
+func init() {
+	flag.StringVar(&flagAddress, "a", "localhost:8080", "address of service")
+	flag.StringVar(&flagPollInterval, "p", "2", "update interval")
+	flag.StringVar(&flagReportInterval, "r", "10", "upload interval to server")
+}
+
 func main() {
-	cfg := config.NewConfig()
+	cfg := config.NewConfigAgent(flagAddress, flagPollInterval, flagReportInterval)
 	fmt.Println(cfg)
 
 	client := &http.Client{}

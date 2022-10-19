@@ -6,23 +6,32 @@ import (
 	"time"
 )
 
-type Config struct {
+type ServerConfig struct {
+	Addr          string
+	StoreInterval time.Duration
+	StoreFile     string
+	Restore       bool
+}
+
+type AgentConfig struct {
 	Addr           string
 	PollInterval   time.Duration
 	ReportInterval time.Duration
-	StoreInterval  time.Duration
-	StoreFile      string
-	Restore        bool
 }
 
-func NewConfig() *Config {
-	return &Config{
+func NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore string) *ServerConfig {
+	return &ServerConfig{
+		Addr:          getEnv(flagAddress, "localhost:8080"),
+		StoreInterval: getEnvTime(flagStoreInterval, 300*time.Second),
+		StoreFile:     getEnv(flagStoreFile, "/tmp/devops-metrics-db.json"),
+		Restore:       getEnvAsBool(flagRestore, true),
+	}
+}
+func NewConfigAgent(flagAddress, flagPollInterval, flagReportInterval string) *AgentConfig {
+	return &AgentConfig{
 		Addr:           getEnv(flagAddress, "localhost:8080"),
 		PollInterval:   getEnvTime(flagPollInterval, 2*time.Second),
 		ReportInterval: getEnvTime(flagReportInterval, 10*time.Second),
-		StoreInterval:  getEnvTime(flagStoreInterval, 300*time.Second),
-		StoreFile:      getEnv(flagStoreFile, "/tmp/devops-metrics-db.json"),
-		Restore:        getEnvAsBool(flagRestore, true),
 	}
 }
 

@@ -3,6 +3,7 @@ package handlers_test
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -17,11 +18,24 @@ import (
 	"github.com/CyrilSbrodov/metricService.git/internal/storage/repositories"
 )
 
+var (
+	flagAddress       = "ADDRESS"
+	flagRestore       = "RESTORE"
+	flagStoreInterval = "STORE_INTERVAL"
+	flagStoreFile     = "STORE_FILE"
+)
+
+func init() {
+	flag.StringVar(&flagAddress, "a", "localhost:8080", "address of service")
+	flag.StringVar(&flagRestore, "r", "true", "restore from file")
+	flag.StringVar(&flagStoreInterval, "i", "300", "upload interval")
+	flag.StringVar(&flagStoreFile, "f", "/tmp/devops-metrics-db.json", "name of file")
+}
 func TestHandler_GaugeHandler(t *testing.T) {
 	type want struct {
 		statusCode int
 	}
-	cfg := config.NewConfig()
+	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore)
 	repo, _ := repositories.NewRepository(cfg)
 
 	type fields struct {
@@ -93,7 +107,7 @@ func TestHandler_CounterHandler(t *testing.T) {
 	type want struct {
 		statusCode int
 	}
-	cfg := config.NewConfig()
+	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore)
 	repo, _ := repositories.NewRepository(cfg)
 
 	type fields struct {
@@ -165,7 +179,7 @@ func TestHandler_OtherHandler(t *testing.T) {
 	type want struct {
 		statusCode int
 	}
-	cfg := config.NewConfig()
+	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore)
 	repo, _ := repositories.NewRepository(cfg)
 
 	type fields struct {
@@ -218,7 +232,7 @@ func TestHandler_CollectHandler(t *testing.T) {
 		statusCode int
 	}
 	var value float64 = 123123
-	cfg := config.NewConfig()
+	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore)
 	repo, _ := repositories.NewRepository(cfg)
 
 	type fields struct {

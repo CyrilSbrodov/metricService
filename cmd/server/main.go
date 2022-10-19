@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -18,19 +19,22 @@ import (
 )
 
 var (
-	flagAddress       string
-	flagRestore       string
-	flagStoreInterval string
-	flagStoreFile     string
+	flagAddress       = "ADDRESS"
+	flagRestore       = "RESTORE"
+	flagStoreInterval = "STORE_INTERVAL"
+	flagStoreFile     = "STORE_FILE"
 )
 
 func init() {
-
+	flag.StringVar(&flagAddress, "a", "localhost:8080", "address of service")
+	flag.StringVar(&flagRestore, "r", "true", "restore from file")
+	flag.StringVar(&flagStoreInterval, "i", "300", "upload interval")
+	flag.StringVar(&flagStoreFile, "f", "/tmp/devops-metrics-db.json", "name of file")
 }
 
 func main() {
 
-	cfg := config.NewConfig()
+	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore)
 	tickerUpload := time.NewTicker(cfg.StoreInterval)
 	//определение роутера
 	router := chi.NewRouter()
