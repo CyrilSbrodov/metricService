@@ -43,7 +43,10 @@ func main() {
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
-	go uploadWithTicker(tickerUpload, repo)
+	//отправка данных на диск
+	if cfg.StoreInterval != 0 {
+		go uploadWithTicker(tickerUpload, repo)
+	}
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
