@@ -11,12 +11,13 @@ import (
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 )
 
+//создание структуры репозитория
 type Repository struct {
 	Metrics       map[string]storage.Metrics
 	Gauge         map[string]float64
 	Counter       map[string]int64
 	file          *os.File
-	check         bool
+	Check         bool
 	StoreInterval time.Duration
 }
 
@@ -24,6 +25,8 @@ func NewRepository(cfg *config.ServerConfig) (*Repository, error) {
 	metrics := storage.MetricsStore
 	gauge := storage.GaugeData
 	counter := storage.CounterData
+
+	//определение сбора данных из файла
 	if cfg.Restore {
 		err := Restore(&metrics, cfg)
 		if err != nil {
@@ -31,13 +34,14 @@ func NewRepository(cfg *config.ServerConfig) (*Repository, error) {
 		}
 	}
 
+	//определение записи на диск и создание файла
 	if cfg.StoreFile == "" {
 		return &Repository{
 			Metrics:       metrics,
 			Gauge:         gauge,
 			Counter:       counter,
 			file:          nil,
-			check:         false,
+			Check:         false,
 			StoreInterval: cfg.StoreInterval,
 		}, nil
 	} else {
@@ -50,7 +54,7 @@ func NewRepository(cfg *config.ServerConfig) (*Repository, error) {
 			Gauge:         gauge,
 			Counter:       counter,
 			file:          file,
-			check:         true,
+			Check:         true,
 			StoreInterval: cfg.StoreInterval,
 		}, nil
 	}
@@ -137,6 +141,7 @@ func (r *Repository) GetCounter(name string) (int64, error) {
 	return value, nil
 }
 
+//функция забора данных из файла при запуске
 func Restore(store *map[string]storage.Metrics, cfg *config.ServerConfig) error {
 
 	file, err := os.OpenFile(cfg.StoreFile, os.O_RDONLY|os.O_CREATE, 0777)
@@ -157,6 +162,7 @@ func Restore(store *map[string]storage.Metrics, cfg *config.ServerConfig) error 
 	return nil
 }
 
+//функция загрузки данных на диск
 func (r *Repository) Upload() error {
 	data, err := json.Marshal(&r.Metrics)
 	if err != nil {

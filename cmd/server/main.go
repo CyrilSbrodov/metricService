@@ -18,6 +18,7 @@ import (
 	"github.com/CyrilSbrodov/metricService.git/internal/storage/repositories"
 )
 
+//объявление флагов
 var (
 	flagAddress       *string
 	flagRestore       *string
@@ -26,6 +27,7 @@ var (
 )
 
 func init() {
+	//присвоение значений флагам
 	flagAddress = flag.String("a", "localhost:8080", "address of service")
 	flagRestore = flag.String("r", "true", "restore from file")
 	flagStoreInterval = flag.String("i", "300s", "upload interval")
@@ -34,6 +36,7 @@ func init() {
 
 func main() {
 	flag.Parse()
+
 	cfg := config.NewConfigServer(*flagAddress, *flagStoreInterval, *flagStoreFile, *flagRestore)
 	tickerUpload := time.NewTicker(cfg.StoreInterval)
 	//определение роутера
@@ -58,8 +61,8 @@ func main() {
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
-	//отправка данных на диск
-	if cfg.StoreInterval != 0 {
+	//отправка данных на диск, если запись разрешена и файл создан
+	if repo.Check {
 		go uploadWithTicker(tickerUpload, repo)
 	}
 

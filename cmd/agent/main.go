@@ -16,6 +16,7 @@ import (
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 )
 
+//объявление флагов
 var (
 	flagAddress        *string
 	flagPollInterval   *string
@@ -23,6 +24,7 @@ var (
 )
 
 func init() {
+	//присвоение значений флагам
 	flagAddress = flag.String("a", "localhost:8080", "address of service")
 	flagPollInterval = flag.String("p", "2s", "update interval")
 	flagReportInterval = flag.String("r", "10s", "upload interval to server")
@@ -31,6 +33,7 @@ func init() {
 
 func main() {
 	flag.Parse()
+
 	cfg := config.NewConfigAgent(*flagAddress, *flagPollInterval, *flagReportInterval)
 
 	client := &http.Client{}
@@ -56,9 +59,8 @@ func main() {
 	}
 }
 
+//сбор метрики
 func update(store map[string]storage.Metrics, count int64) map[string]storage.Metrics {
-	//сбор метрики
-
 	var memory runtime.MemStats
 	runtime.ReadMemStats(&memory)
 	val := reflect.ValueOf(memory)
@@ -106,6 +108,7 @@ func update(store map[string]storage.Metrics, count int64) map[string]storage.Me
 	return store
 }
 
+//отправка метрики
 func upload(client *http.Client, url string, store map[string]storage.Metrics) {
 
 	for _, m := range store {
@@ -136,14 +139,3 @@ func upload(client *http.Client, url string, store map[string]storage.Metrics) {
 		resp.Body.Close()
 	}
 }
-
-//req.Close = true
-//req.Header.Set("Content-Type", "application/json")
-//req.Header.Add("Accept", "application/json")
-
-//fmt.Println("перед ду")
-//resp, err := client.Do(req)
-//if err != nil {
-//	fmt.Println(err)
-//	os.Exit(1)
-//}

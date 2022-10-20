@@ -1,10 +1,8 @@
 package handlers
 
 import (
-	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -89,12 +87,6 @@ func (h Handler) CollectHandler() http.HandlerFunc {
 func (h Handler) GetAllHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
-		//t, err := template.ParseFiles("index.html")
-		//if err != nil {
-		//	log.Print("template parsing error: ", err)
-		//	return
-		//}
-		//t.Execute(rw, nil)
 		result := h.GetAll()
 
 		rw.Header().Set("Content-Type", "text/html")
@@ -226,7 +218,7 @@ func (h Handler) OtherHandler() http.HandlerFunc {
 	}
 }
 
-//хендлер получения данных из gauge and counter
+//хендлер получения данных из gauge and counter в формате JSON
 func (h Handler) GetHandlerJSON() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
@@ -251,6 +243,8 @@ func (h Handler) GetHandlerJSON() http.HandlerFunc {
 		}
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
+
+		//отправка обновленных метрик обратно
 		mJSON, errJSON := json.Marshal(m)
 		if errJSON != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
@@ -309,29 +303,5 @@ func (h Handler) GetHandler() http.HandlerFunc {
 			rw.Write([]byte("incorrect type"))
 			return
 		}
-	}
-}
-
-func gzipHandle(next http.HandlerFunc) http.HandlerFunc {
-	return func(rw http.ResponseWriter, r *http.Request) {
-		// проверяем, что клиент поддерживает gzip-сжатие
-		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
-			// если gzip не поддерживается, передаём управление
-			// дальше без изменений
-			next.ServeHTTP(rw, r)
-			return
-		}
-
-		// создаём gzip.Writer поверх текущего w
-		gz, err := gzip.NewWriterLevel(rw, gzip.BestSpeed)
-		if err != nil {
-			io.WriteString(rw, err.Error())
-			return
-		}
-		defer gz.Close()
-
-		rw.Header().Set("Content-Encoding", "gzip")
-		// передаём обработчику страницы переменную типа gzipWriter для вывода данных
-		next.ServeHTTP(gzipWriter{ResponseWriter: rw, Writer: gz}, r)
 	}
 }
