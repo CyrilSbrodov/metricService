@@ -4,8 +4,10 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -89,15 +91,15 @@ func (h Handler) CollectHandler() http.HandlerFunc {
 func (h Handler) GetAllHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
-		//t, err := template.ParseFiles("index.html")
-		//if err != nil {
-		//	log.Print("template parsing error: ", err)
-		//	return
-		//}
-		//t.Execute(rw, nil)
+		t, err := template.ParseFiles("index.html")
+		if err != nil {
+			log.Print("template parsing error: ", err)
+			return
+		}
+		t.Execute(rw, nil)
 		result := h.GetAll()
+		rw.Header().Add("Content-Type", "text/html")
 		rw.WriteHeader(http.StatusOK)
-		rw.Header().Set("Content-Type", "text/html")
 		rw.Write([]byte(result))
 	}
 }
