@@ -98,7 +98,7 @@ func (h Handler) GetAllHandler() http.HandlerFunc {
 		}
 		t.Execute(rw, nil)
 		result := h.GetAll()
-		rw.Header().Add("Content-Type", "text/html")
+		rw.Header().Set("Content-Type", "text/html")
 		rw.WriteHeader(http.StatusOK)
 		rw.Write([]byte(result))
 	}
