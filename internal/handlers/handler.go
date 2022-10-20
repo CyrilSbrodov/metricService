@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -26,13 +28,13 @@ type Handler struct {
 
 // создание роутеров
 func (h Handler) Register(r *chi.Mux) {
-	r.Post("/value/", h.GetHandlerJSON())
-	r.Get("/value/*", h.GetHandler())
-	r.Get("/", h.GetAllHandler())
-	r.Post("/update/", h.CollectHandler())
-	r.Post("/update/gauge/*", h.GaugeHandler())
-	r.Post("/update/counter/*", h.CounterHandler())
-	r.Post("/*", h.OtherHandler())
+	r.Post("/value/", gzipHandle(h.GetHandlerJSON()))
+	r.Get("/value/*", gzipHandle(h.GetHandler()))
+	r.Get("/", gzipHandle(h.GetAllHandler()))
+	r.Post("/update/", gzipHandle(h.CollectHandler()))
+	r.Post("/update/gauge/*", gzipHandle(h.GaugeHandler()))
+	r.Post("/update/counter/*", gzipHandle(h.CounterHandler()))
+	r.Post("/*", gzipHandle(h.OtherHandler()))
 
 }
 
@@ -307,5 +309,29 @@ func (h Handler) GetHandler() http.HandlerFunc {
 			rw.Write([]byte("incorrect type"))
 			return
 		}
+	}
+}
+
+func gzipHandle(next http.HandlerFunc) http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		// проверяем, что клиент поддерживает gzip-сжатие
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+			// если gzip не поддерживается, передаём управление
+			// дальше без изменений
+			next.ServeHTTP(rw, r)
+			return
+		}
+
+		// создаём gzip.Writer поверх текущего w
+		gz, err := gzip.NewWriterLevel(rw, gzip.BestSpeed)
+		if err != nil {
+			io.WriteString(rw, err.Error())
+			return
+		}
+		defer gz.Close()
+
+		rw.Header().Set("Content-Encoding", "gzip")
+		// передаём обработчику страницы переменную типа gzipWriter для вывода данных
+		next.ServeHTTP(gzipWriter{ResponseWriter: rw, Writer: gz}, r)
 	}
 }

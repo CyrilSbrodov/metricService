@@ -35,7 +35,6 @@ func NewConfigAgent(flagAddress, flagPollInterval, flagReportInterval string) *A
 	}
 }
 
-//"/tmp/devops-metrics-db.json"
 func getEnv(key, flag, defaultVal string) string {
 	if value, exists := os.LookupEnv(key); exists {
 		return value

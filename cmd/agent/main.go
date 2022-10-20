@@ -32,7 +32,6 @@ func init() {
 func main() {
 	flag.Parse()
 	cfg := config.NewConfigAgent(*flagAddress, *flagPollInterval, *flagReportInterval)
-	fmt.Println(cfg)
 
 	client := &http.Client{}
 
