@@ -16,22 +16,8 @@ import (
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 )
 
-//объявление флагов
-var (
-	flagAddress        *string
-	flagPollInterval   *string
-	flagReportInterval *string
-)
-
-func init() {
-	//присвоение значений флагам
-	flagAddress = flag.String("a", "localhost:8080", "address of service")
-	flagPollInterval = flag.String("p", "2s", "update interval")
-	flagReportInterval = flag.String("r", "10s", "upload interval to server")
-
-}
-
 func main() {
+	flagAddress, flagPollInterval, flagReportInterval := config.AgentFlagsInit()
 	flag.Parse()
 
 	cfg := config.NewConfigAgent(*flagAddress, *flagPollInterval, *flagReportInterval)

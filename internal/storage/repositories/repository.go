@@ -28,7 +28,7 @@ func NewRepository(cfg *config.ServerConfig) (*Repository, error) {
 
 	//определение сбора данных из файла
 	if cfg.Restore {
-		err := Restore(&metrics, cfg)
+		err := restore(&metrics, cfg)
 		if err != nil {
 			return nil, err
 		}
@@ -142,7 +142,7 @@ func (r *Repository) GetCounter(name string) (int64, error) {
 }
 
 //функция забора данных из файла при запуске
-func Restore(store *map[string]storage.Metrics, cfg *config.ServerConfig) error {
+func restore(store *map[string]storage.Metrics, cfg *config.ServerConfig) error {
 
 	file, err := os.OpenFile(cfg.StoreFile, os.O_RDONLY|os.O_CREATE, 0777)
 	if err != nil {

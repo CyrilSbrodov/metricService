@@ -18,23 +18,8 @@ import (
 	"github.com/CyrilSbrodov/metricService.git/internal/storage/repositories"
 )
 
-//объявление флагов
-var (
-	flagAddress       *string
-	flagRestore       *string
-	flagStoreInterval *string
-	flagStoreFile     *string
-)
-
-func init() {
-	//присвоение значений флагам
-	flagAddress = flag.String("a", "localhost:8080", "address of service")
-	flagRestore = flag.String("r", "true", "restore from file")
-	flagStoreInterval = flag.String("i", "300s", "upload interval")
-	flagStoreFile = flag.String("f", "/tmp/devops-metrics-db.json", "name of file")
-}
-
 func main() {
+	flagAddress, flagStoreInterval, flagStoreFile, flagRestore := config.ServerFlagsInit()
 	flag.Parse()
 
 	cfg := config.NewConfigServer(*flagAddress, *flagStoreInterval, *flagStoreFile, *flagRestore)
@@ -45,6 +30,7 @@ func main() {
 	repo, err := repositories.NewRepository(cfg)
 	if err != nil {
 		fmt.Println(err)
+		os.Exit(1)
 	}
 	//service := storage.NewService(repo)
 	//определение хендлера
@@ -63,7 +49,7 @@ func main() {
 
 	//отправка данных на диск, если запись разрешена и файл создан
 	if repo.Check {
-		go uploadWithTicker(tickerUpload, repo)
+		go uploadWithTicker(tickerUpload, repo, done)
 	}
 
 	go func() {
@@ -88,11 +74,18 @@ func main() {
 	log.Print("Server Exited Properly")
 }
 
-func uploadWithTicker(ticker *time.Ticker, repo *repositories.Repository) {
-	for range ticker.C {
-		err := repo.Upload()
-		if err != nil {
-			fmt.Println(err)
+func uploadWithTicker(ticker *time.Ticker, repo *repositories.Repository, done chan os.Signal) {
+	for {
+		select {
+		case <-ticker.C:
+			err := repo.Upload()
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+		case <-done:
+			ticker.Stop()
+			return
 		}
 	}
 }

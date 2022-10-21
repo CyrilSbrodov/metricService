@@ -1,10 +1,31 @@
 package config
 
 import (
+	"flag"
 	"os"
 	"strconv"
 	"time"
 )
+
+//объявление флагов
+
+func ServerFlagsInit() (flagAddress, flagRestore, flagStoreInterval, flagStoreFile *string) {
+	//присвоение значений флагам
+	flagAddress = flag.String("a", "localhost:8080", "address of service")
+	flagRestore = flag.String("r", "true", "restore from file")
+	flagStoreInterval = flag.String("i", "300s", "upload interval")
+	flagStoreFile = flag.String("f", "/tmp/devops-metrics-db.json", "name of file")
+	return
+}
+
+func AgentFlagsInit() (flagAddress, flagPollInterval, flagReportInterval *string) {
+	//присвоение значений флагам
+	flagAddress = flag.String("a", "localhost:8080", "address of service")
+	flagPollInterval = flag.String("p", "2s", "update interval")
+	flagReportInterval = flag.String("r", "10s", "upload interval to server")
+	return
+
+}
 
 //создание конфига для сервера
 type ServerConfig struct {
