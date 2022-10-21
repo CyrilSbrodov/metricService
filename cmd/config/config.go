@@ -8,7 +8,6 @@ import (
 )
 
 //объявление флагов
-
 func ServerFlagsInit() (flagAddress, flagRestore, flagStoreInterval, flagStoreFile *string) {
 	//присвоение значений флагам
 	flagAddress = flag.String("a", "localhost:8080", "address of service")
