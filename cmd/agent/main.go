@@ -75,12 +75,9 @@ func update(store map[string]storage.Metrics, count int64, cfg *config.AgentConf
 			value = float64(x)
 			m.Value = &value
 		}
-		if cfg.Hash != "" {
-			hashing(cfg, &m)
-			store[m.ID] = m
-		} else {
-			store[m.ID] = m
-		}
+
+		hashing(cfg, &m)
+		store[m.ID] = m
 
 	}
 	var m = storage.Metrics{
@@ -88,12 +85,9 @@ func update(store map[string]storage.Metrics, count int64, cfg *config.AgentConf
 		MType: "counter",
 		Delta: &count,
 	}
-	if cfg.Hash != "" {
-		hashing(cfg, &m)
-		store[m.ID] = m
-	} else {
-		store[m.ID] = m
-	}
+
+	hashing(cfg, &m)
+	store[m.ID] = m
 
 	value := rand.Intn(256)
 	v := float64(value)
@@ -102,12 +96,9 @@ func update(store map[string]storage.Metrics, count int64, cfg *config.AgentConf
 		MType: "gauge",
 		Value: &v,
 	}
-	if cfg.Hash != "" {
-		hashing(cfg, &randomValue)
-		store[randomValue.ID] = randomValue
-	} else {
-		store[randomValue.ID] = randomValue
-	}
+	hashing(cfg, &randomValue)
+	store[randomValue.ID] = randomValue
+
 	return store
 }
 
@@ -157,5 +148,7 @@ func hashing(cfg *config.AgentConfig, metrics *storage.Metrics) {
 		h.Write([]byte(src))
 		hash := h.Sum(nil)
 		metrics.Hash = hex.EncodeToString(hash)
+	} else {
+		metrics.Hash = ""
 	}
 }
