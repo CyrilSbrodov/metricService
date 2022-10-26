@@ -19,10 +19,10 @@ import (
 )
 
 func main() {
-	flagAddress, flagStoreInterval, flagStoreFile, flagRestore := config.ServerFlagsInit()
+	flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash := config.ServerFlagsInit()
 	flag.Parse()
 
-	cfg := config.NewConfigServer(*flagAddress, *flagStoreInterval, *flagStoreFile, *flagRestore)
+	cfg := config.NewConfigServer(*flagAddress, *flagStoreInterval, *flagStoreFile, *flagRestore, *flagHash)
 	tickerUpload := time.NewTicker(cfg.StoreInterval)
 	//определение роутера
 	router := chi.NewRouter()

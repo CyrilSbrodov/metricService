@@ -8,20 +8,22 @@ import (
 )
 
 //объявление флагов
-func ServerFlagsInit() (flagAddress, flagRestore, flagStoreInterval, flagStoreFile *string) {
+func ServerFlagsInit() (flagAddress, flagRestore, flagStoreInterval, flagStoreFile, flagHash *string) {
 	//присвоение значений флагам
 	flagAddress = flag.String("a", "localhost:8080", "address of service")
 	flagRestore = flag.String("r", "true", "restore from file")
 	flagStoreInterval = flag.String("i", "300s", "upload interval")
 	flagStoreFile = flag.String("f", "/tmp/devops-metrics-db.json", "name of file")
+	flagHash = flag.String("k", "КЛЮЧ", "hash")
 	return
 }
 
-func AgentFlagsInit() (flagAddress, flagPollInterval, flagReportInterval *string) {
+func AgentFlagsInit() (flagAddress, flagPollInterval, flagReportInterval, flagHash *string) {
 	//присвоение значений флагам
 	flagAddress = flag.String("a", "localhost:8080", "address of service")
 	flagPollInterval = flag.String("p", "2s", "update interval")
 	flagReportInterval = flag.String("r", "10s", "upload interval to server")
+	flagHash = flag.String("k", "КЛЮЧ", "hash")
 	return
 
 }
@@ -32,6 +34,7 @@ type ServerConfig struct {
 	StoreInterval time.Duration
 	StoreFile     string
 	Restore       bool
+	Hash          string
 }
 
 //создание конфига для агента
@@ -39,24 +42,27 @@ type AgentConfig struct {
 	Addr           string
 	PollInterval   time.Duration
 	ReportInterval time.Duration
+	Hash           string
 }
 
 // инициализация конфига для сервера
-func NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore string) *ServerConfig {
+func NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash string) *ServerConfig {
 	return &ServerConfig{
 		//проверка флагов и облачных переменных, приоритет облачным переменным, если не дефолтные значения
 		Addr:          getEnv("ADDRESS", flagAddress, "localhost:8080"),
 		StoreInterval: getEnvTime("STORE_INTERVAL", flagStoreInterval, "300s"),
 		StoreFile:     getEnv("STORE_FILE", flagStoreFile, "/tmp/devops-metrics-db.json"),
 		Restore:       getEnvAsBool("RESTORE", flagRestore, "true"),
+		Hash:          getEnv("KEY", flagHash, "КЛЮЧ"),
 	}
 }
-func NewConfigAgent(flagAddress, flagPollInterval, flagReportInterval string) *AgentConfig {
+func NewConfigAgent(flagAddress, flagPollInterval, flagReportInterval, flagHash string) *AgentConfig {
 	return &AgentConfig{
 		//проверка флагов и облачных переменных, приоритет облачным переменным, если не дефолтные значения
 		Addr:           getEnv("ADDRESS", flagAddress, "localhost:8080"),
 		PollInterval:   getEnvTime("POLL_INTERVAL", flagPollInterval, "2s"),
 		ReportInterval: getEnvTime("REPORT_INTERVAL", flagReportInterval, "10s"),
+		Hash:           getEnv("KEY", flagHash, "КЛЮЧ"),
 	}
 }
 

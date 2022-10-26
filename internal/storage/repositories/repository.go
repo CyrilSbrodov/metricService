@@ -2,6 +2,9 @@ package repositories
 
 import (
 	"bufio"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -19,6 +22,7 @@ type Repository struct {
 	file          *os.File
 	Check         bool
 	StoreInterval time.Duration
+	Hash          string
 }
 
 func NewRepository(cfg *config.ServerConfig) (*Repository, error) {
@@ -43,6 +47,7 @@ func NewRepository(cfg *config.ServerConfig) (*Repository, error) {
 			file:          nil,
 			Check:         false,
 			StoreInterval: cfg.StoreInterval,
+			Hash:          cfg.Hash,
 		}, nil
 	} else {
 		file, err := os.OpenFile(cfg.StoreFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
@@ -56,11 +61,18 @@ func NewRepository(cfg *config.ServerConfig) (*Repository, error) {
 			file:          file,
 			Check:         true,
 			StoreInterval: cfg.StoreInterval,
+			Hash:          cfg.Hash,
 		}, nil
 	}
 }
 
 func (r *Repository) CollectMetrics(m storage.Metrics) error {
+	if r.Hash != "" {
+		if !hashing(r.Hash, &m) {
+			err := fmt.Errorf("hash is wrong")
+			return err
+		}
+	}
 
 	if m.MType == "counter" && r.Metrics[m.ID].Delta != nil {
 		var val int64
@@ -178,4 +190,31 @@ func (r *Repository) Upload() error {
 	}
 	writer.Flush()
 	return nil
+}
+
+func hashing(hashKey string, metrics *storage.Metrics) bool {
+	if metrics.MType == "gauge" && metrics.Value != nil {
+		h := hmac.New(sha256.New, []byte(hashKey))
+		src := fmt.Sprintf("%s:gauge:%f", metrics.ID, *metrics.Value)
+		h.Write([]byte(src))
+		expectedHash := h.Sum(nil)
+		hash, err := hex.DecodeString(metrics.Hash)
+		if err != nil {
+			return false
+		}
+		return hmac.Equal(hash, expectedHash)
+
+	} else if metrics.MType == "counter" && metrics.Delta != nil {
+		h := hmac.New(sha256.New, []byte(hashKey))
+		src := fmt.Sprintf("%s:counter:%d", metrics.ID, *metrics.Delta)
+		h.Write([]byte(src))
+		expectedHash := h.Sum(nil)
+		hash, err := hex.DecodeString(metrics.Hash)
+		if err != nil {
+			return false
+		}
+		return hmac.Equal(hash, expectedHash)
+	} else {
+		return false
+	}
 }

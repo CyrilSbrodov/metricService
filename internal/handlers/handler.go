@@ -59,8 +59,9 @@ func (h Handler) CollectHandler() http.HandlerFunc {
 		}
 
 		err = h.Storage.CollectMetrics(m)
+
 		if err != nil {
-			rw.WriteHeader(http.StatusNotFound)
+			rw.WriteHeader(http.StatusBadRequest)
 			rw.Write([]byte(err.Error()))
 			return
 		}

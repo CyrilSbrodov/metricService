@@ -2,6 +2,9 @@ package main
 
 import (
 	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -17,10 +20,10 @@ import (
 )
 
 func main() {
-	flagAddress, flagPollInterval, flagReportInterval := config.AgentFlagsInit()
+	flagAddress, flagPollInterval, flagReportInterval, flagHash := config.AgentFlagsInit()
 	flag.Parse()
 
-	cfg := config.NewConfigAgent(*flagAddress, *flagPollInterval, *flagReportInterval)
+	cfg := config.NewConfigAgent(*flagAddress, *flagPollInterval, *flagReportInterval, *flagHash)
 
 	client := &http.Client{}
 
@@ -40,13 +43,13 @@ func main() {
 			//обновление метрики 2 сек
 		case <-tickerUpdate.C:
 			count++
-			metricsStore = update(metricsStore, count)
+			metricsStore = update(metricsStore, count, cfg)
 		}
 	}
 }
 
 //сбор метрики
-func update(store map[string]storage.Metrics, count int64) map[string]storage.Metrics {
+func update(store map[string]storage.Metrics, count int64, cfg *config.AgentConfig) map[string]storage.Metrics {
 	var memory runtime.MemStats
 	runtime.ReadMemStats(&memory)
 	val := reflect.ValueOf(memory)
@@ -72,7 +75,12 @@ func update(store map[string]storage.Metrics, count int64) map[string]storage.Me
 			value = float64(x)
 			m.Value = &value
 		}
-		store[m.ID] = m
+		if cfg.Hash != "" {
+			hashing(cfg, &m)
+			store[m.ID] = m
+		} else {
+			store[m.ID] = m
+		}
 
 	}
 	var m = storage.Metrics{
@@ -80,7 +88,12 @@ func update(store map[string]storage.Metrics, count int64) map[string]storage.Me
 		MType: "counter",
 		Delta: &count,
 	}
-	store[m.ID] = m
+	if cfg.Hash != "" {
+		hashing(cfg, &m)
+		store[m.ID] = m
+	} else {
+		store[m.ID] = m
+	}
 
 	value := rand.Intn(256)
 	v := float64(value)
@@ -89,8 +102,12 @@ func update(store map[string]storage.Metrics, count int64) map[string]storage.Me
 		MType: "gauge",
 		Value: &v,
 	}
-	store[randomValue.ID] = randomValue
-
+	if cfg.Hash != "" {
+		hashing(cfg, &randomValue)
+		store[randomValue.ID] = randomValue
+	} else {
+		store[randomValue.ID] = randomValue
+	}
 	return store
 }
 
@@ -123,5 +140,22 @@ func upload(client *http.Client, url string, store map[string]storage.Metrics) {
 			break
 		}
 		resp.Body.Close()
+	}
+}
+
+func hashing(cfg *config.AgentConfig, metrics *storage.Metrics) {
+	h := hmac.New(sha256.New, []byte(cfg.Hash))
+
+	if metrics.MType == "gauge" && metrics.Value != nil {
+		src := fmt.Sprintf("%s:gauge:%f", metrics.ID, *metrics.Value)
+		h.Write([]byte(src))
+		hash := h.Sum(nil)
+		metrics.Hash = hex.EncodeToString(hash)
+
+	} else if metrics.MType == "counter" && metrics.Delta != nil {
+		src := fmt.Sprintf("%s:counter:%d", metrics.ID, *metrics.Delta)
+		h.Write([]byte(src))
+		hash := h.Sum(nil)
+		metrics.Hash = hex.EncodeToString(hash)
 	}
 }
