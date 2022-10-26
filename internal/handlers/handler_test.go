@@ -1,22 +1,42 @@
 package handlers_test
 
 import (
+	"bytes"
+	"encoding/json"
+	"flag"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/CyrilSbrodov/metricService.git/cmd/config"
 	"github.com/CyrilSbrodov/metricService.git/internal/handlers"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage/repositories"
 )
 
+var (
+	flagAddress       = "ADDRESS"
+	flagRestore       = "RESTORE"
+	flagStoreInterval = "STORE_INTERVAL"
+	flagStoreFile     = "STORE_FILE"
+)
+
+func init() {
+	flag.StringVar(&flagAddress, "a", "localhost:8080", "address of service")
+	flag.StringVar(&flagRestore, "r", "true", "restore from file")
+	flag.StringVar(&flagStoreInterval, "i", "300", "upload interval")
+	flag.StringVar(&flagStoreFile, "f", "/tmp/devops-metrics-db.json", "name of file")
+}
 func TestHandler_GaugeHandler(t *testing.T) {
 	type want struct {
 		statusCode int
 	}
-	repo := repositories.NewRepository()
+	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore)
+	repo, _ := repositories.NewRepository(cfg)
 
 	type fields struct {
 		Storage storage.Storage
@@ -87,7 +107,8 @@ func TestHandler_CounterHandler(t *testing.T) {
 	type want struct {
 		statusCode int
 	}
-	repo := repositories.NewRepository()
+	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore)
+	repo, _ := repositories.NewRepository(cfg)
 
 	type fields struct {
 		Storage storage.Storage
@@ -158,7 +179,8 @@ func TestHandler_OtherHandler(t *testing.T) {
 	type want struct {
 		statusCode int
 	}
-	repo := repositories.NewRepository()
+	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore)
+	repo, _ := repositories.NewRepository(cfg)
 
 	type fields struct {
 		Storage storage.Storage
@@ -198,6 +220,75 @@ func TestHandler_OtherHandler(t *testing.T) {
 				Storage: tt.fields.Storage,
 			}
 			h.OtherHandler().ServeHTTP(w, request)
+			result := w.Result()
+			defer result.Body.Close()
+			assert.Equal(t, tt.want.statusCode, result.StatusCode)
+		})
+	}
+}
+
+func TestHandler_CollectHandler(t *testing.T) {
+	type want struct {
+		statusCode int
+	}
+	var value float64 = 123123
+	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore)
+	repo, _ := repositories.NewRepository(cfg)
+
+	type fields struct {
+		Storage storage.Storage
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		want    want
+		request string
+		req     storage.Metrics
+	}{
+		{
+			name: "Test ok",
+			fields: fields{
+				repo,
+			},
+			request: "http://localhost:8080/update",
+			want: want{
+				200,
+			},
+			req: storage.Metrics{
+				ID:    "Alloc",
+				MType: "gauge",
+				Value: &value,
+			},
+		},
+		{
+			name: "Test ok",
+			fields: fields{
+				repo,
+			},
+			request: "http://localhost:8080/update/",
+			want: want{
+				200,
+			},
+			req: storage.Metrics{
+				ID:    "Alloc",
+				MType: "gauge",
+				Value: &value,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metricsJSON, err := json.Marshal(tt.req)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			request := httptest.NewRequest(http.MethodPost, tt.request, bytes.NewBuffer(metricsJSON))
+			w := httptest.NewRecorder()
+			h := handlers.Handler{
+				Storage: tt.fields.Storage,
+			}
+			h.CollectHandler().ServeHTTP(w, request)
 			result := w.Result()
 			defer result.Body.Close()
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)

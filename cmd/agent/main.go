@@ -1,147 +1,127 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
+	"flag"
 	"fmt"
+	"io/ioutil"
+	"math/rand"
 	"net/http"
-	"os"
 	"reflect"
 	"runtime"
 	"time"
 
+	"github.com/CyrilSbrodov/metricService.git/cmd/config"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 )
 
-type Arg struct {
-	pollInterval   time.Duration
-	reportInterval time.Duration
-}
-
 func main() {
-	urlGauge := "http://localhost:8080/update/gauge/"
-	urlCounter := "http://localhost:8080/update/counter/"
-	var arg = Arg{
-		2 * time.Second,
-		10 * time.Second,
-	}
-	var gauge storage.Gauge
-	var counter storage.Counter
-	var memory runtime.MemStats
+	flagAddress, flagPollInterval, flagReportInterval := config.AgentFlagsInit()
+	flag.Parse()
 
-	//присвоение имени метрики
-	gauge.Alloc.Name = "Alloc"
-	gauge.BuckHashSys.Name = "BuckHashSys"
-	gauge.Frees.Name = "Frees"
-	gauge.GCCPUFraction.Name = "GCCPUFraction"
-	gauge.GCSys.Name = "GCSys"
-	gauge.HeapAlloc.Name = "HeapAlloc"
-	gauge.HeapIdle.Name = "HeapIdle"
-	gauge.HeapInuse.Name = "HeapInuse"
-	gauge.HeapObjects.Name = "HeapObjects"
-	gauge.HeapReleased.Name = "HeapReleased"
-	gauge.HeapSys.Name = "HeapSys"
-	gauge.LastGC.Name = "LastGC"
-	gauge.Lookups.Name = "Lookups"
-	gauge.MCacheInuse.Name = "MCacheInuse"
-	gauge.MCacheSys.Name = "MCacheSys"
-	gauge.MSpanInuse.Name = "MSpanInuse"
-	gauge.MSpanSys.Name = "MSpanSys"
-	gauge.Mallocs.Name = "Mallocs"
-	gauge.NextGC.Name = "NextGC"
-	gauge.NumForcedGC.Name = "NumForcedGC"
-	gauge.NumGC.Name = "NumGC"
-	gauge.OtherSys.Name = "OtherSys"
-	gauge.PauseTotalNs.Name = "PauseTotalNs"
-	gauge.StackInuse.Name = "StackInuse"
-	gauge.StackSys.Name = "StackSys"
-	gauge.Sys.Name = "Sys"
-	gauge.TotalAlloc.Name = "TotalAlloc"
-	counter.PollCount.Name = "PollCount"
-	gauge.RandomValue.Name = "RandomValue"
+	cfg := config.NewConfigAgent(*flagAddress, *flagPollInterval, *flagReportInterval)
+
+	client := &http.Client{}
+
+	var count int64
+	metricsStore := storage.MetricsStore
 
 	//запуск тикера
-	tickerUpload := time.NewTicker(arg.reportInterval)
-	tickerUpdate := time.NewTicker(arg.pollInterval)
-	client := &http.Client{}
+	tickerUpload := time.NewTicker(cfg.ReportInterval)
+	tickerUpdate := time.NewTicker(cfg.PollInterval)
 
 	for {
 		select {
 		//отправка метрики 10 сек
 		case <-tickerUpload.C:
-			val := reflect.ValueOf(gauge)
-			for i := 0; i < val.NumField(); i++ {
-				//отправка данных по адресу
-				value := fmt.Sprintf("%f", val.Field(i).Field(1).Interface().(float64))
-				uploadGauge(client, getURL(urlGauge, val.Field(i).Field(0).Interface().(string), value))
-			}
 			//отправка данных по адресу
-			value := fmt.Sprintf("%d", counter.PollCount.Value)
-			uploadCounter(client, getURL(urlCounter, counter.PollCount.Name, value))
+			upload(client, cfg.Addr, metricsStore)
 			//обновление метрики 2 сек
 		case <-tickerUpdate.C:
-			gauge, counter = update(&memory, gauge, counter)
-			//fmt.Println(gauge)
+			count++
+			metricsStore = update(metricsStore, count)
 		}
 	}
 }
 
-func update(memory *runtime.MemStats, gauge storage.Gauge, counter storage.Counter) (storage.Gauge, storage.Counter) {
-	//сбор метрики
-	runtime.ReadMemStats(memory)
-	gauge.Alloc.Value = float64(memory.Alloc)
-	gauge.BuckHashSys.Value = float64(memory.BuckHashSys)
-	gauge.Frees.Value = float64(memory.Frees)
-	gauge.GCCPUFraction.Value = memory.GCCPUFraction
-	gauge.GCSys.Value = float64(memory.GCSys)
-	gauge.HeapAlloc.Value = float64(memory.HeapAlloc)
-	gauge.HeapIdle.Value = float64(memory.HeapIdle)
-	gauge.HeapInuse.Value = float64(memory.HeapInuse)
-	gauge.HeapObjects.Value = float64(memory.HeapObjects)
-	gauge.HeapReleased.Value = float64(memory.HeapReleased)
-	gauge.HeapSys.Value = float64(memory.HeapSys)
-	gauge.LastGC.Value = float64(memory.LastGC)
-	gauge.Lookups.Value = float64(memory.Lookups)
-	gauge.MCacheInuse.Value = float64(memory.MCacheInuse)
-	gauge.MCacheSys.Value = float64(memory.MCacheSys)
-	gauge.MSpanInuse.Value = float64(memory.MSpanInuse)
-	gauge.MSpanSys.Value = float64(memory.MSpanSys)
-	gauge.Mallocs.Value = float64(memory.Mallocs)
-	gauge.NextGC.Value = float64(memory.NextGC)
-	gauge.NumForcedGC.Value = float64(memory.NumForcedGC)
-	gauge.NumGC.Value = float64(memory.NumGC)
-	gauge.OtherSys.Value = float64(memory.OtherSys)
-	gauge.PauseTotalNs.Value = float64(memory.PauseTotalNs)
-	gauge.StackInuse.Value = float64(memory.StackInuse)
-	gauge.StackSys.Value = float64(memory.StackSys)
-	gauge.Sys.Value = float64(memory.Sys)
-	gauge.TotalAlloc.Value = float64(memory.TotalAlloc)
-	counter.PollCount.Value++
-	gauge.RandomValue.Value = 1
+//сбор метрики
+func update(store map[string]storage.Metrics, count int64) map[string]storage.Metrics {
+	var memory runtime.MemStats
+	runtime.ReadMemStats(&memory)
+	val := reflect.ValueOf(memory)
+	for i := 0; i < val.NumField(); i++ {
+		var value float64
+		var m storage.Metrics
+		m.ID = reflect.TypeOf(memory).Field(i).Name
+		m.MType = "gauge"
 
-	return gauge, counter
-}
+		metricValue := val.Field(i).Interface()
+		switch valueType := metricValue.(type) {
+		case float64:
+			value = valueType
+			m.Value = &value
+		case uint64:
+			var x uint64
+			x = valueType
+			value = float64(x)
+			m.Value = &value
+		case uint32:
+			var x uint32
+			x = valueType
+			value = float64(x)
+			m.Value = &value
+		}
+		store[m.ID] = m
 
-func getURL(url, name, value string) string {
-	url += name + "/" + value
-	return url
-}
-
-func uploadGauge(client *http.Client, url string) {
-	req, err := http.Post(url, "text/plain", nil)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
 	}
+	var m = storage.Metrics{
+		ID:    "PollCount",
+		MType: "counter",
+		Delta: &count,
+	}
+	store[m.ID] = m
 
-	defer req.Body.Close()
+	value := rand.Intn(256)
+	v := float64(value)
+	var randomValue = storage.Metrics{
+		ID:    "RandomValue",
+		MType: "gauge",
+		Value: &v,
+	}
+	store[randomValue.ID] = randomValue
+
+	return store
 }
 
-func uploadCounter(client *http.Client, url string) {
+//отправка метрики
+func upload(client *http.Client, url string, store map[string]storage.Metrics) {
 
-	req, err := http.Post(url, "text/plain", nil)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+	for _, m := range store {
+		metricsJSON, errJSON := json.Marshal(m)
+		if errJSON != nil {
+			fmt.Println(errJSON)
+			break
+		}
+		req, err := http.NewRequest(http.MethodPost, "http://"+url+"/update/", bytes.NewBuffer(metricsJSON))
+
+		if err != nil {
+			fmt.Println(err)
+			break
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Add("Accept", "application/json")
+
+		resp, err := client.Do(req)
+		if err != nil {
+			fmt.Println(err)
+			break
+		}
+		_, err = ioutil.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Println(err)
+			break
+		}
+		resp.Body.Close()
 	}
-
-	defer req.Body.Close()
 }

@@ -3,8 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"html/template"
-	"log"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -25,12 +24,13 @@ type Handler struct {
 
 // создание роутеров
 func (h Handler) Register(r *chi.Mux) {
-
-	r.Post("/update/gauge/*", h.GaugeHandler())
-	r.Post("/update/counter/*", h.CounterHandler())
-	r.Post("/*", h.OtherHandler())
-	r.Get("/value/*", h.GetHandler())
-	r.Get("/", h.GetAllHandler())
+	r.Post("/value/", gzipHandle(h.GetHandlerJSON()))
+	r.Get("/value/*", gzipHandle(h.GetHandler()))
+	r.Get("/", gzipHandle(h.GetAllHandler()))
+	r.Post("/update/", gzipHandle(h.CollectHandler()))
+	r.Post("/update/gauge/*", gzipHandle(h.GaugeHandler()))
+	r.Post("/update/counter/*", gzipHandle(h.CounterHandler()))
+	r.Post("/*", gzipHandle(h.OtherHandler()))
 
 }
 
@@ -40,29 +40,59 @@ func NewHandler(storage storage.Storage) Handlers {
 	}
 }
 
-//хендлер из задания про родственников
-func (h Handler) UserViewHandler(users map[string]storage.User) http.HandlerFunc {
+//хендлер получения метрик
+func (h Handler) CollectHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		userID := r.URL.Query().Get("user_id")
-		if r.URL.Query().Get("user_id") == "" {
-			http.Error(rw, "userId is empty", http.StatusBadRequest)
-			return
-		}
 
-		user, ok := users[userID]
-		if !ok {
-			http.Error(rw, "user not found", http.StatusNotFound)
-			return
-		}
-
-		jsonUser, err := json.Marshal(user)
+		content, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			http.Error(rw, "can't provide a json. internal error", http.StatusInternalServerError)
+			rw.WriteHeader(http.StatusInternalServerError)
+			rw.Write([]byte(err.Error()))
+			return
+		}
+		defer r.Body.Close()
+		var m storage.Metrics
+		if err := json.Unmarshal(content, &m); err != nil {
+			rw.WriteHeader(http.StatusInternalServerError)
+			rw.Write([]byte(err.Error()))
+			return
+		}
+
+		err = h.Storage.CollectMetrics(m)
+		if err != nil {
+			rw.WriteHeader(http.StatusNotFound)
+			rw.Write([]byte(err.Error()))
+			return
+		}
+
+		m, err = h.Storage.GetMetric(m)
+		if err != nil {
+			rw.WriteHeader(http.StatusNotFound)
+			rw.Write([]byte(err.Error()))
+			return
+		}
+		mJSON, errJSON := json.Marshal(m)
+		if errJSON != nil {
+			rw.WriteHeader(http.StatusInternalServerError)
+			rw.Write([]byte(errJSON.Error()))
 			return
 		}
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
-		rw.Write(jsonUser)
+		rw.Write(mJSON)
+	}
+}
+
+//хендлер получения всех данных
+func (h Handler) GetAllHandler() http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+
+		result := h.GetAll()
+
+		rw.Header().Set("Content-Type", "text/html")
+
+		rw.WriteHeader(http.StatusOK)
+		rw.Write([]byte(result))
 	}
 }
 
@@ -100,7 +130,7 @@ func (h Handler) GaugeHandler() http.HandlerFunc {
 		}
 
 		//отправка значений в БД
-		err = h.CollectGauge(name, value)
+		err = h.CollectOrChangeGauge(name, value)
 		if err != nil {
 			rw.WriteHeader(http.StatusBadRequest)
 			rw.Write([]byte(err.Error()))
@@ -151,6 +181,7 @@ func (h Handler) CounterHandler() http.HandlerFunc {
 			return
 		}
 		rw.WriteHeader(http.StatusOK)
+
 	}
 }
 
@@ -184,6 +215,43 @@ func (h Handler) OtherHandler() http.HandlerFunc {
 		}
 
 		rw.WriteHeader(http.StatusBadRequest)
+	}
+}
+
+//хендлер получения данных из gauge and counter в формате JSON
+func (h Handler) GetHandlerJSON() http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+
+		content, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			rw.WriteHeader(http.StatusInternalServerError)
+			rw.Write([]byte(err.Error()))
+			return
+		}
+		defer r.Body.Close()
+		var m storage.Metrics
+		if err := json.Unmarshal(content, &m); err != nil {
+			rw.WriteHeader(http.StatusInternalServerError)
+			rw.Write([]byte(err.Error()))
+			return
+		}
+		m, err = h.Storage.GetMetric(m)
+		if err != nil {
+			rw.WriteHeader(http.StatusNotFound)
+			rw.Write([]byte(err.Error()))
+			return
+		}
+		rw.Header().Set("Content-Type", "application/json")
+		rw.WriteHeader(http.StatusOK)
+
+		//отправка обновленных метрик обратно
+		mJSON, errJSON := json.Marshal(m)
+		if errJSON != nil {
+			rw.WriteHeader(http.StatusInternalServerError)
+			rw.Write([]byte(errJSON.Error()))
+			return
+		}
+		rw.Write(mJSON)
 	}
 }
 
@@ -235,19 +303,5 @@ func (h Handler) GetHandler() http.HandlerFunc {
 			rw.Write([]byte("incorrect type"))
 			return
 		}
-	}
-}
-
-//хендлер получения всех данных из gauge and counter
-func (h Handler) GetAllHandler() http.HandlerFunc {
-	return func(rw http.ResponseWriter, r *http.Request) {
-		t, err := template.ParseFiles("index.html")
-		if err != nil {
-			log.Print("template parsing error: ", err)
-		}
-		t.Execute(rw, nil)
-		result := h.GetAll()
-		rw.WriteHeader(http.StatusOK)
-		rw.Write([]byte(result))
 	}
 }
