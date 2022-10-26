@@ -67,7 +67,7 @@ func NewRepository(cfg *config.ServerConfig) (*Repository, error) {
 }
 
 func (r *Repository) CollectMetrics(m storage.Metrics) error {
-	if r.Hash != "" {
+	if m.Hash != "" {
 		if !hashing(r.Hash, &m) {
 			err := fmt.Errorf("hash is wrong")
 			return err
