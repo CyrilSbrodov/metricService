@@ -59,6 +59,12 @@ func (h Handler) CollectHandler() http.HandlerFunc {
 		}
 		if m.Value != nil || m.Delta != nil {
 			err = h.Storage.CollectMetrics(m)
+			if err != nil {
+				rw.WriteHeader(http.StatusBadRequest)
+				fmt.Println(err)
+				rw.Write([]byte(err.Error()))
+				return
+			}
 		}
 		err = h.Storage.CollectMetricsNoValue(m)
 		if err != nil {
