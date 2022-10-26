@@ -23,6 +23,7 @@ var (
 	flagRestore       = "RESTORE"
 	flagStoreInterval = "STORE_INTERVAL"
 	flagStoreFile     = "STORE_FILE"
+	flagHash          = "KEY"
 )
 
 func init() {
@@ -30,12 +31,13 @@ func init() {
 	flag.StringVar(&flagRestore, "r", "true", "restore from file")
 	flag.StringVar(&flagStoreInterval, "i", "300", "upload interval")
 	flag.StringVar(&flagStoreFile, "f", "/tmp/devops-metrics-db.json", "name of file")
+	flag.StringVar(&flagHash, "k", "КЛЮЧ", "key of hash")
 }
 func TestHandler_GaugeHandler(t *testing.T) {
 	type want struct {
 		statusCode int
 	}
-	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore)
+	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash)
 	repo, _ := repositories.NewRepository(cfg)
 
 	type fields struct {
@@ -107,7 +109,7 @@ func TestHandler_CounterHandler(t *testing.T) {
 	type want struct {
 		statusCode int
 	}
-	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore)
+	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash)
 	repo, _ := repositories.NewRepository(cfg)
 
 	type fields struct {
@@ -179,7 +181,7 @@ func TestHandler_OtherHandler(t *testing.T) {
 	type want struct {
 		statusCode int
 	}
-	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore)
+	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash)
 	repo, _ := repositories.NewRepository(cfg)
 
 	type fields struct {
@@ -232,7 +234,7 @@ func TestHandler_CollectHandler(t *testing.T) {
 		statusCode int
 	}
 	var value float64 = 123123
-	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore)
+	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash)
 	repo, _ := repositories.NewRepository(cfg)
 
 	type fields struct {
