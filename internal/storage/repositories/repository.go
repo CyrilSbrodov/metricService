@@ -86,6 +86,19 @@ func (r *Repository) CollectMetrics(m storage.Metrics) error {
 	}
 }
 
+func (r *Repository) CollectMetricsNoValue(m storage.Metrics) error {
+	if m.MType == "counter" && r.Metrics[m.ID].Delta != nil {
+		var val int64
+		val = *r.Metrics[m.ID].Delta
+		val += *m.Delta
+		*r.Metrics[m.ID].Delta = val
+		return nil
+	} else {
+		r.Metrics[m.ID] = m
+		return nil
+	}
+}
+
 func (r *Repository) GetMetric(metric storage.Metrics) (storage.Metrics, error) {
 	if metric.MType == "gauge" || metric.MType == "counter" {
 		m, ok := r.Metrics[metric.ID]
@@ -193,6 +206,7 @@ func (r *Repository) Upload() error {
 }
 
 func hashing(hashKey string, metrics *storage.Metrics) bool {
+	fmt.Println(metrics)
 	if metrics.MType == "gauge" && metrics.Value != nil {
 		h := hmac.New(sha256.New, []byte(hashKey))
 		src := fmt.Sprintf("%s:gauge:%f", metrics.ID, *metrics.Value)
