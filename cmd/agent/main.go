@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -76,7 +75,11 @@ func update(store map[string]storage.Metrics, count int64, cfg *config.AgentConf
 			m.Value = &value
 		}
 
-		hashing(cfg, &m)
+		if m.Value == nil {
+			m.Value = &value
+		}
+
+		m.Hash = hashing(cfg, &m)
 		store[m.ID] = m
 
 	}
@@ -86,7 +89,7 @@ func update(store map[string]storage.Metrics, count int64, cfg *config.AgentConf
 		Delta: &count,
 	}
 
-	hashing(cfg, &m)
+	m.Hash = hashing(cfg, &m)
 	store[m.ID] = m
 
 	value := rand.Intn(256)
@@ -96,7 +99,7 @@ func update(store map[string]storage.Metrics, count int64, cfg *config.AgentConf
 		MType: "gauge",
 		Value: &v,
 	}
-	hashing(cfg, &randomValue)
+	randomValue.Hash = hashing(cfg, &randomValue)
 	store[randomValue.ID] = randomValue
 
 	return store
@@ -134,21 +137,15 @@ func upload(client *http.Client, url string, store map[string]storage.Metrics) {
 	}
 }
 
-func hashing(cfg *config.AgentConfig, metrics *storage.Metrics) {
-	h := hmac.New(sha256.New, []byte(cfg.Hash))
-
-	if metrics.MType == "gauge" && metrics.Value != nil {
-		src := fmt.Sprintf("%s:gauge:%f", metrics.ID, *metrics.Value)
-		h.Write([]byte(src))
-		hash := h.Sum(nil)
-		metrics.Hash = hex.EncodeToString(hash)
-
-	} else if metrics.MType == "counter" && metrics.Delta != nil {
-		src := fmt.Sprintf("%s:counter:%d", metrics.ID, *metrics.Delta)
-		h.Write([]byte(src))
-		hash := h.Sum(nil)
-		metrics.Hash = hex.EncodeToString(hash)
-	} else {
-		metrics.Hash = ""
+func hashing(cfg *config.AgentConfig, m *storage.Metrics) string {
+	var hash string
+	switch m.MType {
+	case "counter":
+		hash = fmt.Sprintf("%s:%s:%d", m.ID, m.MType, *m.Delta)
+	case "gauge":
+		hash = fmt.Sprintf("%s:%s:%f", m.ID, m.MType, *m.Value)
 	}
+	h := hmac.New(sha256.New, []byte(cfg.Hash))
+	h.Write([]byte(hash))
+	return fmt.Sprintf("%x", h.Sum(nil))
 }

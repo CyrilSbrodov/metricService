@@ -67,12 +67,15 @@ func NewRepository(cfg *config.ServerConfig) (*Repository, error) {
 }
 
 func (r *Repository) CollectMetrics(m storage.Metrics) error {
+	fmt.Println("collect")
 	if m.Hash != "" {
+		fmt.Println(hashing(r.Hash, &m))
 		if !hashing(r.Hash, &m) {
 			err := fmt.Errorf("hash is wrong")
 			return err
 		}
 	}
+	fmt.Println("==========")
 
 	if m.MType == "counter" && r.Metrics[m.ID].Delta != nil {
 		var val int64
@@ -205,30 +208,44 @@ func (r *Repository) Upload() error {
 	return nil
 }
 
-func hashing(hashKey string, metrics *storage.Metrics) bool {
-	fmt.Println(metrics)
-	if metrics.MType == "gauge" && metrics.Value != nil {
-		h := hmac.New(sha256.New, []byte(hashKey))
-		src := fmt.Sprintf("%s:gauge:%f", metrics.ID, *metrics.Value)
-		h.Write([]byte(src))
-		expectedHash := h.Sum(nil)
-		hash, err := hex.DecodeString(metrics.Hash)
-		if err != nil {
-			return false
-		}
-		return hmac.Equal(hash, expectedHash)
+func hashing(hashKey string, m *storage.Metrics) bool {
+	fmt.Println(m)
+	//if metrics.MType == "gauge" && metrics.Value != nil {
+	//	h := hmac.New(sha256.New, []byte(hashKey))
+	//	src := fmt.Sprintf("%s:gauge:%f", metrics.ID, *metrics.Value)
+	//	h.Write([]byte(src))
+	//	expectedHash := h.Sum(nil)
+	//	hash, err := hex.DecodeString(metrics.Hash)
+	//	if err != nil {
+	//		return false
+	//	}
+	//	return hmac.Equal(hash, expectedHash)
+	//
+	//} else if metrics.MType == "counter" && metrics.Delta != nil {
+	//	h := hmac.New(sha256.New, []byte(hashKey))
+	//	src := fmt.Sprintf("%s:counter:%d", metrics.ID, *metrics.Delta)
+	//	h.Write([]byte(src))
+	//	expectedHash := h.Sum(nil)
+	//	hash, err := hex.DecodeString(metrics.Hash)
+	//	if err != nil {
+	//		return false
+	//	}
+	//	return hmac.Equal(hash, expectedHash)
+	//} else {
+	//	return false
 
-	} else if metrics.MType == "counter" && metrics.Delta != nil {
-		h := hmac.New(sha256.New, []byte(hashKey))
-		src := fmt.Sprintf("%s:counter:%d", metrics.ID, *metrics.Delta)
-		h.Write([]byte(src))
-		expectedHash := h.Sum(nil)
-		hash, err := hex.DecodeString(metrics.Hash)
-		if err != nil {
-			return false
-		}
-		return hmac.Equal(hash, expectedHash)
-	} else {
+	var hash string
+	switch m.MType {
+	case "counter":
+		hash = fmt.Sprintf("%s:%s:%d", m.ID, m.MType, *m.Delta)
+	case "gauge":
+		hash = fmt.Sprintf("%s:%s:%f", m.ID, m.MType, *m.Value)
+	}
+	h := hmac.New(sha256.New, []byte(hashKey))
+	h.Write([]byte(hash))
+	hashAccept, err := hex.DecodeString(m.Hash)
+	if err != nil {
 		return false
 	}
+	return hmac.Equal(h.Sum(nil), hashAccept)
 }
