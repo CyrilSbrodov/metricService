@@ -77,16 +77,39 @@ func (r *Repository) CollectMetrics(m storage.Metrics) error {
 	}
 	fmt.Println("==========")
 
-	if m.MType == "counter" && r.Metrics[m.ID].Delta != nil {
-		var val int64
-		val = *r.Metrics[m.ID].Delta
-		val += *m.Delta
-		*r.Metrics[m.ID].Delta = val
+	switch m.MType {
+	case "counter":
+		entry, ok := r.Metrics[m.ID]
+		if !ok {
+			r.Metrics[m.ID] = m
+			return nil
+		}
+		*entry.Delta += *m.Delta
+		entry.Hash = m.Hash
+		r.Metrics[m.ID] = entry
 		return nil
-	} else {
+	case "gauge":
 		r.Metrics[m.ID] = m
 		return nil
 	}
+	r.Metrics[m.ID] = m
+	return nil
+	//
+	//if m.MType == "counter" && r.Metrics[m.ID].Delta != nil {
+	//	//var val int64
+	//	//val = *r.Metrics[m.ID].Delta
+	//	//val += *m.Delta
+	//	//*r.Metrics[m.ID].Delta = val
+	//	if entry, ok := r.Metrics[m.ID]; ok {
+	//		*entry.Delta += *m.Delta
+	//		entry.Hash = m.Hash
+	//		r.Metrics[m.ID] = entry
+	//	}
+	//	return nil
+	//} else {
+	//	r.Metrics[m.ID] = m
+	//	return nil
+	//}
 }
 
 func (r *Repository) CollectMetricsNoValue(m storage.Metrics) error {
