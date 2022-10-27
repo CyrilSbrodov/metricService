@@ -67,15 +67,14 @@ func NewRepository(cfg *config.ServerConfig) (*Repository, error) {
 }
 
 func (r *Repository) CollectMetrics(m storage.Metrics) error {
-	fmt.Println("collect")
+
 	if m.Hash != "" {
-		fmt.Println(hashing(r.Hash, &m))
-		if !hashing(r.Hash, &m) {
+		_, ok := hashing(r.Hash, &m)
+		if !ok {
 			err := fmt.Errorf("hash is wrong")
 			return err
 		}
 	}
-	fmt.Println("==========")
 
 	switch m.MType {
 	case "counter":
@@ -112,30 +111,18 @@ func (r *Repository) CollectMetrics(m storage.Metrics) error {
 	//}
 }
 
-func (r *Repository) CollectMetricsNoValue(m storage.Metrics) error {
-	if m.MType == "counter" && r.Metrics[m.ID].Delta != nil {
-		var val int64
-		val = *r.Metrics[m.ID].Delta
-		val += *m.Delta
-		*r.Metrics[m.ID].Delta = val
-		return nil
-	} else {
-		r.Metrics[m.ID] = m
-		return nil
-	}
-}
-
-func (r *Repository) GetMetric(metric storage.Metrics) (storage.Metrics, error) {
-	if metric.MType == "gauge" || metric.MType == "counter" {
-		m, ok := r.Metrics[metric.ID]
+func (r *Repository) GetMetric(m storage.Metrics) (storage.Metrics, error) {
+	if m.MType == "gauge" || m.MType == "counter" {
+		metric, ok := r.Metrics[m.ID]
 		if !ok {
-			err := fmt.Errorf("id not found %s", metric.ID)
-			return metric, err
+			err := fmt.Errorf("id not found %s", m.ID)
+			return m, err
 		}
-		return m, nil
+		metric.Hash, _ = hashing(r.Hash, &metric)
+		return metric, nil
 	} else {
-		err := fmt.Errorf("type %s is wrong", metric.MType)
-		return metric, err
+		err := fmt.Errorf("type %s is wrong", m.MType)
+		return m, err
 	}
 }
 
@@ -231,8 +218,9 @@ func (r *Repository) Upload() error {
 	return nil
 }
 
-func hashing(hashKey string, m *storage.Metrics) bool {
-	fmt.Println(m)
+func hashing(hashKey string, m *storage.Metrics) (string, bool) {
+	//fmt.Println(m)
+
 	//if metrics.MType == "gauge" && metrics.Value != nil {
 	//	h := hmac.New(sha256.New, []byte(hashKey))
 	//	src := fmt.Sprintf("%s:gauge:%f", metrics.ID, *metrics.Value)
@@ -268,7 +256,7 @@ func hashing(hashKey string, m *storage.Metrics) bool {
 	h.Write([]byte(hash))
 	hashAccept, err := hex.DecodeString(m.Hash)
 	if err != nil {
-		return false
+		return "", false
 	}
-	return hmac.Equal(h.Sum(nil), hashAccept)
+	return fmt.Sprintf("%x", h.Sum(nil)), hmac.Equal(h.Sum(nil), hashAccept)
 }

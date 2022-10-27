@@ -182,7 +182,7 @@ jobs:
       - name: "Code increment #5"
         if: always()
         run: |
-          SERVER_PORT=$(random unused-port)
+          SERVER_PORT="8282"
           ADDRESS="localhost:${SERVER_PORT}"
           devopstest -test.v -test.run=^TestIteration5$ \
             -source-path=. \
@@ -202,9 +202,9 @@ jobs:
       - name: "Code increment #6"
         if: always()
         run: |
-          SERVER_PORT=$(random unused-port)
+          SERVER_PORT="8282"
           ADDRESS="localhost:${SERVER_PORT}"
-          TEMP_FILE=$(random tempfile)
+          TEMP_FILE="/tmp/devops-metrics-db.json"
           devopstest -test.v -test.run=^TestIteration6$ \
             -source-path=. \
             -agent-binary-path=cmd/agent/agent \
@@ -229,9 +229,9 @@ jobs:
       - name: "Code increment #7"
         if: always()
         run: |
-          SERVER_PORT=$(random unused-port)
+          SERVER_PORT="8282"
           ADDRESS="localhost:${SERVER_PORT}"
-          TEMP_FILE=$(random tempfile)
+          TEMP_FILE="/tmp/devops-metrics-db.json"
           devopstest -test.v -test.run=^TestIteration7$ \
             -source-path=. \
             -agent-binary-path=cmd/agent/agent \
@@ -247,9 +247,9 @@ jobs:
       - name: "Code increment #8"
         if: always()
         run: |
-          SERVER_PORT=$(random unused-port)
+          SERVER_PORT="8282"
           ADDRESS="localhost:${SERVER_PORT}"
-          TEMP_FILE=$(random tempfile)
+          TEMP_FILE="/tmp/devops-metrics-db.json"
           devopstest -test.v -test.run=^TestIteration8 \
             -source-path=. \
             -agent-binary-path=cmd/agent/agent \
@@ -293,9 +293,9 @@ jobs:
       - name: "Code increment #9"
         if: always()
         run: |
-          SERVER_PORT=$(random unused-port)
+          SERVER_PORT="8282"
           ADDRESS="localhost:${SERVER_PORT}"
-          TEMP_FILE=$(random tempfile)
+          TEMP_FILE="/tmp/devops-metrics-db.json"
           devopstest -test.v -test.run=^TestIteration9$ \
             -source-path=. \
             -agent-binary-path=cmd/agent/agent \
