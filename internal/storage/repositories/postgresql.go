@@ -35,7 +35,7 @@ func (db *DB) Connect() error {
 	defer pool.Close()
 
 	if err := pool.Ping(); err != nil {
-		panic(err)
+		return err
 	}
 	return nil
 }
