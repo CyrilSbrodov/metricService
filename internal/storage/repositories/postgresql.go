@@ -1,35 +1,40 @@
 package repositories
 
 import (
-	"context"
+	"database/sql"
 	"fmt"
 	"os"
 
-	"github.com/jackc/pgx/v5"
+	_ "github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/lib/pq"
 
 	"github.com/CyrilSbrodov/metricService.git/cmd/config"
 )
 
 type DB struct {
 	databaseURL string
-	db          *pgx.Conn
+	//db          *pgxpool.Pool
 }
 
 func NewDB(cfg *config.ServerConfig) (*DB, error) {
-	conn, err := pgx.Connect(context.Background(), cfg.DatabaseDSN)
+	//var pool *pgxpool.Pool
+
+	return &DB{
+		databaseURL: cfg.DatabaseDSN,
+		//db:          pool,
+	}, nil
+}
+
+func (db *DB) Connect() error {
+	pool, err := sql.Open("postgres", db.databaseURL)
+
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)
 	}
-	defer conn.Close(context.Background())
-	return &DB{
-		databaseURL: cfg.DatabaseDSN,
-		db:          conn,
-	}, nil
-}
+	defer pool.Close()
 
-func (db *DB) Connect(ctx context.Context) error {
-	if err := db.db.Ping(ctx); err != nil {
+	if err := pool.Ping(); err != nil {
 		panic(err)
 	}
 	return nil

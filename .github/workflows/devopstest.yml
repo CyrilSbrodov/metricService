@@ -324,7 +324,7 @@ jobs:
             -agent-binary-path=cmd/agent/agent \
             -binary-path=cmd/server/server \
             -server-port=$SERVER_PORT \
-            -database-dsn='postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable' \
+            -database-dsn='postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable' \
             -key="${TEMP_FILE}"
 
 # XI. Задание к одиннадцатому инкременту.
