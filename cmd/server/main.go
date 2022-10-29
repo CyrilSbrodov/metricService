@@ -19,10 +19,10 @@ import (
 )
 
 func main() {
-	flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash := config.ServerFlagsInit()
+	flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase := config.ServerFlagsInit()
 	flag.Parse()
 
-	cfg := config.NewConfigServer(*flagAddress, *flagStoreInterval, *flagStoreFile, *flagRestore, *flagHash)
+	cfg := config.NewConfigServer(*flagAddress, *flagStoreInterval, *flagStoreFile, *flagRestore, *flagHash, *flagDatabase)
 	tickerUpload := time.NewTicker(cfg.StoreInterval)
 	//определение роутера
 	router := chi.NewRouter()
@@ -32,9 +32,12 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	//service := storage.NewService(repo)
+	db, err := repositories.NewDB(cfg)
+	if err != nil {
+		os.Exit(1)
+	}
 	//определение хендлера
-	handler := handlers.NewHandler(repo)
+	handler := handlers.NewHandler(repo, db)
 	//регистрация хендлера
 	handler.Register(router)
 

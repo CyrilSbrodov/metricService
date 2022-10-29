@@ -8,13 +8,14 @@ import (
 )
 
 //объявление флагов
-func ServerFlagsInit() (flagAddress, flagRestore, flagStoreInterval, flagStoreFile, flagHash *string) {
+func ServerFlagsInit() (flagAddress, flagRestore, flagStoreInterval, flagStoreFile, flagHash, flagDatabase *string) {
 	//присвоение значений флагам
 	flagAddress = flag.String("a", "localhost:8080", "address of service")
 	flagRestore = flag.String("r", "true", "restore from file")
 	flagStoreInterval = flag.String("i", "300s", "upload interval")
 	flagStoreFile = flag.String("f", "/tmp/devops-metrics-db.json", "name of file")
 	flagHash = flag.String("k", "КЛЮЧ", "hash")
+	flagDatabase = flag.String("d", "", "name of database")
 	return
 }
 
@@ -35,6 +36,7 @@ type ServerConfig struct {
 	StoreFile     string
 	Restore       bool
 	Hash          string
+	DatabaseDSN   string
 }
 
 //создание конфига для агента
@@ -46,7 +48,7 @@ type AgentConfig struct {
 }
 
 // инициализация конфига для сервера
-func NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash string) *ServerConfig {
+func NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase string) *ServerConfig {
 	return &ServerConfig{
 		//проверка флагов и облачных переменных, приоритет облачным переменным, если не дефолтные значения
 		Addr:          getEnv("ADDRESS", flagAddress, "localhost:8080"),
@@ -54,6 +56,7 @@ func NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore,
 		StoreFile:     getEnv("STORE_FILE", flagStoreFile, "/tmp/devops-metrics-db.json"),
 		Restore:       getEnvAsBool("RESTORE", flagRestore, "true"),
 		Hash:          getEnv("KEY", flagHash, "КЛЮЧ"),
+		DatabaseDSN:   getEnv("DATABASE_DSN", flagDatabase, ""),
 	}
 }
 func NewConfigAgent(flagAddress, flagPollInterval, flagReportInterval, flagHash string) *AgentConfig {

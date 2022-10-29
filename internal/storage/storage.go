@@ -9,3 +9,7 @@ type Storage interface {
 	GetGauge(name string) (float64, error)
 	GetCounter(name string) (int64, error)
 }
+
+type PostrgeStorage interface {
+	Connect() error
+}

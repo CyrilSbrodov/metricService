@@ -20,6 +20,7 @@ type Handlers interface {
 type Handler struct {
 	//storage.Service
 	storage.Storage
+	storage.PostrgeStorage
 }
 
 // создание роутеров
@@ -31,12 +32,14 @@ func (h Handler) Register(r *chi.Mux) {
 	r.Post("/update/gauge/*", gzipHandle(h.GaugeHandler()))
 	r.Post("/update/counter/*", gzipHandle(h.CounterHandler()))
 	r.Post("/*", gzipHandle(h.OtherHandler()))
+	r.Get("/ping", gzipHandle(h.Ping()))
 
 }
 
-func NewHandler(storage storage.Storage) Handlers {
+func NewHandler(storage storage.Storage, postrgeStorage storage.PostrgeStorage) Handlers {
 	return &Handler{
 		storage,
+		postrgeStorage,
 	}
 }
 
@@ -57,15 +60,7 @@ func (h Handler) CollectHandler() http.HandlerFunc {
 			rw.Write([]byte(err.Error()))
 			return
 		}
-		//if m.Value != nil || m.Delta != nil {
-		//	err = h.Storage.CollectMetrics(m)
-		//	if err != nil {
-		//		rw.WriteHeader(http.StatusBadRequest)
-		//		fmt.Println(err)
-		//		rw.Write([]byte(err.Error()))
-		//		return
-		//	}
-		//}
+
 		err = h.Storage.CollectMetrics(m)
 		if err != nil {
 			rw.WriteHeader(http.StatusBadRequest)
@@ -313,5 +308,20 @@ func (h Handler) GetHandler() http.HandlerFunc {
 			rw.Write([]byte("incorrect type"))
 			return
 		}
+	}
+}
+
+func (h *Handler) Ping() http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+
+		err := h.Connect()
+		if err != nil {
+			rw.WriteHeader(http.StatusInternalServerError)
+			rw.Write([]byte(err.Error()))
+			return
+		}
+		rw.Header().Set("Content-Type", "text/html")
+		rw.WriteHeader(http.StatusOK)
+
 	}
 }
