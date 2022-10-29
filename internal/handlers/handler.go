@@ -32,7 +32,7 @@ func (h Handler) Register(r *chi.Mux) {
 	r.Post("/update/gauge/*", gzipHandle(h.GaugeHandler()))
 	r.Post("/update/counter/*", gzipHandle(h.CounterHandler()))
 	r.Post("/*", gzipHandle(h.OtherHandler()))
-	r.Get("/ping", gzipHandle(h.Ping()))
+	r.Get("/ping", h.Ping())
 
 }
 
@@ -322,7 +322,6 @@ func (h *Handler) Ping() http.HandlerFunc {
 		}
 		rw.Header().Set("Content-Type", "text/html")
 		rw.WriteHeader(http.StatusOK)
-		//rw.Write([]byte("200"))
-
+		rw.Write([]byte("200"))
 	}
 }
