@@ -24,7 +24,7 @@ var (
 	flagStoreInterval = "STORE_INTERVAL"
 	flagStoreFile     = "STORE_FILE"
 	flagHash          = "KEY"
-	flagDatabase = "DATABASE_DSN"
+	flagDatabase      = "DATABASE_DSN"
 )
 
 func init() {
@@ -111,7 +111,7 @@ func TestHandler_CounterHandler(t *testing.T) {
 	type want struct {
 		statusCode int
 	}
-	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase))
+	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase)
 	repo, _ := repositories.NewRepository(cfg)
 
 	type fields struct {
@@ -183,7 +183,7 @@ func TestHandler_OtherHandler(t *testing.T) {
 	type want struct {
 		statusCode int
 	}
-	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase))
+	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase)
 	repo, _ := repositories.NewRepository(cfg)
 
 	type fields struct {
@@ -236,7 +236,7 @@ func TestHandler_CollectHandler(t *testing.T) {
 		statusCode int
 	}
 	var value float64 = 123123
-	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase))
+	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase)
 	repo, _ := repositories.NewRepository(cfg)
 
 	type fields struct {
