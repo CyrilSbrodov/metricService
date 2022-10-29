@@ -316,9 +316,9 @@ jobs:
       - name: "Code increment #10"
         if: always()
         run: |
-          SERVER_PORT=$(random unused-port)
+          SERVER_PORT="8282"
           ADDRESS="localhost:${SERVER_PORT}"
-          TEMP_FILE=$(random tempfile)
+          TEMP_FILE="/tmp/devops-metrics-db.json"
           devopstest -test.v -test.run=^TestIteration10[b]*$ \
             -source-path=. \
             -agent-binary-path=cmd/agent/agent \

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -313,8 +314,8 @@ func (h Handler) GetHandler() http.HandlerFunc {
 
 func (h *Handler) Ping() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-
-		err := h.Connect()
+		fmt.Println("ping")
+		err := h.Connect(context.Background())
 		if err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Write([]byte(err.Error()))

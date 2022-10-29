@@ -24,6 +24,7 @@ func main() {
 
 	cfg := config.NewConfigServer(*flagAddress, *flagStoreInterval, *flagStoreFile, *flagRestore, *flagHash, *flagDatabase)
 	tickerUpload := time.NewTicker(cfg.StoreInterval)
+	fmt.Println(cfg.DatabaseDSN)
 	//определение роутера
 	router := chi.NewRouter()
 	//определение БД

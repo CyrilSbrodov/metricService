@@ -12,7 +12,7 @@ import (
 
 type DB struct {
 	databaseURL string
-	dbpgx       *pgx.Conn
+	db          *pgx.Conn
 }
 
 func NewDB(cfg *config.ServerConfig) (*DB, error) {
@@ -20,19 +20,17 @@ func NewDB(cfg *config.ServerConfig) (*DB, error) {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)
-		return nil, err
 	}
 	defer conn.Close(context.Background())
 	return &DB{
 		databaseURL: cfg.DatabaseDSN,
-		dbpgx:       conn,
+		db:          conn,
 	}, nil
 }
 
-func (db *DB) Connect() error {
-	err := db.dbpgx.Ping(context.Background())
-	if err != nil {
-		return err
+func (db *DB) Connect(ctx context.Context) error {
+	if err := db.db.Ping(ctx); err != nil {
+		panic(err)
 	}
 	return nil
 }

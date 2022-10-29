@@ -1,5 +1,7 @@
 package storage
 
+import "context"
+
 type Storage interface {
 	GetMetric(metric Metrics) (Metrics, error)
 	GetAll() string
@@ -11,5 +13,5 @@ type Storage interface {
 }
 
 type PostrgeStorage interface {
-	Connect() error
+	Connect(ctx context.Context) error
 }
