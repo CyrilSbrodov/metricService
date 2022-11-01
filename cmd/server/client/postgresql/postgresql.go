@@ -33,11 +33,11 @@ func NewClient(ctx context.Context, maxAttempts int, cfg *config.ServerConfig) (
 		if err != nil {
 			log.Fatal("Ошибка соединения с БД", err)
 		}
-		err = pool.Ping(ctx)
-		if err != nil {
-			fmt.Println("nea")
-			return err
-		}
+		//err = pool.Ping(ctx)
+		//if err != nil {
+		//	fmt.Println("nea")
+		//	return err
+		//}
 		fmt.Println("pings!")
 
 		return nil
