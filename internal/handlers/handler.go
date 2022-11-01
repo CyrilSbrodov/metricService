@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
+	"github.com/CyrilSbrodov/metricService.git/internal/storage/repositories"
 )
 
 type Handlers interface {
@@ -18,9 +19,8 @@ type Handlers interface {
 }
 
 type Handler struct {
-	//storage.Service
 	storage.Storage
-	storage.PostrgeStorage
+	repositories.DB
 }
 
 // создание роутеров
@@ -33,13 +33,12 @@ func (h Handler) Register(r *chi.Mux) {
 	r.Post("/update/counter/*", gzipHandle(h.CounterHandler()))
 	r.Post("/*", gzipHandle(h.OtherHandler()))
 	r.Get("/ping", h.Ping())
-
 }
 
-func NewHandler(storage storage.Storage, postrgeStorage storage.PostrgeStorage) Handlers {
+func NewHandler(storage storage.Storage, db *repositories.DB) Handlers {
 	return &Handler{
 		storage,
-		postrgeStorage,
+		*db,
 	}
 }
 
@@ -314,7 +313,7 @@ func (h Handler) GetHandler() http.HandlerFunc {
 func (h *Handler) Ping() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		fmt.Println("ping")
-		err := h.Connect()
+		err := h.PingClient()
 		if err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Write([]byte(err.Error()))
