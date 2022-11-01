@@ -38,7 +38,7 @@ func main() {
 		//отправка метрики 10 сек
 		case <-tickerUpload.C:
 			//отправка данных по адресу
-			upload(client, cfg.Addr, metricsStore)
+			//upload(client, cfg.Addr, metricsStore)
 			//обновление метрики 2 сек
 		case <-tickerUpdate.C:
 			count++
@@ -133,7 +133,7 @@ func upload(client *http.Client, url string, store map[string]storage.Metrics) {
 			fmt.Println(err)
 			break
 		}
-		//resp.Body.Close()
+		resp.Body.Close()
 	}
 }
 
