@@ -24,7 +24,7 @@ type Handler struct {
 }
 
 // создание роутеров
-func (h Handler) Register(r *chi.Mux) {
+func (h *Handler) Register(r *chi.Mux) {
 	r.Post("/value/", gzipHandle(h.GetHandlerJSON()))
 	r.Get("/value/*", gzipHandle(h.GetHandler()))
 	r.Get("/", gzipHandle(h.GetAllHandler()))
@@ -43,7 +43,7 @@ func NewHandler(storage storage.Storage, db *repositories.DB) Handlers {
 }
 
 //хендлер получения метрик
-func (h Handler) CollectHandler() http.HandlerFunc {
+func (h *Handler) CollectHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
 		content, err := ioutil.ReadAll(r.Body)
@@ -88,7 +88,7 @@ func (h Handler) CollectHandler() http.HandlerFunc {
 }
 
 //хендлер получения всех данных
-func (h Handler) GetAllHandler() http.HandlerFunc {
+func (h *Handler) GetAllHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
 		result := h.GetAll()
@@ -101,7 +101,7 @@ func (h Handler) GetAllHandler() http.HandlerFunc {
 }
 
 //хендлер получения метрики Gauge
-func (h Handler) GaugeHandler() http.HandlerFunc {
+func (h *Handler) GaugeHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
 		//проверка и разбивка URL
@@ -145,7 +145,7 @@ func (h Handler) GaugeHandler() http.HandlerFunc {
 }
 
 //хендлер получения метрики Counter
-func (h Handler) CounterHandler() http.HandlerFunc {
+func (h *Handler) CounterHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
 		//проверка и разбивка URL
@@ -190,7 +190,7 @@ func (h Handler) CounterHandler() http.HandlerFunc {
 }
 
 //проверка на правильность заполнения update and gauge and counter
-func (h Handler) OtherHandler() http.HandlerFunc {
+func (h *Handler) OtherHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
 		//проверка и разбивка URL
@@ -223,7 +223,7 @@ func (h Handler) OtherHandler() http.HandlerFunc {
 }
 
 //хендлер получения данных из gauge and counter в формате JSON
-func (h Handler) GetHandlerJSON() http.HandlerFunc {
+func (h *Handler) GetHandlerJSON() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
 		content, err := ioutil.ReadAll(r.Body)
@@ -260,7 +260,7 @@ func (h Handler) GetHandlerJSON() http.HandlerFunc {
 }
 
 //хендлер получения данных из gauge and counter
-func (h Handler) GetHandler() http.HandlerFunc {
+func (h *Handler) GetHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
 		//проверка и разбивка URL
@@ -310,7 +310,7 @@ func (h Handler) GetHandler() http.HandlerFunc {
 	}
 }
 
-func (h Handler) Ping() http.HandlerFunc {
+func (h *Handler) Ping() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		fmt.Println("ping")
 		err := h.PingClient()
