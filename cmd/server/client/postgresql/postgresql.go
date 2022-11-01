@@ -2,6 +2,7 @@ package postgresql
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -19,7 +20,6 @@ type Client interface {
 	Begin(ctx context.Context) (pgx.Tx, error)
 	BeginTx(ctx context.Context, txOptions pgx.TxOptions) (pgx.Tx, error)
 	Ping(ctx context.Context) error
-	//BeginTxFunc(ctx context.Context, txOptions pgx.TxOptions, f func(pgx.Tx) error) error
 }
 
 func NewClient(ctx context.Context, maxAttempts int, cfg *config.ServerConfig) (pool *pgxpool.Pool, err error) {
@@ -33,6 +33,12 @@ func NewClient(ctx context.Context, maxAttempts int, cfg *config.ServerConfig) (
 		if err != nil {
 			log.Fatal("Ошибка соединения с БД", err)
 		}
+		err = pool.Ping(ctx)
+		if err != nil {
+			fmt.Println("nea")
+			return err
+		}
+		fmt.Println("pings!")
 
 		return nil
 

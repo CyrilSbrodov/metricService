@@ -2,9 +2,6 @@ package repositories
 
 import (
 	"context"
-	"database/sql"
-	"fmt"
-	"os"
 
 	_ "github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/lib/pq"
@@ -76,6 +73,7 @@ func (db *DB) PingClient() error {
 	if err := db.client.Ping(context.Background()); err != nil {
 		return err
 	}
+
 	//pool, err := sql.Open("postgres", db.databaseURL)
 	//
 	//if err != nil {
@@ -94,17 +92,17 @@ func (db *DB) PingClient() error {
 //	conn.q
 //}
 
-func (db *DB) Ping() error {
-	pool, err := sql.Open("postgres", db.databaseURL)
-
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-		os.Exit(1)
-	}
-	defer pool.Close()
-
-	if err = pool.Ping(); err != nil {
-		return err
-	}
-	return nil
-}
+//func (db *DB) Ping() error {
+//	pool, err := sql.Open("postgres", db.databaseURL)
+//
+//	if err != nil {
+//		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+//		os.Exit(1)
+//	}
+//	defer pool.Close()
+//
+//	if err = pool.Ping(); err != nil {
+//		return err
+//	}
+//	return nil
+//}
