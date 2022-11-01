@@ -15,9 +15,9 @@ func ServerFlagsInit() (flagAddress, flagRestore, flagStoreInterval, flagStoreFi
 	flagStoreInterval = flag.String("i", "300s", "upload interval")
 	flagStoreFile = flag.String("f", "/tmp/devops-metrics-db.json", "name of file")
 	flagHash = flag.String("k", "КЛЮЧ", "hash")
-	flagDatabase = flag.String("d", "localhost:5432/postgres?sslmode=disable", "name of database")
+	flagDatabase = flag.String("d", "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable", "name of database")
 	return
-	//postgres://postgres:postgres@
+	//
 }
 
 func AgentFlagsInit() (flagAddress, flagPollInterval, flagReportInterval, flagHash *string) {

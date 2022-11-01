@@ -361,7 +361,7 @@ func TestHandler_Ping(t *testing.T) {
 				Storage: tt.fields.Storage,
 				DB:      tt.fields.DB,
 			}
-			h.Ping().ServeHTTP(w, request)
+			h.PingDB().ServeHTTP(w, request)
 			result := w.Result()
 			defer result.Body.Close()
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)

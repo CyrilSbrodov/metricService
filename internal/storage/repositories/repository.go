@@ -93,22 +93,6 @@ func (r *Repository) CollectMetrics(m storage.Metrics) error {
 	}
 	r.Metrics[m.ID] = m
 	return nil
-	//
-	//if m.MType == "counter" && r.Metrics[m.ID].Delta != nil {
-	//	//var val int64
-	//	//val = *r.Metrics[m.ID].Delta
-	//	//val += *m.Delta
-	//	//*r.Metrics[m.ID].Delta = val
-	//	if entry, ok := r.Metrics[m.ID]; ok {
-	//		*entry.Delta += *m.Delta
-	//		entry.Hash = m.Hash
-	//		r.Metrics[m.ID] = entry
-	//	}
-	//	return nil
-	//} else {
-	//	r.Metrics[m.ID] = m
-	//	return nil
-	//}
 }
 
 func (r *Repository) GetMetric(m storage.Metrics) (storage.Metrics, error) {
@@ -219,32 +203,6 @@ func (r *Repository) Upload() error {
 }
 
 func hashing(hashKey string, m *storage.Metrics) (string, bool) {
-	//fmt.Println(m)
-
-	//if metrics.MType == "gauge" && metrics.Value != nil {
-	//	h := hmac.New(sha256.New, []byte(hashKey))
-	//	src := fmt.Sprintf("%s:gauge:%f", metrics.ID, *metrics.Value)
-	//	h.Write([]byte(src))
-	//	expectedHash := h.Sum(nil)
-	//	hash, err := hex.DecodeString(metrics.Hash)
-	//	if err != nil {
-	//		return false
-	//	}
-	//	return hmac.Equal(hash, expectedHash)
-	//
-	//} else if metrics.MType == "counter" && metrics.Delta != nil {
-	//	h := hmac.New(sha256.New, []byte(hashKey))
-	//	src := fmt.Sprintf("%s:counter:%d", metrics.ID, *metrics.Delta)
-	//	h.Write([]byte(src))
-	//	expectedHash := h.Sum(nil)
-	//	hash, err := hex.DecodeString(metrics.Hash)
-	//	if err != nil {
-	//		return false
-	//	}
-	//	return hmac.Equal(hash, expectedHash)
-	//} else {
-	//	return false
-
 	var hash string
 	switch m.MType {
 	case "counter":
