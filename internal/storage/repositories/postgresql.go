@@ -10,9 +10,9 @@ import (
 	"github.com/CyrilSbrodov/metricService.git/cmd/server/client/postgresql"
 )
 
-type db struct {
-	client postgresql.Client
-}
+//type db struct {
+//	client postgresql.Client
+//}
 
 //func NewDB(client postgresql.Client) storage.Storage {
 //	return &db{

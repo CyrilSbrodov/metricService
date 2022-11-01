@@ -310,7 +310,7 @@ func (h Handler) GetHandler() http.HandlerFunc {
 	}
 }
 
-func (h *Handler) Ping() http.HandlerFunc {
+func (h Handler) Ping() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		fmt.Println("ping")
 		err := h.PingClient()

@@ -2,6 +2,7 @@ package handlers_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/CyrilSbrodov/metricService.git/cmd/config"
+	"github.com/CyrilSbrodov/metricService.git/cmd/server/client/postgresql"
 	"github.com/CyrilSbrodov/metricService.git/internal/handlers"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage/repositories"
@@ -293,6 +295,72 @@ func TestHandler_CollectHandler(t *testing.T) {
 				Storage: tt.fields.Storage,
 			}
 			h.CollectHandler().ServeHTTP(w, request)
+			result := w.Result()
+			defer result.Body.Close()
+			assert.Equal(t, tt.want.statusCode, result.StatusCode)
+		})
+	}
+}
+
+func TestHandler_Ping(t *testing.T) {
+	type want struct {
+		statusCode int
+	}
+	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase)
+	repo, _ := repositories.NewRepository(cfg)
+	client, err := postgresql.NewClient(context.Background(), 2, cfg)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	db, err := repositories.NewDB(cfg, client)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	type fields struct {
+		Storage storage.Storage
+		DB      repositories.DB
+	}
+	tests := []struct {
+		name    string
+		request string
+		fields  fields
+		want    want
+	}{
+		{
+			name: "code 200",
+			fields: fields{
+				repo,
+				*db,
+			},
+			request: "http://localhost:8080/ping",
+			want: want{
+				200,
+			},
+		},
+		//{
+		//	name: "code 501",
+		//	fields: fields{
+		//		repo,
+		//		*db,
+		//	},
+		//	request: "http://localhost:8080/update/test/test/100",
+		//	want: want{
+		//		501,
+		//	},
+		//},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodGet, tt.request, nil)
+			w := httptest.NewRecorder()
+			h := handlers.Handler{
+				Storage: tt.fields.Storage,
+				DB:      tt.fields.DB,
+			}
+			h.Ping().ServeHTTP(w, request)
 			result := w.Result()
 			defer result.Body.Close()
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
