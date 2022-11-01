@@ -107,27 +107,28 @@ func update(store map[string]storage.Metrics, count int64, cfg *config.AgentConf
 
 //отправка метрики
 func upload(client *http.Client, url string, store map[string]storage.Metrics) {
-
 	for _, m := range store {
 		metricsJSON, errJSON := json.Marshal(m)
 		if errJSON != nil {
 			fmt.Println(errJSON)
 			break
 		}
-		req, err := http.NewRequest(http.MethodPost, "http://"+url+"/update/", bytes.NewBuffer(metricsJSON))
+
+		resp, err := http.Post("http://"+url+"/update/", "application/json", bytes.NewBuffer(metricsJSON))
+		//req, err := http.NewRequest(http.MethodPost, "http://"+url+"/update/", bytes.NewBuffer(metricsJSON))
 
 		if err != nil {
 			fmt.Println(err)
 			break
 		}
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Add("Accept", "application/json")
+		//req.Header.Set("Content-Type", "application/json")
+		//req.Header.Add("Accept", "application/json")
 
-		resp, err := client.Do(req)
-		if err != nil {
-			fmt.Println(err)
-			break
-		}
+		//resp, err := client.Do(req)
+		//if err != nil {
+		//	fmt.Println(err)
+		//	break
+		//}
 		_, err = ioutil.ReadAll(resp.Body)
 		if err != nil {
 			fmt.Println(err)
