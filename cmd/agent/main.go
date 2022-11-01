@@ -24,7 +24,7 @@ func main() {
 
 	cfg := config.NewConfigAgent(*flagAddress, *flagPollInterval, *flagReportInterval, *flagHash)
 
-	//client := &http.Client{}
+	client := &http.Client{}
 
 	var count int64
 	metricsStore := storage.MetricsStore
@@ -38,7 +38,7 @@ func main() {
 		//отправка метрики 10 сек
 		case <-tickerUpload.C:
 			//отправка данных по адресу
-			//upload(client, cfg.Addr, metricsStore)
+			upload(client, cfg.Addr, metricsStore)
 			//обновление метрики 2 сек
 		case <-tickerUpdate.C:
 			count++
