@@ -24,7 +24,7 @@ func main() {
 
 	cfg := config.NewConfigAgent(*flagAddress, *flagPollInterval, *flagReportInterval, *flagHash)
 
-	client := &http.Client{}
+	//client := &http.Client{}
 
 	var count int64
 	metricsStore := storage.MetricsStore
