@@ -324,9 +324,9 @@ jobs:
             -agent-binary-path=cmd/agent/agent \
             -binary-path=cmd/server/server \
             -server-port=$SERVER_PORT \
-            -database-dsn='***postgres@localhost:5432/postgres?sslmode=disable' \
+            -database-dsn='postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable' \
             -key="${TEMP_FILE}"
-# postgres://postgres:postgres
+
 # XI. Задание к одиннадцатому инкременту.
 # Сервер:
 # * Перепишите сервер так, чтобы СУБД PostgresSQL стала хранилищем метрик вместо текущей реализации.
