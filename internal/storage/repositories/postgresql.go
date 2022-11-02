@@ -15,7 +15,7 @@ type PGSStore struct {
 	db *sql.DB
 }
 
-func NewPGSStore(cfg config.ServerConfig) (storage.Storage, error) {
+func NewPGSStore(cfg *config.ServerConfig) (storage.Storage, error) {
 	db, err := sql.Open("postgres", cfg.DatabaseDSN)
 	if err != nil {
 		fmt.Println("lost connection")
