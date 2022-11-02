@@ -171,7 +171,6 @@ func (r *Repository) GetCounter(name string) (int64, error) {
 
 func (r *Repository) PingClient(ctx context.Context) error {
 	fmt.Println("try to ping DB")
-	//db, err := sql.Open("postgres", cfg.DatabaseDSN)
 	pool, err := pgx.Connect(ctx, r.Dsn)
 	if err != nil {
 		fmt.Println("lost connection")
@@ -188,11 +187,6 @@ func (r *Repository) PingClient(ctx context.Context) error {
 		fmt.Println(err)
 		return err
 	}
-	//if err = db.PingContext(ctxTimeout); err != nil {
-	//	fmt.Println("Not ping")
-	//	fmt.Println(err)
-	//	return err
-	//}
 	fmt.Println("start and ping")
 	return nil
 }

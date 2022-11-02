@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"flag"
+	//"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/jackc/pgx/v5"
 
 	"github.com/CyrilSbrodov/metricService.git/cmd/config"
 	"github.com/CyrilSbrodov/metricService.git/internal/handlers"
@@ -20,26 +19,33 @@ import (
 )
 
 func main() {
-	flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase := config.ServerFlagsInit()
-	flag.Parse()
+	//flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase := config.ServerFlagsInit()
+	//flag.Parse()
+	//
+	//cfg := config.NewConfigServer(*flagAddress, *flagStoreInterval, *flagStoreFile, *flagRestore, *flagHash, *flagDatabase)
 
-	cfg := config.NewConfigServer(*flagAddress, *flagStoreInterval, *flagStoreFile, *flagRestore, *flagHash, *flagDatabase)
+	cfg := config.ServerConfigInit()
 	tickerUpload := time.NewTicker(cfg.StoreInterval)
 	fmt.Println(cfg.DatabaseDSN)
 	//определение роутера
 	router := chi.NewRouter()
 	//определение БД
-	repo, err := repositories.NewRepository(cfg)
+	repo, err := repositories.NewRepository(&cfg)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-
-	err = pinger(context.Background(), cfg)
+	db, err := repositories.NewPGSStore(&cfg)
 	if err != nil {
 		fmt.Println("not")
 		fmt.Println(err)
+		os.Exit(1)
 	}
+	//err = pinger(context.Background(), cfg)
+	//if err != nil {
+	//	fmt.Println("not")
+	//	fmt.Println(err)
+	//}
 	//client, err := postgresql.NewClient(context.Background(), 5, cfg)
 	//if err != nil {
 	//	os.Exit(1)
@@ -50,7 +56,7 @@ func main() {
 	//	os.Exit(1)
 	//}
 	//определение хендлера
-	handler := handlers.NewHandler(repo)
+	handler := handlers.NewHandler(db)
 	//регистрация хендлера
 	handler.Register(router)
 
@@ -106,29 +112,29 @@ func uploadWithTicker(ticker *time.Ticker, repo *repositories.Repository, done c
 	}
 }
 
-func pinger(ctx context.Context, cfg *config.ServerConfig) error {
-	//db, err := sql.Open("postgres", cfg.DatabaseDSN)
-	pool, err := pgx.Connect(ctx, cfg.DatabaseDSN)
-	if err != nil {
-		fmt.Println("lost connection")
-		fmt.Println(err)
-		return err
-	}
-	defer pool.Close(ctx)
-
-	ctxTimeout, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
-	if err = pool.Ping(ctxTimeout); err != nil {
-		fmt.Println("Not ping")
-		fmt.Println(err)
-		return err
-	}
-	//if err = db.PingContext(ctxTimeout); err != nil {
-	//	fmt.Println("Not ping")
-	//	fmt.Println(err)
-	//	return err
-	//}
-	fmt.Println("start and ping")
-	return nil
-}
+//func pinger(ctx context.Context, cfg *config.ServerConfig) error {
+//	//db, err := sql.Open("postgres", cfg.DatabaseDSN)
+//	pool, err := pgx.Connect(ctx, cfg.DatabaseDSN)
+//	if err != nil {
+//		fmt.Println("lost connection")
+//		fmt.Println(err)
+//		return err
+//	}
+//	defer pool.Close(ctx)
+//
+//	ctxTimeout, cancel := context.WithTimeout(ctx, 5*time.Second)
+//	defer cancel()
+//
+//	if err = pool.Ping(ctxTimeout); err != nil {
+//		fmt.Println("Not ping")
+//		fmt.Println(err)
+//		return err
+//	}
+//	//if err = db.PingContext(ctxTimeout); err != nil {
+//	//	fmt.Println("Not ping")
+//	//	fmt.Println(err)
+//	//	return err
+//	//}
+//	fmt.Println("start and ping")
+//	return nil
+//}

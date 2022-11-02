@@ -30,7 +30,7 @@ func AgentFlagsInit() (flagAddress, flagPollInterval, flagReportInterval, flagHa
 }
 
 //создание конфига для сервера
-type ServerConfig struct {
+type ServerConfigs struct {
 	Addr          string
 	StoreInterval time.Duration
 	StoreFile     string
@@ -40,7 +40,7 @@ type ServerConfig struct {
 }
 
 //создание конфига для агента
-type AgentConfig struct {
+type AgentConfigs struct {
 	Addr           string
 	PollInterval   time.Duration
 	ReportInterval time.Duration

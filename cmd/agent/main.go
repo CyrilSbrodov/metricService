@@ -5,7 +5,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/json"
-	"flag"
+	//"flag"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -19,10 +19,12 @@ import (
 )
 
 func main() {
-	flagAddress, flagPollInterval, flagReportInterval, flagHash := config.AgentFlagsInit()
-	flag.Parse()
+	//flagAddress, flagPollInterval, flagReportInterval, flagHash := config.AgentFlagsInit()
+	//flag.Parse()
+	//
+	//cfg := config.NewConfigAgent(*flagAddress, *flagPollInterval, *flagReportInterval, *flagHash)
 
-	cfg := config.NewConfigAgent(*flagAddress, *flagPollInterval, *flagReportInterval, *flagHash)
+	cfg := config.AgentConfigInit()
 
 	client := &http.Client{}
 
@@ -42,7 +44,7 @@ func main() {
 			//обновление метрики 2 сек
 		case <-tickerUpdate.C:
 			count++
-			metricsStore = update(metricsStore, count, cfg)
+			metricsStore = update(metricsStore, count, &cfg)
 		}
 	}
 }

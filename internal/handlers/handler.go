@@ -20,7 +20,6 @@ type Handlers interface {
 
 type Handler struct {
 	storage.Storage
-	//repositories.DB
 }
 
 // создание роутеров
@@ -330,7 +329,7 @@ func (h Handler) GetHandler() http.HandlerFunc {
 func (h Handler) PingDB() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		fmt.Println("ping")
-		err := h.PingClient(context.Background())
+		err := h.Storage.PingClient(context.Background())
 		if err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Write([]byte(err.Error()))

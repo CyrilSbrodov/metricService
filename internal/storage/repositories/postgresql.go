@@ -2,34 +2,67 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 
 	_ "github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/lib/pq"
 
 	"github.com/CyrilSbrodov/metricService.git/cmd/config"
-	"github.com/CyrilSbrodov/metricService.git/cmd/server/client/postgresql"
+	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 )
 
-type DB struct {
-	databaseURL string
-	client      postgresql.Client
+type PGSStore struct {
+	db *sql.DB
 }
 
-func NewDB(cfg *config.ServerConfig, client postgresql.Client) (*DB, error) {
-	return &DB{
-		databaseURL: cfg.DatabaseDSN,
-		client:      client,
-	}, nil
-}
-
-func (db *DB) PingClient() error {
-	fmt.Println("try to ping DB")
-	err := db.client.Ping(context.Background())
+func NewPGSStore(cfg *config.ServerConfig) (storage.Storage, error) {
+	db, err := sql.Open("postgres", cfg.DatabaseDSN)
 	if err != nil {
 		fmt.Println("lost connection")
 		fmt.Println(err)
-		return err
+		return nil, err
 	}
-	return nil
+	return &PGSStore{
+		db: db,
+	}, nil
+}
+
+func (P PGSStore) GetMetric(m storage.Metrics) (storage.Metrics, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (P PGSStore) GetAll() string {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (P PGSStore) CollectMetrics(m storage.Metrics) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (P PGSStore) CollectOrChangeGauge(name string, value float64) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (P PGSStore) CollectOrIncreaseCounter(name string, value int64) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (P PGSStore) GetGauge(name string) (float64, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (P PGSStore) GetCounter(name string) (int64, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (P PGSStore) PingClient(ctx context.Context) error {
+	return P.db.Ping()
 }
