@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	//"flag"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"reflect"
@@ -129,11 +130,11 @@ func upload(client *http.Client, url string, store map[string]storage.Metrics) {
 			//fmt.Println(err)
 			break
 		}
-		//_, err = ioutil.ReadAll(resp.Body)
-		//if err != nil {
-		//	fmt.Println(err)
-		//	break
-		//}
+		_, err = ioutil.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Println(err)
+			break
+		}
 		resp.Body.Close()
 	}
 }
