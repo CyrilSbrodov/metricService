@@ -135,7 +135,8 @@ func upload(client *http.Client, url string, store map[string]storage.Metrics) {
 			fmt.Println(err)
 			break
 		}
-		resp.Body.Close()
+		err = resp.Body.Close()
+		fmt.Println(err)
 	}
 }
 
