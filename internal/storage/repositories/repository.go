@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"crypto/hmac"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -23,6 +24,7 @@ type Repository struct {
 	Check         bool
 	StoreInterval time.Duration
 	Hash          string
+	Dsn           string
 }
 
 func NewRepository(cfg *config.ServerConfig) (*Repository, error) {
@@ -48,6 +50,7 @@ func NewRepository(cfg *config.ServerConfig) (*Repository, error) {
 			Check:         false,
 			StoreInterval: cfg.StoreInterval,
 			Hash:          cfg.Hash,
+			Dsn:           cfg.DatabaseDSN,
 		}, nil
 	} else {
 		file, err := os.OpenFile(cfg.StoreFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
@@ -62,6 +65,7 @@ func NewRepository(cfg *config.ServerConfig) (*Repository, error) {
 			Check:         true,
 			StoreInterval: cfg.StoreInterval,
 			Hash:          cfg.Hash,
+			Dsn:           cfg.DatabaseDSN,
 		}, nil
 	}
 }
@@ -161,6 +165,25 @@ func (r *Repository) GetCounter(name string) (int64, error) {
 		return value, fmt.Errorf("missing metric %s", name)
 	}
 	return value, nil
+}
+
+func (r *Repository) PingClient() error {
+	fmt.Println("try to ping DB")
+	db, err := sql.Open("postgres", r.Dsn)
+	if err != nil {
+		fmt.Println("lost connection")
+		fmt.Println(err)
+		return err
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		fmt.Println("lost connection")
+		fmt.Println(err)
+		return err
+	}
+	return nil
 }
 
 //функция забора данных из файла при запуске

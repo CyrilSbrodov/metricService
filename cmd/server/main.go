@@ -14,7 +14,6 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/CyrilSbrodov/metricService.git/cmd/config"
-	"github.com/CyrilSbrodov/metricService.git/cmd/server/client/postgresql"
 	"github.com/CyrilSbrodov/metricService.git/internal/handlers"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage/repositories"
 )
@@ -34,17 +33,17 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	client, err := postgresql.NewClient(context.Background(), 5, cfg)
-	if err != nil {
-		os.Exit(1)
-	}
-
-	db, err := repositories.NewDB(cfg, client)
-	if err != nil {
-		os.Exit(1)
-	}
+	//client, err := postgresql.NewClient(context.Background(), 5, cfg)
+	//if err != nil {
+	//	os.Exit(1)
+	//}
+	//
+	//db, err := repositories.NewDB(cfg, client)
+	//if err != nil {
+	//	os.Exit(1)
+	//}
 	//определение хендлера
-	handler := handlers.NewHandler(repo, db)
+	handler := handlers.NewHandler(repo)
 	//регистрация хендлера
 	handler.Register(router)
 

@@ -11,7 +11,6 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
-	"github.com/CyrilSbrodov/metricService.git/internal/storage/repositories"
 )
 
 type Handlers interface {
@@ -20,7 +19,7 @@ type Handlers interface {
 
 type Handler struct {
 	storage.Storage
-	repositories.DB
+	//repositories.DB
 }
 
 // создание роутеров
@@ -35,12 +34,14 @@ func (h Handler) Register(r *chi.Mux) {
 	r.Get("/ping", h.PingDB())
 }
 
-func NewHandler(storage storage.Storage, db *repositories.DB) Handlers {
+func NewHandler(storage storage.Storage) Handlers {
 	return &Handler{
 		storage,
-		*db,
+		//*db,
 	}
 }
+
+//db *repositories.DB
 
 //хендлер получения метрик
 func (h Handler) CollectHandler() http.HandlerFunc {

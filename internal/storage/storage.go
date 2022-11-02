@@ -8,4 +8,5 @@ type Storage interface {
 	CollectOrIncreaseCounter(name string, value int64) error
 	GetGauge(name string) (float64, error)
 	GetCounter(name string) (int64, error)
+	PingClient() error
 }

@@ -359,7 +359,7 @@ func TestHandler_Ping(t *testing.T) {
 			w := httptest.NewRecorder()
 			h := handlers.Handler{
 				Storage: tt.fields.Storage,
-				DB:      tt.fields.DB,
+				//DB:      tt.fields.DB,
 			}
 			h.PingDB().ServeHTTP(w, request)
 			result := w.Result()
