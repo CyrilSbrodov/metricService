@@ -1,5 +1,7 @@
 package storage
 
+import "context"
+
 type Storage interface {
 	GetMetric(metric Metrics) (Metrics, error)
 	GetAll() string
@@ -8,5 +10,5 @@ type Storage interface {
 	CollectOrIncreaseCounter(name string, value int64) error
 	GetGauge(name string) (float64, error)
 	GetCounter(name string) (int64, error)
-	PingClient() error
+	PingClient(ctx context.Context) error
 }
