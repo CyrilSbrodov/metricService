@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"flag"
 	"fmt"
 	"log"
@@ -32,6 +33,12 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
+	}
+
+	err = pinger(context.Background(), cfg)
+	if err != nil {
+		fmt.Println("not")
+		fmt.Println(err)
 	}
 	//client, err := postgresql.NewClient(context.Background(), 5, cfg)
 	//if err != nil {
@@ -97,4 +104,24 @@ func uploadWithTicker(ticker *time.Ticker, repo *repositories.Repository, done c
 			return
 		}
 	}
+}
+
+func pinger(ctx context.Context, cfg *config.ServerConfig) error {
+	db, err := sql.Open("postgres", cfg.DatabaseDSN)
+	if err != nil {
+		fmt.Println("lost connection")
+		fmt.Println(err)
+		return err
+	}
+	defer db.Close()
+
+	ctxTimeout, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	if err = db.PingContext(ctxTimeout); err != nil {
+		fmt.Println("Not ping")
+		fmt.Println(err)
+		return err
+	}
+	fmt.Println("start and ping")
+	return nil
 }
