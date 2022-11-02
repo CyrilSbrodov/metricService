@@ -31,7 +31,7 @@ func (h *Handler) Register(r *chi.Mux) {
 	r.Post("/update/", gzipHandle(h.CollectHandler()))
 	r.Post("/update/gauge/*", gzipHandle(h.GaugeHandler()))
 	r.Post("/update/counter/*", gzipHandle(h.CounterHandler()))
-	//r.Post("/*", gzipHandle(h.OtherHandler()))
+	r.Post("/*", gzipHandle(h.OtherHandler()))
 	r.Get("/ping", h.PingDB())
 }
 
@@ -190,37 +190,37 @@ func (h *Handler) CounterHandler() http.HandlerFunc {
 }
 
 //проверка на правильность заполнения update and gauge and counter
-//func (h *Handler) OtherHandler() http.HandlerFunc {
-//	return func(rw http.ResponseWriter, r *http.Request) {
-//
-//		//проверка и разбивка URL
-//		url := strings.Split(r.URL.Path, "/")
-//
-//		if len(url) < 3 {
-//			rw.WriteHeader(http.StatusNotFound)
-//			rw.Write([]byte("not value"))
-//			return
-//		}
-//		method := url[1]
-//		if method != "update" {
-//			rw.WriteHeader(http.StatusNotFound)
-//			rw.Write([]byte("method is wrong"))
-//			return
-//		}
-//		types := url[2]
-//		if types != "counter" {
-//			rw.WriteHeader(http.StatusNotImplemented)
-//			rw.Write([]byte("incorrect type"))
-//			return
-//		} else if types != "gauge" {
-//			rw.WriteHeader(http.StatusNotImplemented)
-//			rw.Write([]byte("incorrect type"))
-//			return
-//		}
-//
-//		rw.WriteHeader(http.StatusBadRequest)
-//	}
-//}
+func (h *Handler) OtherHandler() http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+
+		//проверка и разбивка URL
+		url := strings.Split(r.URL.Path, "/")
+
+		if len(url) < 3 {
+			rw.WriteHeader(http.StatusNotFound)
+			rw.Write([]byte("not value"))
+			return
+		}
+		method := url[1]
+		if method != "update" {
+			rw.WriteHeader(http.StatusNotFound)
+			rw.Write([]byte("method is wrong"))
+			return
+		}
+		types := url[2]
+		if types != "counter" {
+			rw.WriteHeader(http.StatusNotImplemented)
+			rw.Write([]byte("incorrect type"))
+			return
+		} else if types != "gauge" {
+			rw.WriteHeader(http.StatusNotImplemented)
+			rw.Write([]byte("incorrect type"))
+			return
+		}
+
+		rw.WriteHeader(http.StatusBadRequest)
+	}
+}
 
 //хендлер получения данных из gauge and counter в формате JSON
 func (h *Handler) GetHandlerJSON() http.HandlerFunc {
