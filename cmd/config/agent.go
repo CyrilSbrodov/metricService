@@ -20,8 +20,8 @@ var cfgAgent AgentConfig
 
 func AgentConfigInit() AgentConfig {
 	flag.StringVar(&cfgAgent.Addr, "a", "localhost:8080", "ADDRESS")
-	flag.DurationVar(&cfgAgent.PollInterval, "i", time.Duration(2)*time.Second, "update interval")
-	flag.DurationVar(&cfgAgent.ReportInterval, "i", time.Duration(10)*time.Second, "upload interval")
+	flag.DurationVar(&cfgAgent.PollInterval, "p", time.Duration(2)*time.Second, "update interval")
+	flag.DurationVar(&cfgAgent.ReportInterval, "r", time.Duration(10)*time.Second, "upload interval")
 	flag.StringVar(&cfgAgent.Hash, "k", "", "hash")
 
 	flag.Parse()
