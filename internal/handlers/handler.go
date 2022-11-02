@@ -328,8 +328,14 @@ func (h *Handler) GetHandler() http.HandlerFunc {
 func (h *Handler) PingDB() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		fmt.Println("ping")
+		errPing := h.PingClient()
+		if errPing != nil {
+			fmt.Println(errPing)
+			fmt.Println("error repo")
+		}
 		err := h.Storage.PingClient()
 		if err != nil {
+			fmt.Println("error pgs")
 			http.Error(rw, "", http.StatusInternalServerError)
 		}
 		//rw.Header().Set("Content-Type", "text/html")
