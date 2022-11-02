@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"encoding/json"
+	//"encoding/json"
 	"fmt"
-	"io/ioutil"
+	//"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -25,10 +25,10 @@ type Handler struct {
 
 // создание роутеров
 func (h *Handler) Register(r *chi.Mux) {
-	r.Post("/value/", gzipHandle(h.GetHandlerJSON()))
+	//r.Post("/value/", gzipHandle(h.GetHandlerJSON()))
 	r.Get("/value/*", gzipHandle(h.GetHandler()))
 	r.Get("/", gzipHandle(h.GetAllHandler()))
-	r.Post("/update/", gzipHandle(h.CollectHandler()))
+	//r.Post("/update/", gzipHandle(h.CollectHandler()))
 	r.Post("/update/gauge/*", gzipHandle(h.GaugeHandler()))
 	r.Post("/update/counter/*", gzipHandle(h.CounterHandler()))
 	r.Post("/*", gzipHandle(h.OtherHandler()))
@@ -43,49 +43,49 @@ func NewHandler(storage storage.Storage, db *repositories.PGSStore) Handlers {
 }
 
 //хендлер получения метрик
-func (h *Handler) CollectHandler() http.HandlerFunc {
-	return func(rw http.ResponseWriter, r *http.Request) {
-
-		content, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
-			rw.Write([]byte(err.Error()))
-			return
-		}
-		defer r.Body.Close()
-		var m storage.Metrics
-		if err := json.Unmarshal(content, &m); err != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
-			rw.Write([]byte(err.Error()))
-			return
-		}
-
-		err = h.Storage.CollectMetrics(m)
-		if err != nil {
-			rw.WriteHeader(http.StatusBadRequest)
-			fmt.Println(err)
-			rw.Write([]byte(err.Error()))
-			return
-		}
-
-		metric, err := h.Storage.GetMetric(m)
-
-		if err != nil {
-			rw.WriteHeader(http.StatusNotFound)
-			rw.Write([]byte(err.Error()))
-			return
-		}
-		mJSON, errJSON := json.Marshal(metric)
-		if errJSON != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
-			rw.Write([]byte(errJSON.Error()))
-			return
-		}
-		rw.Header().Set("Content-Type", "application/json")
-		rw.WriteHeader(http.StatusOK)
-		rw.Write(mJSON)
-	}
-}
+//func (h *Handler) CollectHandler() http.HandlerFunc {
+//	return func(rw http.ResponseWriter, r *http.Request) {
+//
+//		content, err := ioutil.ReadAll(r.Body)
+//		if err != nil {
+//			rw.WriteHeader(http.StatusInternalServerError)
+//			rw.Write([]byte(err.Error()))
+//			return
+//		}
+//		defer r.Body.Close()
+//		var m storage.Metrics
+//		if err := json.Unmarshal(content, &m); err != nil {
+//			rw.WriteHeader(http.StatusInternalServerError)
+//			rw.Write([]byte(err.Error()))
+//			return
+//		}
+//
+//		err = h.Storage.CollectMetrics(m)
+//		if err != nil {
+//			rw.WriteHeader(http.StatusBadRequest)
+//			fmt.Println(err)
+//			rw.Write([]byte(err.Error()))
+//			return
+//		}
+//
+//		metric, err := h.Storage.GetMetric(m)
+//
+//		if err != nil {
+//			rw.WriteHeader(http.StatusNotFound)
+//			rw.Write([]byte(err.Error()))
+//			return
+//		}
+//		mJSON, errJSON := json.Marshal(metric)
+//		if errJSON != nil {
+//			rw.WriteHeader(http.StatusInternalServerError)
+//			rw.Write([]byte(errJSON.Error()))
+//			return
+//		}
+//		rw.Header().Set("Content-Type", "application/json")
+//		rw.WriteHeader(http.StatusOK)
+//		rw.Write(mJSON)
+//	}
+//}
 
 //хендлер получения всех данных
 func (h *Handler) GetAllHandler() http.HandlerFunc {
@@ -223,41 +223,41 @@ func (h *Handler) OtherHandler() http.HandlerFunc {
 }
 
 //хендлер получения данных из gauge and counter в формате JSON
-func (h *Handler) GetHandlerJSON() http.HandlerFunc {
-	return func(rw http.ResponseWriter, r *http.Request) {
-
-		content, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
-			rw.Write([]byte(err.Error()))
-			return
-		}
-		defer r.Body.Close()
-		var m storage.Metrics
-		if err := json.Unmarshal(content, &m); err != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
-			rw.Write([]byte(err.Error()))
-			return
-		}
-		m, err = h.Storage.GetMetric(m)
-		if err != nil {
-			rw.WriteHeader(http.StatusNotFound)
-			rw.Write([]byte(err.Error()))
-			return
-		}
-		rw.Header().Set("Content-Type", "application/json")
-		rw.WriteHeader(http.StatusOK)
-
-		//отправка обновленных метрик обратно
-		mJSON, errJSON := json.Marshal(m)
-		if errJSON != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
-			rw.Write([]byte(errJSON.Error()))
-			return
-		}
-		rw.Write(mJSON)
-	}
-}
+//func (h *Handler) GetHandlerJSON() http.HandlerFunc {
+//	return func(rw http.ResponseWriter, r *http.Request) {
+//
+//		content, err := ioutil.ReadAll(r.Body)
+//		if err != nil {
+//			rw.WriteHeader(http.StatusInternalServerError)
+//			rw.Write([]byte(err.Error()))
+//			return
+//		}
+//		defer r.Body.Close()
+//		var m storage.Metrics
+//		if err := json.Unmarshal(content, &m); err != nil {
+//			rw.WriteHeader(http.StatusInternalServerError)
+//			rw.Write([]byte(err.Error()))
+//			return
+//		}
+//		m, err = h.Storage.GetMetric(m)
+//		if err != nil {
+//			rw.WriteHeader(http.StatusNotFound)
+//			rw.Write([]byte(err.Error()))
+//			return
+//		}
+//		rw.Header().Set("Content-Type", "application/json")
+//		rw.WriteHeader(http.StatusOK)
+//
+//		//отправка обновленных метрик обратно
+//		mJSON, errJSON := json.Marshal(m)
+//		if errJSON != nil {
+//			rw.WriteHeader(http.StatusInternalServerError)
+//			rw.Write([]byte(errJSON.Error()))
+//			return
+//		}
+//		rw.Write(mJSON)
+//	}
+//}
 
 //хендлер получения данных из gauge and counter
 func (h *Handler) GetHandler() http.HandlerFunc {
@@ -310,35 +310,20 @@ func (h *Handler) GetHandler() http.HandlerFunc {
 	}
 }
 
-//func (h Handler) Pings() http.HandlerFunc {
-//	return func(rw http.ResponseWriter, r *http.Request) {
-//		fmt.Println("ping")
-//		err := h.PingClient(context.Background())
-//		if err != nil {
-//			rw.WriteHeader(http.StatusInternalServerError)
-//			rw.Write([]byte(err.Error()))
-//			return
-//		}
-//		rw.Header().Set("Content-Type", "text/html")
-//		rw.WriteHeader(http.StatusOK)
-//		rw.Write([]byte("200"))
-//	}
-//}
-
 func (h *Handler) PingDB() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		fmt.Println("ping")
 		errPing := h.PGSStore.PingClient()
 		if errPing != nil {
 			fmt.Println(errPing)
-			fmt.Println("error repo")
-		}
-		err := h.Storage.PingClient()
-		if err != nil {
-			fmt.Println("error pgs")
+			fmt.Println("error")
 			http.Error(rw, "", http.StatusInternalServerError)
 		}
-		//rw.Header().Set("Content-Type", "text/html")
+		//err := h.Storage.PingClient()
+		//if err != nil {
+		//	fmt.Println("error pgs")
+		//	http.Error(rw, "", http.StatusInternalServerError)
+		//}
 		rw.WriteHeader(http.StatusOK)
 	}
 }
