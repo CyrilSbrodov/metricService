@@ -17,7 +17,6 @@ func ServerFlagsInit() (flagAddress, flagRestore, flagStoreInterval, flagStoreFi
 	flagHash = flag.String("k", "КЛЮЧ", "hash")
 	flagDatabase = flag.String("d", "postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable", "name of database")
 	return
-	//
 }
 
 func AgentFlagsInit() (flagAddress, flagPollInterval, flagReportInterval, flagHash *string) {
@@ -57,7 +56,7 @@ func NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore,
 		StoreFile:     getEnv("STORE_FILE", flagStoreFile, "/tmp/devops-metrics-db.json"),
 		Restore:       getEnvAsBool("RESTORE", flagRestore, "true"),
 		Hash:          getEnv("KEY", flagHash, "КЛЮЧ"),
-		DatabaseDSN:   getEnv("DATABASE_DSN", flagDatabase, ""),
+		DatabaseDSN:   getEnv("DATABASE_DSN", flagDatabase, "postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable"),
 	}
 }
 func NewConfigAgent(flagAddress, flagPollInterval, flagReportInterval, flagHash string) *AgentConfig {
