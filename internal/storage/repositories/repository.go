@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"bufio"
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"database/sql"
@@ -167,7 +168,7 @@ func (r *Repository) GetCounter(name string) (int64, error) {
 	return value, nil
 }
 
-func (r *Repository) PingClient() error {
+func (r *Repository) PingClient(ctx context.Context) error {
 	fmt.Println("try to ping DB")
 	db, err := sql.Open("postgres", r.Dsn)
 	if err != nil {
@@ -177,9 +178,10 @@ func (r *Repository) PingClient() error {
 	}
 	defer db.Close()
 
-	err = db.Ping()
-	if err != nil {
-		fmt.Println("lost connection")
+	ctxTimeout, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	if err = db.PingContext(ctxTimeout); err != nil {
+		fmt.Println("Not ping")
 		fmt.Println(err)
 		return err
 	}
