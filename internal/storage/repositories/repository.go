@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"crypto/hmac"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -167,7 +168,14 @@ func (r *Repository) GetCounter(name string) (int64, error) {
 }
 
 func (r *Repository) PingClient() error {
-	return nil
+	db, err := sql.Open("postgres", r.Dsn)
+	if err != nil {
+		fmt.Println("lost connection")
+		fmt.Println(err)
+		return err
+	}
+
+	return db.Ping()
 }
 
 //функция забора данных из файла при запуске

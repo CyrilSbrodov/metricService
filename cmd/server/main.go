@@ -25,16 +25,16 @@ func main() {
 	//cfg := config.NewConfigServer(*flagAddress, *flagStoreInterval, *flagStoreFile, *flagRestore, *flagHash, *flagDatabase)
 
 	cfg := config.ServerConfigInit()
-	tickerUpload := time.NewTicker(cfg.StoreInterval)
+	//tickerUpload := time.NewTicker(cfg.StoreInterval)
 	fmt.Println("DataBase:", cfg.DatabaseDSN)
 	//определение роутера
 	router := chi.NewRouter()
 	//определение БД
-	repo, err := repositories.NewRepository(cfg)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	//repo, err := repositories.NewRepository(cfg)
+	//if err != nil {
+	//	fmt.Println(err)
+	//	os.Exit(1)
+	//}
 	db, err := repositories.NewPGSStore(cfg)
 	if err != nil {
 		fmt.Println("not")
@@ -70,9 +70,9 @@ func main() {
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 	//отправка данных на диск, если запись разрешена и файл создан
-	if repo.Check {
-		go uploadWithTicker(tickerUpload, repo, done)
-	}
+	//if repo.Check {
+	//	go uploadWithTicker(tickerUpload, repo, done)
+	//}
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
