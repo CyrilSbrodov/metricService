@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"flag"
 	"fmt"
 	"log"
@@ -13,6 +12,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/CyrilSbrodov/metricService.git/cmd/config"
 	"github.com/CyrilSbrodov/metricService.git/internal/handlers"
@@ -107,21 +107,28 @@ func uploadWithTicker(ticker *time.Ticker, repo *repositories.Repository, done c
 }
 
 func pinger(ctx context.Context, cfg *config.ServerConfig) error {
-	db, err := sql.Open("postgres", cfg.DatabaseDSN)
+	//db, err := sql.Open("postgres", cfg.DatabaseDSN)
+	pool, err := pgx.Connect(ctx, cfg.DatabaseDSN)
 	if err != nil {
 		fmt.Println("lost connection")
 		fmt.Println(err)
 		return err
 	}
-	defer db.Close()
+	defer pool.Close(ctx)
 
 	ctxTimeout, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	if err = db.PingContext(ctxTimeout); err != nil {
+
+	if err = pool.Ping(ctxTimeout); err != nil {
 		fmt.Println("Not ping")
 		fmt.Println(err)
 		return err
 	}
+	//if err = db.PingContext(ctxTimeout); err != nil {
+	//	fmt.Println("Not ping")
+	//	fmt.Println(err)
+	//	return err
+	//}
 	fmt.Println("start and ping")
 	return nil
 }
