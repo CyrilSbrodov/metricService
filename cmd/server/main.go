@@ -16,6 +16,7 @@ import (
 	"github.com/CyrilSbrodov/metricService.git/cmd/config"
 	"github.com/CyrilSbrodov/metricService.git/internal/handlers"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage/repositories"
+	"github.com/CyrilSbrodov/metricService.git/pkg/client/postgresql"
 )
 
 func main() {
@@ -35,28 +36,19 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	db, err := repositories.NewPGSStore(&cfg)
+	client, err := postgresql.NewClient(context.Background(), 5, &cfg)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	db, err := repositories.NewPGSStore(client)
 	if err != nil {
 		fmt.Println("not")
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	//err = pinger(context.Background(), cfg)
-	//if err != nil {
-	//	fmt.Println("not")
-	//	fmt.Println(err)
-	//}
-	//client, err := postgresql.NewClient(context.Background(), 5, cfg)
-	//if err != nil {
-	//	os.Exit(1)
-	//}
-	//
-	//db, err := repositories.NewDB(cfg, client)
-	//if err != nil {
-	//	os.Exit(1)
-	//}
 	//определение хендлера
-	handler := handlers.NewHandler(db)
+	handler := handlers.NewHandler(repo, db)
 	//регистрация хендлера
 	handler.Register(router)
 

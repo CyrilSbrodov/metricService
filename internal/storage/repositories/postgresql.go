@@ -1,67 +1,61 @@
 package repositories
 
 import (
-	"database/sql"
-	"fmt"
+	"context"
 
 	_ "github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/lib/pq"
 
-	"github.com/CyrilSbrodov/metricService.git/cmd/config"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
+	"github.com/CyrilSbrodov/metricService.git/pkg/client/postgresql"
 )
 
 type PGSStore struct {
-	db *sql.DB
+	client postgresql.Client
 }
 
-func NewPGSStore(cfg *config.ServerConfig) (storage.Storage, error) {
-	db, err := sql.Open("postgres", cfg.DatabaseDSN)
-	if err != nil {
-		fmt.Println("lost connection")
-		fmt.Println(err)
-		return nil, err
-	}
+func NewPGSStore(client postgresql.Client) (*PGSStore, error) {
 	return &PGSStore{
-		db: db,
+		client: client,
 	}, nil
 }
 
-func (P PGSStore) GetMetric(m storage.Metrics) (storage.Metrics, error) {
+func (p *PGSStore) GetMetric(m storage.Metrics) (storage.Metrics, error) {
 	//TODO implement me
+
 	return storage.Metrics{}, nil
 }
 
-func (P PGSStore) GetAll() string {
+func (p *PGSStore) GetAll() string {
 	//TODO implement me
 	return ""
 }
 
-func (P PGSStore) CollectMetrics(m storage.Metrics) error {
+func (p *PGSStore) CollectMetrics(m storage.Metrics) error {
 	//TODO implement me
 	return nil
 }
 
-func (P PGSStore) CollectOrChangeGauge(name string, value float64) error {
+func (p *PGSStore) CollectOrChangeGauge(name string, value float64) error {
 	//TODO implement me
 	return nil
 }
 
-func (P PGSStore) CollectOrIncreaseCounter(name string, value int64) error {
+func (p *PGSStore) CollectOrIncreaseCounter(name string, value int64) error {
 	//TODO implement me
 	return nil
 }
 
-func (P PGSStore) GetGauge(name string) (float64, error) {
+func (p *PGSStore) GetGauge(name string) (float64, error) {
 	//TODO implement me
 	return 0, nil
 }
 
-func (P PGSStore) GetCounter(name string) (int64, error) {
+func (p *PGSStore) GetCounter(name string) (int64, error) {
 	//TODO implement me
 	return 0, nil
 }
 
-func (P PGSStore) PingClient() error {
-	return P.db.Ping()
+func (p *PGSStore) PingClient() error {
+	return p.client.Ping(context.Background())
 }

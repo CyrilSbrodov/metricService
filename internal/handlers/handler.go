@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
+	"github.com/CyrilSbrodov/metricService.git/internal/storage/repositories"
 )
 
 type Handlers interface {
@@ -19,6 +20,7 @@ type Handlers interface {
 
 type Handler struct {
 	storage.Storage
+	repositories.PGSStore
 }
 
 // создание роутеров
@@ -33,14 +35,12 @@ func (h *Handler) Register(r *chi.Mux) {
 	r.Get("/ping", h.PingDB())
 }
 
-func NewHandler(storage storage.Storage) Handlers {
+func NewHandler(storage storage.Storage, db *repositories.PGSStore) Handlers {
 	return &Handler{
 		storage,
-		//*db,
+		*db,
 	}
 }
-
-//db *repositories.DB
 
 //хендлер получения метрик
 func (h *Handler) CollectHandler() http.HandlerFunc {
@@ -91,7 +91,7 @@ func (h *Handler) CollectHandler() http.HandlerFunc {
 func (h *Handler) GetAllHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
-		result := h.GetAll()
+		result := h.Storage.GetAll()
 
 		rw.Header().Set("Content-Type", "text/html")
 
@@ -134,7 +134,7 @@ func (h *Handler) GaugeHandler() http.HandlerFunc {
 		}
 
 		//отправка значений в БД
-		err = h.CollectOrChangeGauge(name, value)
+		err = h.Storage.CollectOrChangeGauge(name, value)
 		if err != nil {
 			rw.WriteHeader(http.StatusBadRequest)
 			rw.Write([]byte(err.Error()))
@@ -178,7 +178,7 @@ func (h *Handler) CounterHandler() http.HandlerFunc {
 		}
 
 		//отправка значений в БД
-		err = h.CollectOrIncreaseCounter(name, int64(value))
+		err = h.Storage.CollectOrIncreaseCounter(name, int64(value))
 		if err != nil {
 			rw.WriteHeader(http.StatusBadRequest)
 			rw.Write([]byte(err.Error()))
@@ -281,7 +281,7 @@ func (h *Handler) GetHandler() http.HandlerFunc {
 		if types == "gauge" {
 
 			//получение значений из gauge
-			value, err := h.GetGauge(name)
+			value, err := h.Storage.GetGauge(name)
 			if err != nil {
 				rw.WriteHeader(http.StatusNotFound)
 				rw.Write([]byte("incorrect name"))
@@ -293,7 +293,7 @@ func (h *Handler) GetHandler() http.HandlerFunc {
 		} else if types == "counter" {
 
 			//получение значений из counter
-			value, err := h.GetCounter(name)
+			value, err := h.Storage.GetCounter(name)
 			if err != nil {
 				rw.WriteHeader(http.StatusNotFound)
 				rw.Write([]byte("incorrect name"))
@@ -328,7 +328,7 @@ func (h *Handler) GetHandler() http.HandlerFunc {
 func (h *Handler) PingDB() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		fmt.Println("ping")
-		errPing := h.PingClient()
+		errPing := h.PGSStore.PingClient()
 		if errPing != nil {
 			fmt.Println(errPing)
 			fmt.Println("error repo")

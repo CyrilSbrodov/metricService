@@ -2,7 +2,6 @@ package postgresql
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"time"
 
@@ -23,7 +22,6 @@ type Client interface {
 }
 
 func NewClient(ctx context.Context, maxAttempts int, cfg *config.ServerConfig) (pool *pgxpool.Pool, err error) {
-	//dsn := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s", p.username, p.password, p.host, p.port, p.database)
 	err = DoWithTries(func() error {
 		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 
@@ -33,13 +31,6 @@ func NewClient(ctx context.Context, maxAttempts int, cfg *config.ServerConfig) (
 		if err != nil {
 			log.Fatal("Ошибка соединения с БД", err)
 		}
-		//err = pool.Ping(ctx)
-		//if err != nil {
-		//	fmt.Println("nea")
-		//	return err
-		//}
-		fmt.Println("pings!")
-
 		return nil
 
 	}, maxAttempts, 5*time.Second)
