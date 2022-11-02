@@ -26,7 +26,7 @@ func main() {
 
 	cfg := config.ServerConfigInit()
 	tickerUpload := time.NewTicker(cfg.StoreInterval)
-	fmt.Println(cfg.DatabaseDSN)
+	fmt.Println("DataBase:", cfg.DatabaseDSN)
 	//определение роутера
 	router := chi.NewRouter()
 	//определение БД
