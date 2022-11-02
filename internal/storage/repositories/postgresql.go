@@ -1,7 +1,6 @@
 package repositories
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 
@@ -63,6 +62,6 @@ func (P PGSStore) GetCounter(name string) (int64, error) {
 	panic("implement me")
 }
 
-func (P PGSStore) PingClient(ctx context.Context) error {
+func (P PGSStore) PingClient() error {
 	return P.db.Ping()
 }

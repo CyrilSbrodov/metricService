@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"bufio"
-	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -10,8 +9,6 @@ import (
 	"fmt"
 	"os"
 	"time"
-
-	"github.com/jackc/pgx/v5"
 
 	"github.com/CyrilSbrodov/metricService.git/cmd/config"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
@@ -169,25 +166,7 @@ func (r *Repository) GetCounter(name string) (int64, error) {
 	return value, nil
 }
 
-func (r *Repository) PingClient(ctx context.Context) error {
-	fmt.Println("try to ping DB")
-	pool, err := pgx.Connect(ctx, r.Dsn)
-	if err != nil {
-		fmt.Println("lost connection")
-		fmt.Println(err)
-		return err
-	}
-	defer pool.Close(ctx)
-
-	ctxTimeout, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
-	if err = pool.Ping(ctxTimeout); err != nil {
-		fmt.Println("Not ping")
-		fmt.Println(err)
-		return err
-	}
-	fmt.Println("start and ping")
+func (r *Repository) PingClient() error {
 	return nil
 }
 

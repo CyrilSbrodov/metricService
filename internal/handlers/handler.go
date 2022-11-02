@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -329,13 +328,11 @@ func (h Handler) GetHandler() http.HandlerFunc {
 func (h Handler) PingDB() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		fmt.Println("ping")
-		err := h.Storage.PingClient(context.Background())
+		err := h.Storage.PingClient()
 		if err != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
-			rw.Write([]byte(err.Error()))
-			return
+			http.Error(rw, "", http.StatusInternalServerError)
 		}
-		rw.Header().Set("Content-Type", "text/html")
-		rw.WriteHeader(http.StatusOK)
+		//rw.Header().Set("Content-Type", "text/html")
+		//rw.WriteHeader(http.StatusOK)
 	}
 }
