@@ -30,12 +30,12 @@ func main() {
 	//определение роутера
 	router := chi.NewRouter()
 	//определение БД
-	repo, err := repositories.NewRepository(&cfg)
+	repo, err := repositories.NewRepository(cfg)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	db, err := repositories.NewPGSStore(&cfg)
+	db, err := repositories.NewPGSStore(cfg)
 	if err != nil {
 		fmt.Println("not")
 		fmt.Println(err)

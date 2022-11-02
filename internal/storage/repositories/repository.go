@@ -26,7 +26,7 @@ type Repository struct {
 	Dsn           string
 }
 
-func NewRepository(cfg *config.ServerConfig) (*Repository, error) {
+func NewRepository(cfg config.ServerConfig) (*Repository, error) {
 	metrics := storage.MetricsStore
 	gauge := storage.GaugeData
 	counter := storage.CounterData
@@ -171,7 +171,7 @@ func (r *Repository) PingClient() error {
 }
 
 //функция забора данных из файла при запуске
-func restore(store *map[string]storage.Metrics, cfg *config.ServerConfig) error {
+func restore(store *map[string]storage.Metrics, cfg config.ServerConfig) error {
 
 	file, err := os.OpenFile(cfg.StoreFile, os.O_RDONLY|os.O_CREATE, 0777)
 	if err != nil {

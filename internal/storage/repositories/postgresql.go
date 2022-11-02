@@ -15,7 +15,7 @@ type PGSStore struct {
 	db *sql.DB
 }
 
-func NewPGSStore(cfg *config.ServerConfig) (storage.Storage, error) {
+func NewPGSStore(cfg config.ServerConfig) (storage.Storage, error) {
 	db, err := sql.Open("postgres", cfg.DatabaseDSN)
 	if err != nil {
 		fmt.Println("lost connection")
@@ -29,37 +29,37 @@ func NewPGSStore(cfg *config.ServerConfig) (storage.Storage, error) {
 
 func (P PGSStore) GetMetric(m storage.Metrics) (storage.Metrics, error) {
 	//TODO implement me
-	panic("implement me")
+	return storage.Metrics{}, nil
 }
 
 func (P PGSStore) GetAll() string {
 	//TODO implement me
-	panic("implement me")
+	return ""
 }
 
 func (P PGSStore) CollectMetrics(m storage.Metrics) error {
 	//TODO implement me
-	panic("implement me")
+	return nil
 }
 
 func (P PGSStore) CollectOrChangeGauge(name string, value float64) error {
 	//TODO implement me
-	panic("implement me")
+	return nil
 }
 
 func (P PGSStore) CollectOrIncreaseCounter(name string, value int64) error {
 	//TODO implement me
-	panic("implement me")
+	return nil
 }
 
 func (P PGSStore) GetGauge(name string) (float64, error) {
 	//TODO implement me
-	panic("implement me")
+	return 0, nil
 }
 
 func (P PGSStore) GetCounter(name string) (int64, error) {
 	//TODO implement me
-	panic("implement me")
+	return 0, nil
 }
 
 func (P PGSStore) PingClient() error {
