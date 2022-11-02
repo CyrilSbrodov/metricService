@@ -312,20 +312,20 @@ func (h Handler) GetHandler() http.HandlerFunc {
 	}
 }
 
-func (h Handler) Pings() http.HandlerFunc {
-	return func(rw http.ResponseWriter, r *http.Request) {
-		fmt.Println("ping")
-		err := h.PingClient()
-		if err != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
-			rw.Write([]byte(err.Error()))
-			return
-		}
-		rw.Header().Set("Content-Type", "text/html")
-		rw.WriteHeader(http.StatusOK)
-		rw.Write([]byte("200"))
-	}
-}
+//func (h Handler) Pings() http.HandlerFunc {
+//	return func(rw http.ResponseWriter, r *http.Request) {
+//		fmt.Println("ping")
+//		err := h.PingClient(context.Background())
+//		if err != nil {
+//			rw.WriteHeader(http.StatusInternalServerError)
+//			rw.Write([]byte(err.Error()))
+//			return
+//		}
+//		rw.Header().Set("Content-Type", "text/html")
+//		rw.WriteHeader(http.StatusOK)
+//		rw.Write([]byte("200"))
+//	}
+//}
 
 func (h Handler) PingDB() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
