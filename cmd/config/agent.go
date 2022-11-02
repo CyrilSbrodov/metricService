@@ -10,16 +10,16 @@ import (
 )
 
 type AgentConfig struct {
-	Addr           string
-	PollInterval   time.Duration
-	ReportInterval time.Duration
-	Hash           string
+	Addr           string        `env:"ADDRESS"`
+	PollInterval   time.Duration `env:"POLL_INTERVAL"`
+	ReportInterval time.Duration `env:"REPORT_INTERVAL"`
+	Hash           string        `env:"KEY"`
 }
 
 var cfgAgent AgentConfig
 
 func AgentConfigInit() AgentConfig {
-	flag.StringVar(&cfgAgent.Addr, "a", "localhost:8080", "server address")
+	flag.StringVar(&cfgAgent.Addr, "a", "localhost:8080", "ADDRESS")
 	flag.DurationVar(&cfgAgent.PollInterval, "i", time.Duration(2)*time.Second, "update interval")
 	flag.DurationVar(&cfgAgent.ReportInterval, "i", time.Duration(10)*time.Second, "upload interval")
 	flag.StringVar(&cfgAgent.Hash, "k", "", "hash")

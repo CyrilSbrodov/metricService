@@ -21,12 +21,12 @@ type ServerConfig struct {
 var cfgSrv ServerConfig
 
 func ServerConfigInit() ServerConfig {
-	flag.StringVar(&cfgSrv.Addr, "a", "localhost:8080", "server address")
-	flag.DurationVar(&cfgSrv.StoreInterval, "i", time.Duration(300)*time.Second, "upload interval")
-	flag.StringVar(&cfgSrv.StoreFile, "f", "/tmp/devops-metrics-db.json", "file name")
-	flag.BoolVar(&cfgSrv.Restore, "r", true, "restore from file")
-	flag.StringVar(&cfgSrv.Hash, "k", "", "hash")
-	flag.StringVar(&cfgSrv.DatabaseDSN, "d", "", "database addr")
+	flag.StringVar(&cfgSrv.Addr, "a", "localhost:8080", "ADDRESS")
+	flag.DurationVar(&cfgSrv.StoreInterval, "i", time.Duration(300)*time.Second, "STORE_INTERVAL")
+	flag.StringVar(&cfgSrv.StoreFile, "f", "/tmp/devops-metrics-db.json", "STORE_FILE")
+	flag.BoolVar(&cfgSrv.Restore, "r", true, "RESTORE")
+	flag.StringVar(&cfgSrv.Hash, "k", "", "KEY")
+	flag.StringVar(&cfgSrv.DatabaseDSN, "d", "", "DATABASE_DSN")
 
 	flag.Parse()
 	if err := env.Parse(&cfgSrv); err != nil {
