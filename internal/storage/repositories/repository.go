@@ -5,12 +5,13 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
-	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 
 	"github.com/CyrilSbrodov/metricService.git/cmd/config"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
@@ -170,21 +171,29 @@ func (r *Repository) GetCounter(name string) (int64, error) {
 
 func (r *Repository) PingClient(ctx context.Context) error {
 	fmt.Println("try to ping DB")
-	db, err := sql.Open("postgres", r.Dsn)
+	//db, err := sql.Open("postgres", cfg.DatabaseDSN)
+	pool, err := pgx.Connect(ctx, r.Dsn)
 	if err != nil {
 		fmt.Println("lost connection")
 		fmt.Println(err)
 		return err
 	}
-	defer db.Close()
+	defer pool.Close(ctx)
 
 	ctxTimeout, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	if err = db.PingContext(ctxTimeout); err != nil {
+
+	if err = pool.Ping(ctxTimeout); err != nil {
 		fmt.Println("Not ping")
 		fmt.Println(err)
 		return err
 	}
+	//if err = db.PingContext(ctxTimeout); err != nil {
+	//	fmt.Println("Not ping")
+	//	fmt.Println(err)
+	//	return err
+	//}
+	fmt.Println("start and ping")
 	return nil
 }
 
