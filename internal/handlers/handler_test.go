@@ -2,7 +2,6 @@ package handlers_test
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -14,7 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/CyrilSbrodov/metricService.git/cmd/config"
-	"github.com/CyrilSbrodov/metricService.git/cmd/server/client/postgresql"
 	"github.com/CyrilSbrodov/metricService.git/internal/handlers"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage/repositories"
@@ -308,20 +306,20 @@ func TestHandler_Ping(t *testing.T) {
 	}
 	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase)
 	repo, _ := repositories.NewRepository(cfg)
-	client, err := postgresql.NewClient(context.Background(), 2, cfg)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	db, err := repositories.NewDB(cfg, client)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	//client, err := postgresql.NewClient(context.Background(), 2, cfg)
+	//if err != nil {
+	//	fmt.Println(err)
+	//	os.Exit(1)
+	//}
+	//db, err := repositories.NewDB(cfg, client)
+	//if err != nil {
+	//	fmt.Println(err)
+	//	os.Exit(1)
+	//}
 
 	type fields struct {
 		Storage storage.Storage
-		DB      repositories.DB
+		//DB      repositories.DB
 	}
 	tests := []struct {
 		name    string
@@ -333,7 +331,7 @@ func TestHandler_Ping(t *testing.T) {
 			name: "code 200",
 			fields: fields{
 				repo,
-				*db,
+				//*db,
 			},
 			request: "http://localhost:8080/ping",
 			want: want{
