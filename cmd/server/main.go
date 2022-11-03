@@ -20,13 +20,8 @@ import (
 )
 
 func main() {
-	//flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase := config.ServerFlagsInit()
-	//flag.Parse()
-	//
-	//cfg := config.NewConfigServer(*flagAddress, *flagStoreInterval, *flagStoreFile, *flagRestore, *flagHash, *flagDatabase)
-	//tickerUpload := time.NewTicker(cfg.StoreInterval)
 	cfg := config.ServerConfigInit()
-	//tickerUpload := time.NewTicker(cfg.StoreInterval)
+	tickerUpload := time.NewTicker(cfg.StoreInterval)
 	fmt.Println(cfg.DatabaseDSN)
 	//определение роутера
 	router := chi.NewRouter()
@@ -61,17 +56,17 @@ func main() {
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
-	//отправка данных на диск, если запись разрешена и файл создан
-	//if repo.File != nil {
-	//	go uploadWithTicker(tickerUpload, repo, done)
-	//}
-
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("listen: %s\n", err)
 		}
 	}()
 	log.Println("server is listen on", cfg.Addr)
+
+	//отправка данных на диск, если запись разрешена и файл создан
+	if repo.File != nil {
+		go uploadWithTicker(tickerUpload, repo, done)
+	}
 
 	<-done
 
@@ -95,11 +90,11 @@ func uploadWithTicker(ticker *time.Ticker, repo *repositories.Repository, done c
 			err := repo.Upload()
 			if err != nil {
 				fmt.Println(err)
-				return
+				break
 			}
 		case <-done:
 			ticker.Stop()
-			return
+			break
 		}
 	}
 }
