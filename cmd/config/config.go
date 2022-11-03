@@ -99,3 +99,15 @@ func getEnvAsBool(key, flag string, defaultVal string) bool {
 	}
 	return true
 }
+
+func newStoreFile(filename string) (*os.File, error) {
+	if filename == "" {
+		return nil, nil
+	}
+	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE, 0777)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	return file, nil
+}

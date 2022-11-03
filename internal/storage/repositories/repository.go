@@ -20,8 +20,7 @@ type Repository struct {
 	Metrics       map[string]storage.Metrics
 	Gauge         map[string]float64
 	Counter       map[string]int64
-	file          *os.File
-	Check         bool
+	File          *os.File
 	StoreInterval time.Duration
 	Hash          string
 	Dsn           string
@@ -41,33 +40,19 @@ func NewRepository(cfg *config.ServerConfig) (*Repository, error) {
 	}
 
 	//определение записи на диск и создание файла
-	if cfg.StoreFile == "" {
-		return &Repository{
-			Metrics:       metrics,
-			Gauge:         gauge,
-			Counter:       counter,
-			file:          nil,
-			Check:         false,
-			StoreInterval: cfg.StoreInterval,
-			Hash:          cfg.Hash,
-			Dsn:           cfg.DatabaseDSN,
-		}, nil
-	} else {
-		file, err := os.OpenFile(cfg.StoreFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
-		if err != nil {
-			return nil, err
-		}
-		return &Repository{
-			Metrics:       metrics,
-			Gauge:         gauge,
-			Counter:       counter,
-			file:          file,
-			Check:         true,
-			StoreInterval: cfg.StoreInterval,
-			Hash:          cfg.Hash,
-			Dsn:           cfg.DatabaseDSN,
-		}, nil
+	file, err := newStoreFile(cfg.StoreFile)
+	if err != nil {
+		return nil, err
 	}
+	return &Repository{
+		Metrics:       metrics,
+		Gauge:         gauge,
+		Counter:       counter,
+		File:          file,
+		StoreInterval: cfg.StoreInterval,
+		Hash:          cfg.Hash,
+		Dsn:           cfg.DatabaseDSN,
+	}, nil
 }
 
 func (r *Repository) CollectMetrics(m storage.Metrics) error {
@@ -206,7 +191,7 @@ func (r *Repository) Upload() error {
 		return err
 	}
 	// записываем событие в буфер
-	writer := bufio.NewWriter(r.file)
+	writer := bufio.NewWriter(r.File)
 	if _, err := writer.Write(data); err != nil {
 		return err
 	}
@@ -232,4 +217,16 @@ func hashing(hashKey string, m *storage.Metrics) (string, bool) {
 		return "", false
 	}
 	return fmt.Sprintf("%x", h.Sum(nil)), hmac.Equal(h.Sum(nil), hashAccept)
+}
+
+func newStoreFile(filename string) (*os.File, error) {
+	if filename == "" {
+		return nil, nil
+	}
+	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	return file, nil
 }

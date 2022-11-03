@@ -26,7 +26,7 @@ func main() {
 	//cfg := config.NewConfigServer(*flagAddress, *flagStoreInterval, *flagStoreFile, *flagRestore, *flagHash, *flagDatabase)
 	//tickerUpload := time.NewTicker(cfg.StoreInterval)
 	cfg := config.ServerConfigInit()
-	tickerUpload := time.NewTicker(cfg.StoreInterval)
+	//tickerUpload := time.NewTicker(cfg.StoreInterval)
 	fmt.Println(cfg.DatabaseDSN)
 	//определение роутера
 	router := chi.NewRouter()
@@ -62,9 +62,9 @@ func main() {
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 	//отправка данных на диск, если запись разрешена и файл создан
-	if repo.Check {
-		go uploadWithTicker(tickerUpload, repo, done)
-	}
+	//if repo.File != nil {
+	//	go uploadWithTicker(tickerUpload, repo, done)
+	//}
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
