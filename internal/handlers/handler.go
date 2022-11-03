@@ -103,7 +103,7 @@ func (h *Handler) GetAllHandler() http.HandlerFunc {
 //хендлер получения метрики Gauge
 func (h *Handler) GaugeHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-
+		fmt.Println("GaugeHandler")
 		//проверка и разбивка URL
 		url := strings.Split(r.URL.Path, "/")
 		if len(url) < 5 {
@@ -147,7 +147,7 @@ func (h *Handler) GaugeHandler() http.HandlerFunc {
 //хендлер получения метрики Counter
 func (h *Handler) CounterHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-
+		fmt.Println("CounterHandler")
 		//проверка и разбивка URL
 		url := strings.Split(r.URL.Path, "/")
 
@@ -192,7 +192,7 @@ func (h *Handler) CounterHandler() http.HandlerFunc {
 //проверка на правильность заполнения update and gauge and counter
 func (h *Handler) OtherHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-
+		fmt.Println("OtherHandler")
 		//проверка и разбивка URL
 		url := strings.Split(r.URL.Path, "/")
 
