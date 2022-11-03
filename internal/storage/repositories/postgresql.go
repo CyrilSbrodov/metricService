@@ -2,7 +2,9 @@ package repositories
 
 import (
 	"context"
+	"time"
 
+	"github.com/jackc/pgx/v5"
 	_ "github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/lib/pq"
 
@@ -14,7 +16,31 @@ type PGSStore struct {
 	client postgresql.Client
 }
 
+func createTable(ctx context.Context, client postgresql.Client) error {
+	tx, err := client.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return err
+	}
+	q := `CREATE TABLE metrics (
+    id TEXT NOT NULL,
+    mType TEXT NOT NULL,
+    delta INT,
+    value DOUBLE PRECISION,
+    hash TEXT
+);`
+	_, err = tx.Exec(ctx, q)
+	if err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
 func NewPGSStore(client postgresql.Client) (*PGSStore, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := createTable(ctx, client); err != nil {
+		return nil, err
+	}
 	return &PGSStore{
 		client: client,
 	}, nil

@@ -43,9 +43,15 @@ func main() {
 		os.Exit(1)
 	}
 	//определение хендлера
-	handler := handlers.NewHandler(repo, db)
-	//регистрация хендлера
-	handler.Register(router)
+	if cfg.DatabaseDSN != "" {
+		handler := handlers.NewHandler(db)
+		//регистрация хендлера
+		handler.Register(router)
+	} else {
+		handler := handlers.NewHandler(repo)
+		//регистрация хендлера
+		handler.Register(router)
+	}
 
 	srv := http.Server{
 		Addr:    cfg.Addr,

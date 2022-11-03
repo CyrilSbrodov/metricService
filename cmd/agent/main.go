@@ -19,11 +19,6 @@ import (
 )
 
 func main() {
-	//flagAddress, flagPollInterval, flagReportInterval, flagHash := config.AgentFlagsInit()
-	//flag.Parse()
-	//
-	//cfg := config.NewConfigAgent(*flagAddress, *flagPollInterval, *flagReportInterval, *flagHash)
-
 	cfg := config.AgentConfigInit()
 
 	client := &http.Client{}
