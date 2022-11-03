@@ -64,7 +64,7 @@ func main() {
 	log.Println("server is listen on", cfg.Addr)
 
 	//отправка данных на диск, если запись разрешена и файл создан
-	if repo.File != nil {
+	if repo.Check {
 		go uploadWithTicker(tickerUpload, repo, done)
 	}
 
@@ -98,30 +98,3 @@ func uploadWithTicker(ticker *time.Ticker, repo *repositories.Repository, done c
 		}
 	}
 }
-
-//func pinger(ctx context.Context, cfg *config.ServerConfig) error {
-//	//db, err := sql.Open("postgres", cfg.DatabaseDSN)
-//	pool, err := pgx.Connect(ctx, cfg.DatabaseDSN)
-//	if err != nil {
-//		fmt.Println("lost connection")
-//		fmt.Println(err)
-//		return err
-//	}
-//	defer pool.Close(ctx)
-//
-//	ctxTimeout, cancel := context.WithTimeout(ctx, 5*time.Second)
-//	defer cancel()
-//
-//	if err = pool.Ping(ctxTimeout); err != nil {
-//		fmt.Println("Not ping")
-//		fmt.Println(err)
-//		return err
-//	}
-//	//if err = db.PingContext(ctxTimeout); err != nil {
-//	//	fmt.Println("Not ping")
-//	//	fmt.Println(err)
-//	//	return err
-//	//}
-//	fmt.Println("start and ping")
-//	return nil
-//}

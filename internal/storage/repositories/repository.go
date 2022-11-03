@@ -20,7 +20,8 @@ type Repository struct {
 	Metrics       map[string]storage.Metrics
 	Gauge         map[string]float64
 	Counter       map[string]int64
-	File          *os.File
+	file          *os.File
+	Check         bool
 	StoreInterval time.Duration
 	Hash          string
 	Dsn           string
@@ -40,19 +41,33 @@ func NewRepository(cfg *config.ServerConfig) (*Repository, error) {
 	}
 
 	//определение записи на диск и создание файла
-	file, err := newStoreFile(cfg.StoreFile)
-	if err != nil {
-		return nil, err
+	if cfg.StoreFile == "" {
+		return &Repository{
+			Metrics:       metrics,
+			Gauge:         gauge,
+			Counter:       counter,
+			file:          nil,
+			Check:         false,
+			StoreInterval: cfg.StoreInterval,
+			Hash:          cfg.Hash,
+			Dsn:           cfg.DatabaseDSN,
+		}, nil
+	} else {
+		file, err := os.OpenFile(cfg.StoreFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
+		if err != nil {
+			return nil, err
+		}
+		return &Repository{
+			Metrics:       metrics,
+			Gauge:         gauge,
+			Counter:       counter,
+			file:          file,
+			Check:         true,
+			StoreInterval: cfg.StoreInterval,
+			Hash:          cfg.Hash,
+			Dsn:           cfg.DatabaseDSN,
+		}, nil
 	}
-	return &Repository{
-		Metrics:       metrics,
-		Gauge:         gauge,
-		Counter:       counter,
-		File:          file,
-		StoreInterval: cfg.StoreInterval,
-		Hash:          cfg.Hash,
-		Dsn:           cfg.DatabaseDSN,
-	}, nil
 }
 
 func (r *Repository) CollectMetrics(m storage.Metrics) error {
@@ -191,7 +206,7 @@ func (r *Repository) Upload() error {
 		return err
 	}
 	// записываем событие в буфер
-	writer := bufio.NewWriter(r.File)
+	writer := bufio.NewWriter(r.file)
 	if _, err := writer.Write(data); err != nil {
 		return err
 	}
