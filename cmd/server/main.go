@@ -90,11 +90,11 @@ func uploadWithTicker(ticker *time.Ticker, repo *repositories.Repository, done c
 			err := repo.Upload()
 			if err != nil {
 				fmt.Println(err)
-				break
+				return
 			}
 		case <-done:
 			ticker.Stop()
-			break
+			return
 		}
 	}
 }
