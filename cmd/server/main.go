@@ -15,43 +15,42 @@ import (
 
 	"github.com/CyrilSbrodov/metricService.git/cmd/config"
 	"github.com/CyrilSbrodov/metricService.git/internal/handlers"
+	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage/repositories"
 	"github.com/CyrilSbrodov/metricService.git/pkg/client/postgresql"
 )
 
 func main() {
 	cfg := config.ServerConfigInit()
-	tickerUpload := time.NewTicker(cfg.StoreInterval)
+	//tickerUpload := time.NewTicker(cfg.StoreInterval)
 	fmt.Println(cfg.DatabaseDSN)
 	//определение роутера
 	router := chi.NewRouter()
 	//определение БД
-	repo, err := repositories.NewRepository(&cfg)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	var store storage.Storage
 	client, err := postgresql.NewClient(context.Background(), 5, &cfg)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	db, err := repositories.NewPGSStore(client)
-	if err != nil {
-		fmt.Println("not")
-		fmt.Println(err)
-		os.Exit(1)
-	}
 	//определение хендлера
 	if cfg.DatabaseDSN != "" {
-		handler := handlers.NewHandler(db)
-		//регистрация хендлера
-		handler.Register(router)
+		store, err = repositories.NewPGSStore(client)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 	} else {
-		handler := handlers.NewHandler(repo)
-		//регистрация хендлера
-		handler.Register(router)
+		store, err = repositories.NewRepository(&cfg)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 	}
+
+	handler := handlers.NewHandler(store)
+	//регистрация хендлера
+	handler.Register(router)
 
 	srv := http.Server{
 		Addr:    cfg.Addr,
@@ -70,9 +69,9 @@ func main() {
 	log.Println("server is listen on", cfg.Addr)
 
 	//отправка данных на диск, если запись разрешена и файл создан
-	if repo.Check {
-		go uploadWithTicker(tickerUpload, repo, done)
-	}
+	//if store.Check {
+	//	go uploadWithTicker(tickerUpload, repo, done)
+	//}
 
 	<-done
 
