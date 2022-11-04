@@ -147,7 +147,7 @@ func (p *PGSStore) CollectMetrics(m storage.Metrics) error {
 							ON CONFLICT (id) DO UPDATE SET
     							delta = metrics.delta + EXCLUDED.delta,
     							value = $4,
-    							hash = $5
+    							hash = EXCLUDED.hash
     							RETURNING id`
 		if _, err := p.client.Exec(context.Background(), q, m.ID, m.MType, m.Delta, m.Value, m.Hash); err != nil {
 			log.Fatal("Failure to insert object into table. Due error: ", err)
