@@ -90,10 +90,7 @@ func (p *PGSStore) GetMetric(metric storage.Metrics) (storage.Metrics, error) {
 			}
 			return m, fmt.Errorf("missing metric %s", metric.ID)
 		}
-		if m.MType == "counter" {
-			m.Hash, _ = hashing(p.Hash, &m)
-			return m, nil
-		}
+		m.Hash, _ = hashing(p.Hash, &m)
 		return m, nil
 	} else {
 		return m, fmt.Errorf("wrong type")
@@ -147,8 +144,7 @@ func (p *PGSStore) CollectMetrics(m storage.Metrics) error {
 							ON CONFLICT (id) DO UPDATE SET
     							delta = metrics.delta + EXCLUDED.delta,
     							value = $4,
-    							hash = EXCLUDED.hash
-    							RETURNING id`
+    							hash = EXCLUDED.hash`
 		if _, err := p.client.Exec(context.Background(), q, m.ID, m.MType, m.Delta, m.Value, m.Hash); err != nil {
 			log.Fatal("Failure to insert object into table. Due error: ", err)
 			return err
