@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"compress/gzip"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/json"
@@ -24,7 +25,8 @@ func main() {
 	client := &http.Client{}
 
 	var count int64
-	metricsStore := storage.MetricsStore
+	metrics := storage.MetricsStore
+	//var metrics []storage.Metrics
 
 	//запуск тикера
 	tickerUpload := time.NewTicker(cfg.ReportInterval)
@@ -35,17 +37,19 @@ func main() {
 		//отправка метрики 10 сек
 		case <-tickerUpload.C:
 			//отправка данных по адресу
-			upload(client, cfg.Addr, metricsStore)
+			upload(client, cfg.Addr, metrics)
+			uploadBatch(client, cfg.Addr, metrics)
 			//обновление метрики 2 сек
 		case <-tickerUpdate.C:
 			count++
-			metricsStore = update(metricsStore, count, &cfg)
+			metrics = update(metrics, count, &cfg)
 		}
 	}
 }
 
 //сбор метрики
 func update(store map[string]storage.Metrics, count int64, cfg *config.AgentConfig) map[string]storage.Metrics {
+
 	var memory runtime.MemStats
 	runtime.ReadMemStats(&memory)
 	val := reflect.ValueOf(memory)
@@ -134,6 +138,46 @@ func upload(client *http.Client, url string, store map[string]storage.Metrics) {
 	}
 }
 
+func uploadBatch(client *http.Client, url string, store map[string]storage.Metrics) {
+	var metrics []storage.Metrics
+	for _, m := range store {
+		metrics = append(metrics, m)
+	}
+	metricsJSON, errJSON := json.Marshal(metrics)
+	if errJSON != nil {
+		fmt.Println(errJSON)
+		return
+	}
+	metricsCompress, err := compress(metricsJSON)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	if len(metricsCompress) == 0 {
+		return
+	}
+	req, err := http.NewRequest(http.MethodPost, "http://"+url+"/updates/", bytes.NewBuffer(metricsCompress))
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("Content-Encoding", "gzip")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	_, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	resp.Body.Close()
+}
+
 func hashing(cfg *config.AgentConfig, m *storage.Metrics) string {
 	var hash string
 	switch m.MType {
@@ -145,4 +189,19 @@ func hashing(cfg *config.AgentConfig, m *storage.Metrics) string {
 	h := hmac.New(sha256.New, []byte(cfg.Hash))
 	h.Write([]byte(hash))
 	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+func compress(store []byte) ([]byte, error) {
+	var b bytes.Buffer
+	w := gzip.NewWriter(&b)
+
+	_, err := w.Write(store)
+	if err != nil {
+		return nil, fmt.Errorf("failed to write data to compress temporary buffer: %v", err)
+	}
+	err = w.Close()
+	if err != nil {
+		return nil, fmt.Errorf("failed compress data: %v", err)
+	}
+	return b.Bytes(), nil
 }

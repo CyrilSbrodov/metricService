@@ -74,7 +74,7 @@ func NewRepository(cfg *config.ServerConfig) (*Repository, error) {
 	}, nil
 }
 
-func (r *Repository) CollectMetrics(m storage.Metrics) error {
+func (r *Repository) CollectMetric(m storage.Metrics) error {
 	if m.Hash != "" {
 		_, ok := hashing(r.Hash, &m)
 		if !ok {
@@ -99,6 +99,36 @@ func (r *Repository) CollectMetrics(m storage.Metrics) error {
 		return nil
 	}
 	r.Metrics[m.ID] = m
+	return nil
+}
+
+func (r *Repository) CollectMetrics(metrics []storage.Metrics) error {
+	//if m.Hash != "" {
+	//	_, ok := hashing(r.Hash, &m)
+	//	if !ok {
+	//		err := fmt.Errorf("hash is wrong")
+	//		return err
+	//	}
+	//}
+	for _, m := range metrics {
+		switch m.MType {
+		case "counter":
+			entry, ok := r.Metrics[m.ID]
+			if !ok {
+				r.Metrics[m.ID] = m
+				return nil
+			}
+			*entry.Delta += *m.Delta
+			entry.Hash = m.Hash
+			r.Metrics[m.ID] = entry
+			return nil
+		case "gauge":
+			r.Metrics[m.ID] = m
+			return nil
+		}
+		r.Metrics[m.ID] = m
+		return nil
+	}
 	return nil
 }
 

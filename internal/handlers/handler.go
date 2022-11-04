@@ -1,14 +1,17 @@
 package handlers
 
 import (
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 )
@@ -23,6 +26,8 @@ type Handler struct {
 
 // создание роутеров
 func (h *Handler) Register(r *chi.Mux) {
+	compressor := middleware.NewCompressor(gzip.DefaultCompression)
+	r.Use(compressor.Handler)
 	r.Post("/value/", gzipHandle(h.GetHandlerJSON()))
 	r.Get("/value/*", gzipHandle(h.GetHandler()))
 	r.Get("/", gzipHandle(h.GetAllHandler()))
@@ -31,6 +36,7 @@ func (h *Handler) Register(r *chi.Mux) {
 	r.Post("/update/counter/*", gzipHandle(h.CounterHandler()))
 	r.Post("/*", gzipHandle(h.OtherHandler()))
 	r.Get("/ping", h.PingDB())
+	r.Post("/updates/", gzipHandle(h.CollectBatchHandler()))
 }
 
 func NewHandler(storage storage.Storage) Handlers {
@@ -56,7 +62,7 @@ func (h *Handler) CollectHandler() http.HandlerFunc {
 			return
 		}
 
-		err = h.CollectMetrics(m)
+		err = h.CollectMetric(m)
 		if err != nil {
 			rw.WriteHeader(http.StatusBadRequest)
 			rw.Write([]byte(err.Error()))
@@ -308,5 +314,62 @@ func (h *Handler) PingDB() http.HandlerFunc {
 			http.Error(rw, "", http.StatusInternalServerError)
 		}
 		rw.WriteHeader(http.StatusOK)
+	}
+}
+
+func (h *Handler) CollectBatchHandler() http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		var reader io.Reader
+		if r.Header.Get(`Content-Encoding`) == `gzip` {
+			gz, err := gzip.NewReader(r.Body)
+			if err != nil {
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			reader = gz
+			defer gz.Close()
+		} else {
+			reader = r.Body
+		}
+		content, err := ioutil.ReadAll(reader)
+		if err != nil {
+			rw.WriteHeader(http.StatusInternalServerError)
+			rw.Write([]byte(err.Error()))
+			return
+		}
+		defer r.Body.Close()
+		var m []storage.Metrics
+		if err := json.Unmarshal(content, &m); err != nil {
+			rw.WriteHeader(http.StatusInternalServerError)
+			rw.Write([]byte(err.Error()))
+			return
+		}
+		err = h.CollectMetrics(m)
+		if err != nil {
+			rw.WriteHeader(http.StatusBadRequest)
+			rw.Write([]byte(err.Error()))
+			return
+		}
+
+		//metric, err := h.GetMetric(metrics)
+		//fmt.Println(metric)
+		//if metrics == metric {
+		//	fmt.Println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++=================================")
+		//}
+		//if err != nil {
+		//	rw.WriteHeader(http.StatusNotFound)
+		//	rw.Write([]byte(err.Error()))
+		//	return
+		//}
+		//mJSON, errJSON := json.Marshal(metric)
+		//if errJSON != nil {
+		//	rw.WriteHeader(http.StatusInternalServerError)
+		//	rw.Write([]byte(errJSON.Error()))
+		//	return
+		//}
+		//rw.Header().Set("Content-Type", "application/json")
+		//rw.WriteHeader(http.StatusOK)
+		//rw.Write(mJSON)
+
 	}
 }

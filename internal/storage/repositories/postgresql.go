@@ -108,7 +108,7 @@ func (p *PGSStore) GetAll() (string, error) {
 	return result, nil
 }
 
-func (p *PGSStore) CollectMetrics(m storage.Metrics) error {
+func (p *PGSStore) CollectMetric(m storage.Metrics) error {
 
 	if m.Hash != "" {
 		_, ok := hashing(p.Hash, &m)
@@ -196,24 +196,25 @@ func (p *PGSStore) PingClient() error {
 	return p.client.Ping(context.Background())
 }
 
-////функция загрузки данных на диск
-//func (p *PGSStore) Upload() error {
-//	return nil
-//}
-//
-//// TODO рещить проблему, чтобы файл был только для repository.
-//func (p *PGSStore) UploadWithTicker(ticker *time.Ticker, done chan os.Signal) {
-//	for {
-//		select {
-//		case <-ticker.C:
-//			err := p.Upload()
-//			if err != nil {
-//				fmt.Println(err)
-//				return
-//			}
-//		case <-done:
-//			ticker.Stop()
-//			return
-//		}
-//	}
-//}
+func (p *PGSStore) CollectMetrics(metrics []storage.Metrics) error {
+
+	tx, err := p.client.BeginTx(context.Background(), pgx.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(context.Background())
+	q := `INSERT INTO metrics (id, mType, delta, value, hash)
+    						VALUES ($1, $2, $3, $4, $5)
+							ON CONFLICT (id) DO UPDATE SET
+    							delta = metrics.delta + EXCLUDED.delta,
+    							value = $4,
+    							hash = EXCLUDED.hash`
+
+	for _, m := range metrics {
+		if _, err = tx.Exec(context.Background(), q, m.ID, m.MType, m.Delta, m.Value, m.Hash); err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit(context.Background())
+}
