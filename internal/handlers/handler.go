@@ -19,7 +19,6 @@ type Handlers interface {
 
 type Handler struct {
 	storage.Storage
-	//repositories.PGSStore
 }
 
 // создание роутеров
@@ -40,12 +39,9 @@ func NewHandler(storage storage.Storage) Handlers {
 	}
 }
 
-//db *repositories.PGSStore / *db,
-
 //хендлер получения метрик
 func (h *Handler) CollectHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-
 		content, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
@@ -63,7 +59,6 @@ func (h *Handler) CollectHandler() http.HandlerFunc {
 		err = h.CollectMetrics(m)
 		if err != nil {
 			rw.WriteHeader(http.StatusBadRequest)
-			fmt.Println(err)
 			rw.Write([]byte(err.Error()))
 			return
 		}
@@ -91,10 +86,11 @@ func (h *Handler) CollectHandler() http.HandlerFunc {
 func (h *Handler) GetAllHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 
-		result := h.GetAll()
-
+		result, err := h.GetAll()
+		if err != nil {
+			rw.WriteHeader(http.StatusInternalServerError)
+		}
 		rw.Header().Set("Content-Type", "text/html")
-
 		rw.WriteHeader(http.StatusOK)
 		rw.Write([]byte(result))
 	}
@@ -103,7 +99,6 @@ func (h *Handler) GetAllHandler() http.HandlerFunc {
 //хендлер получения метрики Gauge
 func (h *Handler) GaugeHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		fmt.Println("GaugeHandler")
 		//проверка и разбивка URL
 		url := strings.Split(r.URL.Path, "/")
 		if len(url) < 5 {
@@ -147,7 +142,6 @@ func (h *Handler) GaugeHandler() http.HandlerFunc {
 //хендлер получения метрики Counter
 func (h *Handler) CounterHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		fmt.Println("CounterHandler")
 		//проверка и разбивка URL
 		url := strings.Split(r.URL.Path, "/")
 
@@ -192,7 +186,6 @@ func (h *Handler) CounterHandler() http.HandlerFunc {
 //проверка на правильность заполнения update and gauge and counter
 func (h *Handler) OtherHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		fmt.Println("OtherHandler")
 		//проверка и разбивка URL
 		url := strings.Split(r.URL.Path, "/")
 
@@ -225,7 +218,6 @@ func (h *Handler) OtherHandler() http.HandlerFunc {
 //хендлер получения данных из gauge and counter в формате JSON
 func (h *Handler) GetHandlerJSON() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-
 		content, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
@@ -262,7 +254,6 @@ func (h *Handler) GetHandlerJSON() http.HandlerFunc {
 //хендлер получения данных из gauge and counter
 func (h *Handler) GetHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-
 		//проверка и разбивка URL
 		url := strings.Split(r.URL.Path, "/")
 		if len(url) < 3 {
@@ -312,11 +303,8 @@ func (h *Handler) GetHandler() http.HandlerFunc {
 
 func (h *Handler) PingDB() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		fmt.Println("ping")
 		errPing := h.PingClient()
 		if errPing != nil {
-			fmt.Println(errPing)
-			fmt.Println("error")
 			http.Error(rw, "", http.StatusInternalServerError)
 		}
 		rw.WriteHeader(http.StatusOK)

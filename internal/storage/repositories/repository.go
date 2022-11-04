@@ -115,7 +115,7 @@ func (r *Repository) GetMetric(m storage.Metrics) (storage.Metrics, error) {
 }
 
 //получение всех метрик
-func (r *Repository) GetAll() string {
+func (r *Repository) GetAll() (string, error) {
 	result := ""
 	for s, f := range r.Metrics {
 		if f.MType == "gauge" {
@@ -127,7 +127,7 @@ func (r *Repository) GetAll() string {
 			result += fmt.Sprintf("%s : %d\n", s, *f.Delta)
 		}
 	}
-	return result
+	return result, nil
 }
 
 func (r *Repository) CollectOrChangeGauge(name string, value float64) error {
@@ -244,4 +244,20 @@ func newStoreFile(filename string) (*os.File, error) {
 	}
 	defer file.Close()
 	return file, nil
+}
+
+func (r *Repository) UploadWithTicker(ticker *time.Ticker, done chan os.Signal) {
+	for {
+		select {
+		case <-ticker.C:
+			err := r.Upload()
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+		case <-done:
+			ticker.Stop()
+			return
+		}
+	}
 }

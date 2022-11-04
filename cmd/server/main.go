@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	//"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -22,8 +21,8 @@ import (
 
 func main() {
 	cfg := config.ServerConfigInit()
-	//tickerUpload := time.NewTicker(cfg.StoreInterval)
-	fmt.Println(cfg.DatabaseDSN)
+	tickerUpload := time.NewTicker(cfg.StoreInterval)
+
 	//определение роутера
 	router := chi.NewRouter()
 	//определение БД
@@ -61,9 +60,9 @@ func main() {
 	log.Println("server is listen on", cfg.Addr)
 
 	//отправка данных на диск, если запись разрешена и файл создан
-	//if cfg.StoreFile != "" {
-	//	go uploadWithTicker(tickerUpload, repo, done)
-	//}
+	if cfg.StoreFile != "" {
+		go store.UploadWithTicker(tickerUpload, done)
+	}
 
 	<-done
 
@@ -80,25 +79,25 @@ func main() {
 	log.Print("Server Exited Properly")
 }
 
-func uploadWithTicker(ticker *time.Ticker, repo *repositories.Repository, done chan os.Signal) {
-	for {
-		select {
-		case <-ticker.C:
-			err := repo.Upload()
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-		case <-done:
-			ticker.Stop()
-			return
-		}
-	}
-}
-
 func checkError(err error) {
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 }
+
+//func uploadWithTicker(ticker *time.Ticker, repo *repositories.Repository, done chan os.Signal) {
+//	for {
+//		select {
+//		case <-ticker.C:
+//			err := repo.Upload()
+//			if err != nil {
+//				fmt.Println(err)
+//				return
+//			}
+//		case <-done:
+//			ticker.Stop()
+//			return
+//		}
+//	}
+//}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -19,10 +20,10 @@ type PGSStore struct {
 	client  postgresql.Client
 	Metrics map[string]storage.Metrics
 	//Dsn           string
-	//file          *os.File
+	file *os.File
 	//Check         bool
-	//StoreInterval time.Duration
-	Hash string
+	StoreInterval time.Duration
+	Hash          string
 }
 
 func createTable(ctx context.Context, client postgresql.Client) error {
@@ -54,22 +55,77 @@ func NewPGSStore(client postgresql.Client, cfg *config.ServerConfig) (*PGSStore,
 	if err := createTable(ctx, client); err != nil {
 		return nil, err
 	}
-	return &PGSStore{
-		Metrics: metrics,
-		client:  client,
-		Hash:    cfg.Hash,
-	}, nil
+
+	if cfg.StoreFile == "" {
+		return &PGSStore{
+			Metrics:       metrics,
+			client:        client,
+			file:          nil,
+			StoreInterval: cfg.StoreInterval,
+			Hash:          cfg.Hash,
+		}, nil
+	} else {
+		file, err := os.OpenFile(cfg.StoreFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
+		if err != nil {
+			return nil, err
+		}
+		return &PGSStore{
+			Metrics:       metrics,
+			file:          file,
+			client:        client,
+			StoreInterval: cfg.StoreInterval,
+			Hash:          cfg.Hash,
+		}, nil
+	}
 }
 
-func (p *PGSStore) GetMetric(m storage.Metrics) (storage.Metrics, error) {
-	//TODO implement me
-
-	return storage.Metrics{}, nil
+func (p *PGSStore) GetMetric(metric storage.Metrics) (storage.Metrics, error) {
+	var m storage.Metrics
+	if metric.MType == "counter" || metric.MType == "gauge" {
+		q := `SELECT id, mType, delta, value, hash FROM metrics WHERE id = $1 AND mType = $2`
+		if err := p.client.QueryRow(context.Background(), q, metric.ID, metric.MType).Scan(&m.ID, &m.MType, &m.Delta, &m.Value, &m.Hash); err != nil {
+			if err != pgx.ErrNoRows {
+				log.Fatal("Failure to select object from table. Due error: ", err)
+				return m, err
+			}
+			return m, fmt.Errorf("missing metric %s", metric.ID)
+		}
+		return m, nil
+	} else {
+		return m, fmt.Errorf("wrong type")
+	}
 }
 
-func (p *PGSStore) GetAll() string {
-	//TODO implement me
-	return ""
+func (p *PGSStore) GetAll() (string, error) {
+	var metrics []storage.Metrics
+	q := `SELECT id, mType, delta, value, hash FROM metrics`
+	rows, err := p.client.Query(context.Background(), q)
+	if err != nil {
+		log.Fatal("Failure to select object from table. Due error: ", err)
+		return "", err
+	}
+	for rows.Next() {
+		var m storage.Metrics
+		err = rows.Scan(&m.ID, &m.MType, &m.Delta, &m.Value, &m.Hash)
+		if err != nil {
+			log.Fatal("Failure to convert object from table. Due error: ", err)
+			return "", err
+		}
+		metrics = append(metrics, m)
+	}
+
+	result := ""
+	for _, f := range metrics {
+		if f.MType == "gauge" {
+			if f.Value != nil {
+				result += fmt.Sprintf("%s : %f\n", f.ID, *f.Value)
+			}
+			continue
+		} else if f.MType == "counter" {
+			result += fmt.Sprintf("%s : %d\n", f.ID, *f.Delta)
+		}
+	}
+	return result, nil
 }
 
 func (p *PGSStore) CollectMetrics(m storage.Metrics) error {
@@ -81,19 +137,18 @@ func (p *PGSStore) CollectMetrics(m storage.Metrics) error {
 			return err
 		}
 	}
-	var metric storage.Metrics
 	if m.MType == "counter" || m.MType == "gauge" {
-		sqlStatement := `INSERT INTO metrics (id, mType, delta, value, hash)
+		q := `INSERT INTO metrics (id, mType, delta, value, hash)
     						VALUES ($1, $2, $3, $4, $5)
 							ON CONFLICT (id) DO UPDATE SET
     							delta = metrics.delta + EXCLUDED.delta,
     							value = $4,
     							hash = $5
     							RETURNING id`
-		if err := p.client.QueryRow(context.Background(), sqlStatement, m.ID, m.MType, m.Delta, m.Value, m.Hash).Scan(&metric.ID); err != nil {
-			log.Fatal("Ошибка добавления данных в БД. ", err)
+		if _, err := p.client.Exec(context.Background(), q, m.ID, m.MType, m.Delta, m.Value, m.Hash); err != nil {
+			log.Fatal("Failure to insert object into table. Due error: ", err)
+			return err
 		}
-		fmt.Println(metric)
 	} else {
 		return fmt.Errorf("wrong type")
 	}
@@ -102,40 +157,117 @@ func (p *PGSStore) CollectMetrics(m storage.Metrics) error {
 
 func (p *PGSStore) CollectOrChangeGauge(id string, value float64) error {
 	mType := "gauge"
-	sqlStatement := `INSERT INTO metrics (id, mType, value)
-    						VALUES ($1, $2, $3)
+	hash := ""
+	q := `INSERT INTO metrics (id, mType, value, hash)
+    						VALUES ($1, $2, $3, $4)
 							ON CONFLICT (id) DO UPDATE SET
     							value = EXCLUDED.value,
 							    mType = EXCLUDED.mType`
-	if err := p.client.QueryRow(context.Background(), sqlStatement, id, value, mType); err != nil {
-		log.Fatal("Ошибка добавления данных в БД. ", err)
+	if _, err := p.client.Exec(context.Background(), q, id, mType, value, hash); err != nil {
+		log.Fatal("Failure to insert object into table. Due error: ", err)
+		return err
 	}
 	return nil
 }
 
 func (p *PGSStore) CollectOrIncreaseCounter(id string, delta int64) error {
 	mType := "counter"
-	sqlStatement := `INSERT INTO metrics (id, mType, delta)
-    						VALUES ($1, $2, $3)
+	hash := ""
+	q := `INSERT INTO metrics (id, mType, delta, hash)
+    						VALUES ($1, $2, $3, $4)
 							ON CONFLICT (id) DO UPDATE SET
     							delta = metrics.delta + EXCLUDED.delta,
  								mType = EXCLUDED.mType`
-	if err := p.client.QueryRow(context.Background(), sqlStatement, id, delta, mType); err != nil {
-		log.Fatal("Ошибка добавления данных в БД. ", err)
+	if _, err := p.client.Exec(context.Background(), q, id, mType, delta, hash); err != nil {
+		log.Fatal("Failure to insert object into table. Due error: ", err)
+		return err
 	}
 	return nil
 }
 
-func (p *PGSStore) GetGauge(name string) (float64, error) {
-	//TODO implement me
-	return 0, nil
+func (p *PGSStore) GetGauge(id string) (float64, error) {
+	var value float64
+	mType := "gauge"
+	q := `SELECT value FROM metrics WHERE id = $1 AND mType = $2`
+	if err := p.client.QueryRow(context.Background(), q, id, mType).Scan(&value); err != nil {
+		if err != pgx.ErrNoRows {
+			log.Fatal("Failure to select object from table. Due error: ", err)
+			return 0, err
+		}
+		return 0, fmt.Errorf("missing metric %s", id)
+	}
+	return value, nil
 }
 
-func (p *PGSStore) GetCounter(name string) (int64, error) {
-	//TODO implement me
-	return 0, nil
+func (p *PGSStore) GetCounter(id string) (int64, error) {
+	var delta int64
+	mType := "counter"
+	q := `SELECT delta FROM metrics WHERE id = $1 AND mType = $2`
+	if err := p.client.QueryRow(context.Background(), q, id, mType).Scan(&delta); err != nil {
+		if err != pgx.ErrNoRows {
+			log.Fatal("Failure to select object from table. Due error: ", err)
+			return 0, err
+		}
+		return 0, fmt.Errorf("missing metric %s", id)
+	}
+	return delta, nil
 }
 
 func (p *PGSStore) PingClient() error {
 	return p.client.Ping(context.Background())
+}
+
+//функция загрузки данных на диск
+func (p *PGSStore) Upload() error {
+	//data, err := json.Marshal(&p.Metrics)
+	//if err != nil {
+	//	return err
+	//}
+	//// записываем событие в буфер
+	//writer := bufio.NewWriter(p.file)
+	//if _, err := writer.Write(data); err != nil {
+	//	return err
+	//}
+	//if err := writer.WriteByte('\n'); err != nil {
+	//	return err
+	//}
+	//writer.Flush()
+	return nil
+}
+
+func (p *PGSStore) UploadWithTicker(ticker *time.Ticker, done chan os.Signal) {
+	for {
+		select {
+		case <-ticker.C:
+			err := p.Upload()
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+		case <-done:
+			ticker.Stop()
+			return
+		}
+	}
+}
+
+func restorePGS(store *map[string]storage.Metrics, cfg *config.ServerConfig) error {
+	//file, err := os.OpenFile(cfg.StoreFile, os.O_RDONLY|os.O_CREATE, 0777)
+	//if err != nil {
+	//	return err
+	//}
+	//scanner := bufio.NewScanner(file)
+	//for scanner.Scan() {
+	//	data := scanner.Bytes()
+	//	err = json.Unmarshal(data, &store)
+	//	if err != nil {
+	//		fmt.Println(err)
+	//		return err
+	//	}
+	//}
+	//for _, metrics := range *store {
+	//
+	//}
+	//defer file.Close()
+	return nil
 }
