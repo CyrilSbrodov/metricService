@@ -17,13 +17,8 @@ import (
 )
 
 type PGSStore struct {
-	client  postgresql.Client
-	Metrics map[string]storage.Metrics
-	//Dsn           string
-	file *os.File
-	//Check         bool
-	StoreInterval time.Duration
-	Hash          string
+	client postgresql.Client
+	Hash   string
 }
 
 func createTable(ctx context.Context, client postgresql.Client) error {
@@ -47,8 +42,6 @@ func createTable(ctx context.Context, client postgresql.Client) error {
 }
 
 func NewPGSStore(client postgresql.Client, cfg *config.ServerConfig) (*PGSStore, error) {
-	metrics := storage.MetricsStore
-
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -56,27 +49,10 @@ func NewPGSStore(client postgresql.Client, cfg *config.ServerConfig) (*PGSStore,
 		return nil, err
 	}
 
-	if cfg.StoreFile == "" {
-		return &PGSStore{
-			Metrics:       metrics,
-			client:        client,
-			file:          nil,
-			StoreInterval: cfg.StoreInterval,
-			Hash:          cfg.Hash,
-		}, nil
-	} else {
-		file, err := os.OpenFile(cfg.StoreFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
-		if err != nil {
-			return nil, err
-		}
-		return &PGSStore{
-			Metrics:       metrics,
-			file:          file,
-			client:        client,
-			StoreInterval: cfg.StoreInterval,
-			Hash:          cfg.Hash,
-		}, nil
-	}
+	return &PGSStore{
+		client: client,
+		Hash:   cfg.Hash,
+	}, nil
 }
 
 func (p *PGSStore) GetMetric(metric storage.Metrics) (storage.Metrics, error) {
@@ -219,22 +195,10 @@ func (p *PGSStore) PingClient() error {
 
 //функция загрузки данных на диск
 func (p *PGSStore) Upload() error {
-	//data, err := json.Marshal(&p.Metrics)
-	//if err != nil {
-	//	return err
-	//}
-	//// записываем событие в буфер
-	//writer := bufio.NewWriter(p.file)
-	//if _, err := writer.Write(data); err != nil {
-	//	return err
-	//}
-	//if err := writer.WriteByte('\n'); err != nil {
-	//	return err
-	//}
-	//writer.Flush()
 	return nil
 }
 
+// TODO рещить проблему, чтобы файл был только для repository.
 func (p *PGSStore) UploadWithTicker(ticker *time.Ticker, done chan os.Signal) {
 	for {
 		select {
@@ -249,25 +213,4 @@ func (p *PGSStore) UploadWithTicker(ticker *time.Ticker, done chan os.Signal) {
 			return
 		}
 	}
-}
-
-func restorePGS(store *map[string]storage.Metrics, cfg *config.ServerConfig) error {
-	//file, err := os.OpenFile(cfg.StoreFile, os.O_RDONLY|os.O_CREATE, 0777)
-	//if err != nil {
-	//	return err
-	//}
-	//scanner := bufio.NewScanner(file)
-	//for scanner.Scan() {
-	//	data := scanner.Bytes()
-	//	err = json.Unmarshal(data, &store)
-	//	if err != nil {
-	//		fmt.Println(err)
-	//		return err
-	//	}
-	//}
-	//for _, metrics := range *store {
-	//
-	//}
-	//defer file.Close()
-	return nil
 }
