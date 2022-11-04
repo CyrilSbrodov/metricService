@@ -54,7 +54,7 @@ func NewRepository(cfg *config.ServerConfig) (*Repository, error) {
 		Gauge:         gauge,
 		Counter:       counter,
 		file:          file,
-		Check:         false,
+		Check:         check,
 		StoreInterval: cfg.StoreInterval,
 	}
 	if file != nil {
