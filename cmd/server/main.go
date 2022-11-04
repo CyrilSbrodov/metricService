@@ -29,7 +29,7 @@ func main() {
 	var store storage.Storage
 	var err error
 	//определение хендлера
-	if cfg.DatabaseDSN != "" {
+	if len(cfg.DatabaseDSN) != 0 {
 		client, err := postgresql.NewClient(context.Background(), 5, &cfg)
 		checkError(err)
 		store, err = repositories.NewPGSStore(client, &cfg)
