@@ -27,10 +27,11 @@ type Repository struct {
 	Dsn           string
 }
 
-func NewRepository(cfg *config.ServerConfig) (*Repository, error) {
+func NewRepository(cfg *config.ServerConfig, done chan os.Signal) (*Repository, error) {
 	metrics := storage.MetricsStore
 	gauge := storage.GaugeData
 	counter := storage.CounterData
+	check := false
 
 	//определение сбора данных из файла
 	if cfg.Restore {
@@ -40,38 +41,33 @@ func NewRepository(cfg *config.ServerConfig) (*Repository, error) {
 		}
 	}
 
-	//определение записи на диск и создание файла
-	if cfg.StoreFile == "" {
-		return &Repository{
-			Metrics:       metrics,
-			Gauge:         gauge,
-			Counter:       counter,
-			file:          nil,
-			Check:         false,
-			StoreInterval: cfg.StoreInterval,
-			Hash:          cfg.Hash,
-			Dsn:           cfg.DatabaseDSN,
-		}, nil
-	} else {
-		file, err := os.OpenFile(cfg.StoreFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
-		if err != nil {
-			return nil, err
-		}
-		return &Repository{
-			Metrics:       metrics,
-			Gauge:         gauge,
-			Counter:       counter,
-			file:          file,
-			Check:         true,
-			StoreInterval: cfg.StoreInterval,
-			Hash:          cfg.Hash,
-			Dsn:           cfg.DatabaseDSN,
-		}, nil
+	file, err := newStoreFile(cfg.StoreFile)
+	if err != nil {
+		return nil, err
 	}
+
+	if cfg.StoreInterval == 0 {
+		check = true
+	}
+
+	if file != nil {
+		ticker := time.NewTicker(cfg.StoreInterval)
+		go uploadWithTicker(ticker, done, &metrics, file)
+	}
+
+	return &Repository{
+		Metrics:       metrics,
+		Gauge:         gauge,
+		Counter:       counter,
+		file:          file,
+		Check:         check,
+		StoreInterval: cfg.StoreInterval,
+		Hash:          cfg.Hash,
+		Dsn:           cfg.DatabaseDSN,
+	}, nil
 }
 
 func (r *Repository) CollectMetrics(m storage.Metrics) error {
-
 	if m.Hash != "" {
 		_, ok := hashing(r.Hash, &m)
 		if !ok {
@@ -235,26 +231,33 @@ func hashing(hashKey string, m *storage.Metrics) (string, bool) {
 }
 
 func newStoreFile(filename string) (*os.File, error) {
-	if filename == "" {
+	if len(filename) == 0 {
 		return nil, nil
 	}
 	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
 	return file, nil
 }
 
-func (r *Repository) UploadWithTicker(ticker *time.Ticker, done chan os.Signal) {
+func uploadWithTicker(ticker *time.Ticker, done chan os.Signal, store *map[string]storage.Metrics, file *os.File) {
 	for {
 		select {
 		case <-ticker.C:
-			err := r.Upload()
+			data, err := json.Marshal(&store)
 			if err != nil {
-				fmt.Println(err)
 				return
 			}
+			// записываем событие в буфер
+			writer := bufio.NewWriter(file)
+			if _, err := writer.Write(data); err != nil {
+				return
+			}
+			if err := writer.WriteByte('\n'); err != nil {
+				return
+			}
+			writer.Flush()
 		case <-done:
 			ticker.Stop()
 			return

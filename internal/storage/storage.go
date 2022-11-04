@@ -1,10 +1,5 @@
 package storage
 
-import (
-	"os"
-	"time"
-)
-
 type Storage interface {
 	GetMetric(metric Metrics) (Metrics, error)
 	GetAll() (string, error)
@@ -14,5 +9,4 @@ type Storage interface {
 	GetGauge(name string) (float64, error)
 	GetCounter(name string) (int64, error)
 	PingClient() error
-	UploadWithTicker(ticker *time.Ticker, done chan os.Signal)
 }

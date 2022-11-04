@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -26,6 +25,8 @@ func createTable(ctx context.Context, client postgresql.Client) error {
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback(ctx)
+
 	q := `CREATE TABLE if not exists metrics (
     id TEXT NOT NULL,
     mType TEXT NOT NULL,
@@ -34,10 +35,12 @@ func createTable(ctx context.Context, client postgresql.Client) error {
     hash TEXT
 	); 
 	CREATE UNIQUE INDEX if not exists metrics_id_uindex on metrics (id);`
+
 	_, err = tx.Exec(ctx, q)
 	if err != nil {
 		return err
 	}
+
 	return tx.Commit(ctx)
 }
 
@@ -193,24 +196,24 @@ func (p *PGSStore) PingClient() error {
 	return p.client.Ping(context.Background())
 }
 
-//функция загрузки данных на диск
-func (p *PGSStore) Upload() error {
-	return nil
-}
-
-// TODO рещить проблему, чтобы файл был только для repository.
-func (p *PGSStore) UploadWithTicker(ticker *time.Ticker, done chan os.Signal) {
-	for {
-		select {
-		case <-ticker.C:
-			err := p.Upload()
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-		case <-done:
-			ticker.Stop()
-			return
-		}
-	}
-}
+////функция загрузки данных на диск
+//func (p *PGSStore) Upload() error {
+//	return nil
+//}
+//
+//// TODO рещить проблему, чтобы файл был только для repository.
+//func (p *PGSStore) UploadWithTicker(ticker *time.Ticker, done chan os.Signal) {
+//	for {
+//		select {
+//		case <-ticker.C:
+//			err := p.Upload()
+//			if err != nil {
+//				fmt.Println(err)
+//				return
+//			}
+//		case <-done:
+//			ticker.Stop()
+//			return
+//		}
+//	}
+//}

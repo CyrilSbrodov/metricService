@@ -21,7 +21,9 @@ import (
 
 func main() {
 	cfg := config.ServerConfigInit()
-	tickerUpload := time.NewTicker(cfg.StoreInterval)
+
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 	//определение роутера
 	router := chi.NewRouter()
@@ -35,7 +37,7 @@ func main() {
 		store, err = repositories.NewPGSStore(client, &cfg)
 		checkError(err)
 	} else {
-		store, err = repositories.NewRepository(&cfg)
+		store, err = repositories.NewRepository(&cfg, done)
 		checkError(err)
 	}
 
@@ -48,10 +50,6 @@ func main() {
 		Handler: router,
 	}
 
-	//gracefullshutdown
-	done := make(chan os.Signal, 1)
-	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
-
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("listen: %s\n", err)
@@ -59,11 +57,7 @@ func main() {
 	}()
 	log.Println("server is listen on", cfg.Addr)
 
-	//отправка данных на диск, если запись разрешена и файл создан
-	if cfg.StoreFile != "" {
-		go store.UploadWithTicker(tickerUpload, done)
-	}
-
+	//gracefullshutdown
 	<-done
 
 	log.Print("Server Stopped")
@@ -85,19 +79,3 @@ func checkError(err error) {
 		os.Exit(1)
 	}
 }
-
-//func uploadWithTicker(ticker *time.Ticker, repo *repositories.Repository, done chan os.Signal) {
-//	for {
-//		select {
-//		case <-ticker.C:
-//			err := repo.Upload()
-//			if err != nil {
-//				fmt.Println(err)
-//				return
-//			}
-//		case <-done:
-//			ticker.Stop()
-//			return
-//		}
-//	}
-//}
