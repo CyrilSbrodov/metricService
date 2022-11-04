@@ -27,7 +27,7 @@ type Repository struct {
 	Dsn           string
 }
 
-func NewRepository(cfg *config.ServerConfig, done chan os.Signal) (*Repository, error) {
+func NewRepository(cfg *config.ServerConfig) (*Repository, error) {
 	metrics := storage.MetricsStore
 	gauge := storage.GaugeData
 	counter := storage.CounterData
@@ -49,10 +49,17 @@ func NewRepository(cfg *config.ServerConfig, done chan os.Signal) (*Repository, 
 	if cfg.StoreInterval == 0 {
 		check = true
 	}
-
+	repo := &Repository{
+		Metrics:       metrics,
+		Gauge:         gauge,
+		Counter:       counter,
+		file:          file,
+		Check:         false,
+		StoreInterval: cfg.StoreInterval,
+	}
 	if file != nil {
 		ticker := time.NewTicker(cfg.StoreInterval)
-		go uploadWithTicker(ticker, done, &metrics, file)
+		go uploadWithTicker(ticker, repo)
 	}
 
 	return &Repository{
@@ -241,25 +248,9 @@ func newStoreFile(filename string) (*os.File, error) {
 	return file, nil
 }
 
-func uploadWithTicker(ticker *time.Ticker, done chan os.Signal, store *map[string]storage.Metrics, file *os.File) {
-	for {
-		select {
-		case <-ticker.C:
-			data, err := json.Marshal(&store)
-			if err != nil {
-				return
-			}
-			// записываем событие в буфер
-			writer := bufio.NewWriter(file)
-			if _, err := writer.Write(data); err != nil {
-				return
-			}
-			if err := writer.WriteByte('\n'); err != nil {
-				return
-			}
-			writer.Flush()
-		case <-done:
-			ticker.Stop()
+func uploadWithTicker(ticker *time.Ticker, repo *Repository) {
+	for range ticker.C {
+		if err := repo.Upload(); err != nil {
 			return
 		}
 	}

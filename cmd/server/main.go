@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
+	//"os/signal"
+	//"syscall"
 
 	"github.com/go-chi/chi/v5"
 
@@ -20,8 +20,8 @@ import (
 func main() {
 	cfg := config.ServerConfigInit()
 
-	done := make(chan os.Signal, 1)
-	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	//done := make(chan os.Signal, 1)
+	//signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 	//определение роутера
 	router := chi.NewRouter()
@@ -35,7 +35,7 @@ func main() {
 		store, err = repositories.NewPGSStore(client, &cfg)
 		checkError(err)
 	} else {
-		store, err = repositories.NewRepository(&cfg, done)
+		store, err = repositories.NewRepository(&cfg)
 		checkError(err)
 	}
 
