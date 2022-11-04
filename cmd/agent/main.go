@@ -26,7 +26,6 @@ func main() {
 
 	var count int64
 	metrics := storage.MetricsStore
-	//var metrics []storage.Metrics
 
 	//запуск тикера
 	tickerUpload := time.NewTicker(cfg.ReportInterval)

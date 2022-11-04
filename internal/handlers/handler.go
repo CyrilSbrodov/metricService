@@ -350,26 +350,5 @@ func (h *Handler) CollectBatchHandler() http.HandlerFunc {
 			rw.Write([]byte(err.Error()))
 			return
 		}
-
-		//metric, err := h.GetMetric(metrics)
-		//fmt.Println(metric)
-		//if metrics == metric {
-		//	fmt.Println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++=================================")
-		//}
-		//if err != nil {
-		//	rw.WriteHeader(http.StatusNotFound)
-		//	rw.Write([]byte(err.Error()))
-		//	return
-		//}
-		//mJSON, errJSON := json.Marshal(metric)
-		//if errJSON != nil {
-		//	rw.WriteHeader(http.StatusInternalServerError)
-		//	rw.Write([]byte(errJSON.Error()))
-		//	return
-		//}
-		//rw.Header().Set("Content-Type", "application/json")
-		//rw.WriteHeader(http.StatusOK)
-		//rw.Write(mJSON)
-
 	}
 }

@@ -103,13 +103,6 @@ func (r *Repository) CollectMetric(m storage.Metrics) error {
 }
 
 func (r *Repository) CollectMetrics(metrics []storage.Metrics) error {
-	//if m.Hash != "" {
-	//	_, ok := hashing(r.Hash, &m)
-	//	if !ok {
-	//		err := fmt.Errorf("hash is wrong")
-	//		return err
-	//	}
-	//}
 	for _, m := range metrics {
 		switch m.MType {
 		case "counter":
@@ -127,7 +120,6 @@ func (r *Repository) CollectMetrics(metrics []storage.Metrics) error {
 			return nil
 		}
 		r.Metrics[m.ID] = m
-		return nil
 	}
 	return nil
 }
