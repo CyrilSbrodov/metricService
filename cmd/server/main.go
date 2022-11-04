@@ -3,12 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -49,28 +47,29 @@ func main() {
 		Addr:    cfg.Addr,
 		Handler: router,
 	}
+	srv.ListenAndServe()
 
-	go func() {
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("listen: %s\n", err)
-		}
-	}()
-	log.Println("server is listen on", cfg.Addr)
-
-	//gracefullshutdown
-	<-done
-
-	log.Print("Server Stopped")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer func() {
-		cancel()
-	}()
-
-	if err = srv.Shutdown(ctx); err != nil {
-		log.Fatalf("Server Shutdown Failed:%+v", err)
-	}
-	log.Print("Server Exited Properly")
+	//go func() {
+	//	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	//		log.Fatalf("listen: %s\n", err)
+	//	}
+	//}()
+	//log.Println("server is listen on", cfg.Addr)
+	//
+	////gracefullshutdown
+	//<-done
+	//
+	//log.Print("Server Stopped")
+	//
+	//ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	//defer func() {
+	//	cancel()
+	//}()
+	//
+	//if err = srv.Shutdown(ctx); err != nil {
+	//	log.Fatalf("Server Shutdown Failed:%+v", err)
+	//}
+	//log.Print("Server Exited Properly")
 }
 
 func checkError(err error) {
