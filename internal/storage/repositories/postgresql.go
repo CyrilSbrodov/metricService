@@ -88,11 +88,11 @@ func (p *PGSStore) GetMetric(metric storage.Metrics) (storage.Metrics, error) {
 				log.Fatal("Failure to select object from table. Due error: ", err)
 				return m, err
 			}
-			if m.MType == "counter" {
-				m.Hash, _ = hashing(p.Hash, &m)
-				return m, fmt.Errorf("missing metric %s", metric.ID)
-			}
 			return m, fmt.Errorf("missing metric %s", metric.ID)
+		}
+		if m.MType == "counter" {
+			m.Hash, _ = hashing(p.Hash, &m)
+			return m, nil
 		}
 		return m, nil
 	} else {
