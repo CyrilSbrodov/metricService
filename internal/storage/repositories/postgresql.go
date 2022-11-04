@@ -34,7 +34,7 @@ func createTable(ctx context.Context, client postgresql.Client) error {
 	q := `CREATE TABLE if not exists metrics (
     id TEXT NOT NULL,
     mType TEXT NOT NULL,
-    delta INT,
+    delta BIGINT,
     value DOUBLE PRECISION,
     hash TEXT
 	); 
