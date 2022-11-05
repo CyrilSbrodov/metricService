@@ -11,6 +11,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/rs/zerolog"
+
 	"github.com/CyrilSbrodov/metricService.git/cmd/config"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 )
@@ -25,9 +27,10 @@ type Repository struct {
 	StoreInterval time.Duration
 	Hash          string
 	Dsn           string
+	logger        zerolog.Logger
 }
 
-func NewRepository(cfg *config.ServerConfig) (*Repository, error) {
+func NewRepository(cfg *config.ServerConfig, logger zerolog.Logger) (*Repository, error) {
 	metrics := storage.MetricsStore
 	gauge := storage.GaugeData
 	counter := storage.CounterData
@@ -35,14 +38,16 @@ func NewRepository(cfg *config.ServerConfig) (*Repository, error) {
 
 	//определение сбора данных из файла
 	if cfg.Restore {
-		err := restore(&metrics, cfg)
+		err := restore(&metrics, cfg, logger)
 		if err != nil {
+			logger.Error().Err(err).Msg("failed to restore data from file")
 			return nil, err
 		}
 	}
 
-	file, err := newStoreFile(cfg.StoreFile)
+	file, err := newStoreFile(cfg.StoreFile, logger)
 	if err != nil {
+		logger.Error().Err(err).Msg("failed to create file")
 		return nil, err
 	}
 
@@ -59,7 +64,7 @@ func NewRepository(cfg *config.ServerConfig) (*Repository, error) {
 	}
 	if file != nil {
 		ticker := time.NewTicker(cfg.StoreInterval)
-		go uploadWithTicker(ticker, repo)
+		go uploadWithTicker(ticker, repo, logger)
 	}
 
 	return &Repository{
@@ -76,9 +81,10 @@ func NewRepository(cfg *config.ServerConfig) (*Repository, error) {
 
 func (r *Repository) CollectMetric(m storage.Metrics) error {
 	if m.Hash != "" {
-		_, ok := hashing(r.Hash, &m)
+		_, ok := hashing(r.Hash, &m, r.logger)
 		if !ok {
 			err := fmt.Errorf("hash is wrong")
+			r.logger.Error().Err(fmt.Errorf("hash is wrong")).Msg("wrong hash")
 			return err
 		}
 	}
@@ -128,12 +134,14 @@ func (r *Repository) GetMetric(m storage.Metrics) (storage.Metrics, error) {
 	if m.MType == "gauge" || m.MType == "counter" {
 		metric, ok := r.Metrics[m.ID]
 		if !ok {
+			r.logger.Error().Err(fmt.Errorf("id not found %s", m.ID)).Str("id not found", m.ID)
 			err := fmt.Errorf("id not found %s", m.ID)
 			return m, err
 		}
-		metric.Hash, _ = hashing(r.Hash, &metric)
+		metric.Hash, _ = hashing(r.Hash, &metric, r.logger)
 		return metric, nil
 	} else {
+		r.logger.Error().Err(fmt.Errorf("type %s is wrong", m.MType)).Str("type %s is wrong", m.MType)
 		err := fmt.Errorf("type %s is wrong", m.MType)
 		return m, err
 	}
@@ -179,6 +187,7 @@ func (r *Repository) CollectOrIncreaseCounter(name string, value int64) error {
 func (r *Repository) GetGauge(name string) (float64, error) {
 	value, ok := r.Metrics[name]
 	if !ok {
+		r.logger.Error().Err(fmt.Errorf("missing metric %s", name))
 		return 0, fmt.Errorf("missing metric %s", name)
 	}
 	return *value.Value, nil
@@ -187,6 +196,7 @@ func (r *Repository) GetGauge(name string) (float64, error) {
 func (r *Repository) GetCounter(name string) (int64, error) {
 	value, ok := r.Counter[name]
 	if !ok {
+		r.logger.Error().Err(fmt.Errorf("missing metric %s", name))
 		return value, fmt.Errorf("missing metric %s", name)
 	}
 	return value, nil
@@ -195,8 +205,7 @@ func (r *Repository) GetCounter(name string) (int64, error) {
 func (r *Repository) PingClient() error {
 	db, err := sql.Open("postgres", r.Dsn)
 	if err != nil {
-		fmt.Println("lost connection")
-		fmt.Println(err)
+		r.logger.Error().Err(err).Msg("not connection")
 		return err
 	}
 
@@ -204,10 +213,11 @@ func (r *Repository) PingClient() error {
 }
 
 //функция забора данных из файла при запуске
-func restore(store *map[string]storage.Metrics, cfg *config.ServerConfig) error {
+func restore(store *map[string]storage.Metrics, cfg *config.ServerConfig, logger zerolog.Logger) error {
 
 	file, err := os.OpenFile(cfg.StoreFile, os.O_RDONLY|os.O_CREATE, 0777)
 	if err != nil {
+		logger.Error().Err(err).Msg("failed to open file")
 		return err
 	}
 	scanner := bufio.NewScanner(file)
@@ -215,7 +225,7 @@ func restore(store *map[string]storage.Metrics, cfg *config.ServerConfig) error 
 		data := scanner.Bytes()
 		err = json.Unmarshal(data, &store)
 		if err != nil {
-			fmt.Println(err)
+			logger.Error().Err(err).Msg("failed to unmarshal data")
 			return err
 		}
 	}
@@ -228,21 +238,24 @@ func restore(store *map[string]storage.Metrics, cfg *config.ServerConfig) error 
 func (r *Repository) Upload() error {
 	data, err := json.Marshal(&r.Metrics)
 	if err != nil {
+		r.logger.Error().Err(err).Msg("failed to marshal data")
 		return err
 	}
 	// записываем событие в буфер
 	writer := bufio.NewWriter(r.file)
 	if _, err := writer.Write(data); err != nil {
+		r.logger.Error().Err(err).Msg("failed to write buffer")
 		return err
 	}
 	if err := writer.WriteByte('\n'); err != nil {
+		r.logger.Error().Err(err).Msg("failed to write bytes")
 		return err
 	}
 	writer.Flush()
 	return nil
 }
 
-func hashing(hashKey string, m *storage.Metrics) (string, bool) {
+func hashing(hashKey string, m *storage.Metrics, logger zerolog.Logger) (string, bool) {
 	var hash string
 	switch m.MType {
 	case "counter":
@@ -254,25 +267,28 @@ func hashing(hashKey string, m *storage.Metrics) (string, bool) {
 	h.Write([]byte(hash))
 	hashAccept, err := hex.DecodeString(m.Hash)
 	if err != nil {
+		logger.Error().Err(err).Msg("failed to decode data")
 		return "", false
 	}
 	return fmt.Sprintf("%x", h.Sum(nil)), hmac.Equal(h.Sum(nil), hashAccept)
 }
 
-func newStoreFile(filename string) (*os.File, error) {
+func newStoreFile(filename string, logger zerolog.Logger) (*os.File, error) {
 	if len(filename) == 0 {
 		return nil, nil
 	}
 	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
 	if err != nil {
+		logger.Error().Err(err).Str("filename:", filename).Msg("failed to open/create file")
 		return nil, err
 	}
 	return file, nil
 }
 
-func uploadWithTicker(ticker *time.Ticker, repo *Repository) {
+func uploadWithTicker(ticker *time.Ticker, repo *Repository, logger zerolog.Logger) {
 	for range ticker.C {
 		if err := repo.Upload(); err != nil {
+			logger.Error().Err(err).Msg("failed to upload metrics to file")
 			return
 		}
 	}

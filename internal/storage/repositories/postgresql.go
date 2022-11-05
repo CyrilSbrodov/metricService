@@ -2,13 +2,14 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	_ "github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/lib/pq"
+	"github.com/rs/zerolog"
 
 	"github.com/CyrilSbrodov/metricService.git/cmd/config"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
@@ -18,11 +19,13 @@ import (
 type PGSStore struct {
 	client postgresql.Client
 	Hash   string
+	logger zerolog.Logger
 }
 
-func createTable(ctx context.Context, client postgresql.Client) error {
+func createTable(ctx context.Context, client postgresql.Client, logger zerolog.Logger) error {
 	tx, err := client.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
+		logger.Err(err).Msg("failed to begin transaction")
 		return err
 	}
 	defer tx.Rollback(ctx)
@@ -38,17 +41,19 @@ func createTable(ctx context.Context, client postgresql.Client) error {
 
 	_, err = tx.Exec(ctx, q)
 	if err != nil {
+		logger.Err(err).Msg("failed to create table")
 		return err
 	}
 
 	return tx.Commit(ctx)
 }
 
-func NewPGSStore(client postgresql.Client, cfg *config.ServerConfig) (*PGSStore, error) {
+func NewPGSStore(client postgresql.Client, cfg *config.ServerConfig, logger zerolog.Logger) (*PGSStore, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	if err := createTable(ctx, client); err != nil {
+	if err := createTable(ctx, client, logger); err != nil {
+		logger.Err(err).Msg("failed to create table")
 		return nil, err
 	}
 
@@ -63,15 +68,17 @@ func (p *PGSStore) GetMetric(metric storage.Metrics) (storage.Metrics, error) {
 	if metric.MType == "counter" || metric.MType == "gauge" {
 		q := `SELECT id, mType, delta, value, hash FROM metrics WHERE id = $1 AND mType = $2`
 		if err := p.client.QueryRow(context.Background(), q, metric.ID, metric.MType).Scan(&m.ID, &m.MType, &m.Delta, &m.Value, &m.Hash); err != nil {
-			if err != pgx.ErrNoRows {
-				log.Fatal("Failure to select object from table. Due error: ", err)
+			if errors.Is(err, pgx.ErrNoRows) {
+				p.logger.Err(err).Msg("Failure to select object from table")
 				return m, err
 			}
+			p.logger.Err(err).Msg("wrong metric")
 			return m, fmt.Errorf("missing metric %s", metric.ID)
 		}
 		m.Hash, _ = hashing(p.Hash, &m)
 		return m, nil
 	} else {
+		p.logger.Error().Err(fmt.Errorf("wrong type"))
 		return m, fmt.Errorf("wrong type")
 	}
 }
@@ -81,14 +88,14 @@ func (p *PGSStore) GetAll() (string, error) {
 	q := `SELECT id, mType, delta, value, hash FROM metrics`
 	rows, err := p.client.Query(context.Background(), q)
 	if err != nil {
-		log.Fatal("Failure to select object from table. Due error: ", err)
+		p.logger.Error().Err(err).Msg("Failure to select object from table")
 		return "", err
 	}
 	for rows.Next() {
 		var m storage.Metrics
 		err = rows.Scan(&m.ID, &m.MType, &m.Delta, &m.Value, &m.Hash)
 		if err != nil {
-			log.Fatal("Failure to convert object from table. Due error: ", err)
+			p.logger.Error().Err(err).Msg("Failure to convert object from table")
 			return "", err
 		}
 		metrics = append(metrics, m)
@@ -114,6 +121,7 @@ func (p *PGSStore) CollectMetric(m storage.Metrics) error {
 		_, ok := hashing(p.Hash, &m)
 		if !ok {
 			err := fmt.Errorf("hash is wrong")
+			p.logger.Error().Err(err).Msg("hash is wrong")
 			return err
 		}
 	}
@@ -125,10 +133,11 @@ func (p *PGSStore) CollectMetric(m storage.Metrics) error {
     							value = $4,
     							hash = EXCLUDED.hash`
 		if _, err := p.client.Exec(context.Background(), q, m.ID, m.MType, m.Delta, m.Value, m.Hash); err != nil {
-			log.Fatal("Failure to insert object into table. Due error: ", err)
+			p.logger.Error().Err(err).Msg("Failure to insert object into table")
 			return err
 		}
 	} else {
+		p.logger.Error().Err(fmt.Errorf("wrong type"))
 		return fmt.Errorf("wrong type")
 	}
 	return nil
@@ -143,7 +152,7 @@ func (p *PGSStore) CollectOrChangeGauge(id string, value float64) error {
     							value = EXCLUDED.value,
 							    mType = EXCLUDED.mType`
 	if _, err := p.client.Exec(context.Background(), q, id, mType, value, hash); err != nil {
-		log.Fatal("Failure to insert object into table. Due error: ", err)
+		p.logger.Error().Err(err).Msg("Failure to insert object into table")
 		return err
 	}
 	return nil
@@ -158,7 +167,7 @@ func (p *PGSStore) CollectOrIncreaseCounter(id string, delta int64) error {
     							delta = metrics.delta + EXCLUDED.delta,
  								mType = EXCLUDED.mType`
 	if _, err := p.client.Exec(context.Background(), q, id, mType, delta, hash); err != nil {
-		log.Fatal("Failure to insert object into table. Due error: ", err)
+		p.logger.Error().Err(err).Msg("Failure to insert object into table")
 		return err
 	}
 	return nil
@@ -169,10 +178,11 @@ func (p *PGSStore) GetGauge(id string) (float64, error) {
 	mType := "gauge"
 	q := `SELECT value FROM metrics WHERE id = $1 AND mType = $2`
 	if err := p.client.QueryRow(context.Background(), q, id, mType).Scan(&value); err != nil {
-		if err != pgx.ErrNoRows {
-			log.Fatal("Failure to select object from table. Due error: ", err)
+		if errors.Is(err, pgx.ErrNoRows) {
+			p.logger.Error().Err(err).Msg("Failure to select object from table")
 			return 0, err
 		}
+		p.logger.Error().Err(err).Msg("Wrong metric")
 		return 0, fmt.Errorf("missing metric %s", id)
 	}
 	return value, nil
@@ -183,10 +193,11 @@ func (p *PGSStore) GetCounter(id string) (int64, error) {
 	mType := "counter"
 	q := `SELECT delta FROM metrics WHERE id = $1 AND mType = $2`
 	if err := p.client.QueryRow(context.Background(), q, id, mType).Scan(&delta); err != nil {
-		if err != pgx.ErrNoRows {
-			log.Fatal("Failure to select object from table. Due error: ", err)
+		if errors.Is(err, pgx.ErrNoRows) {
+			p.logger.Error().Err(err).Msg("Failure to select object from table")
 			return 0, err
 		}
+		p.logger.Error().Err(err).Msg("Wrong metric")
 		return 0, fmt.Errorf("missing metric %s", id)
 	}
 	return delta, nil
@@ -200,6 +211,7 @@ func (p *PGSStore) CollectMetrics(metrics []storage.Metrics) error {
 
 	tx, err := p.client.BeginTx(context.Background(), pgx.TxOptions{})
 	if err != nil {
+		p.logger.Error().Err(err).Msg("failed to begin transaction")
 		return err
 	}
 	defer tx.Rollback(context.Background())
@@ -212,6 +224,7 @@ func (p *PGSStore) CollectMetrics(metrics []storage.Metrics) error {
 
 	for _, m := range metrics {
 		if _, err = tx.Exec(context.Background(), q, m.ID, m.MType, m.Delta, m.Value, m.Hash); err != nil {
+			p.logger.Error().Err(err).Msg("failed transaction")
 			return err
 		}
 	}

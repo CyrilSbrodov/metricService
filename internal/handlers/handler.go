@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/rs/zerolog"
 
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 )
@@ -22,6 +23,7 @@ type Handlers interface {
 
 type Handler struct {
 	storage.Storage
+	logger zerolog.Logger
 }
 
 // создание роутеров
@@ -39,9 +41,10 @@ func (h *Handler) Register(r *chi.Mux) {
 	r.Post("/updates/", gzipHandle(h.CollectBatchHandler()))
 }
 
-func NewHandler(storage storage.Storage) Handlers {
+func NewHandler(storage storage.Storage, logger zerolog.Logger) Handlers {
 	return &Handler{
 		storage,
+		logger,
 	}
 }
 
@@ -50,6 +53,7 @@ func (h *Handler) CollectHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		content, err := ioutil.ReadAll(r.Body)
 		if err != nil {
+			h.logger.Error()
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Write([]byte(err.Error()))
 			return
@@ -57,6 +61,7 @@ func (h *Handler) CollectHandler() http.HandlerFunc {
 		defer r.Body.Close()
 		var m storage.Metrics
 		if err := json.Unmarshal(content, &m); err != nil {
+			h.logger.Err(err)
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Write([]byte(err.Error()))
 			return
@@ -64,6 +69,7 @@ func (h *Handler) CollectHandler() http.HandlerFunc {
 
 		err = h.CollectMetric(m)
 		if err != nil {
+			h.logger.Err(err)
 			rw.WriteHeader(http.StatusBadRequest)
 			rw.Write([]byte(err.Error()))
 			return
@@ -72,12 +78,14 @@ func (h *Handler) CollectHandler() http.HandlerFunc {
 		metric, err := h.GetMetric(m)
 
 		if err != nil {
+			h.logger.Err(err)
 			rw.WriteHeader(http.StatusNotFound)
 			rw.Write([]byte(err.Error()))
 			return
 		}
 		mJSON, errJSON := json.Marshal(metric)
 		if errJSON != nil {
+			h.logger.Err(errJSON)
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Write([]byte(errJSON.Error()))
 			return
@@ -94,7 +102,9 @@ func (h *Handler) GetAllHandler() http.HandlerFunc {
 
 		result, err := h.GetAll()
 		if err != nil {
+			h.logger.Err(err)
 			rw.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 		rw.Header().Set("Content-Type", "text/html")
 		rw.WriteHeader(http.StatusOK)
@@ -115,6 +125,7 @@ func (h *Handler) GaugeHandler() http.HandlerFunc {
 
 		method := url[1]
 		if method != "update" {
+			h.logger.Info()
 			rw.WriteHeader(http.StatusNotFound)
 			rw.Write([]byte("incorrect method"))
 			return
@@ -129,6 +140,7 @@ func (h *Handler) GaugeHandler() http.HandlerFunc {
 		name := url[3]
 		value, err := strconv.ParseFloat(url[4], 64)
 		if err != nil {
+			h.logger.Err(err)
 			rw.WriteHeader(http.StatusBadRequest)
 			rw.Write([]byte("incorrect value"))
 			return
@@ -137,7 +149,9 @@ func (h *Handler) GaugeHandler() http.HandlerFunc {
 		//отправка значений в БД
 		err = h.CollectOrChangeGauge(name, value)
 		if err != nil {
+			h.logger.Err(err)
 			rw.WriteHeader(http.StatusBadRequest)
+			h.logger.Err(err)
 			rw.Write([]byte(err.Error()))
 			return
 		}
@@ -180,6 +194,7 @@ func (h *Handler) CounterHandler() http.HandlerFunc {
 		//отправка значений в БД
 		err = h.CollectOrIncreaseCounter(name, int64(value))
 		if err != nil {
+			h.logger.Err(err)
 			rw.WriteHeader(http.StatusBadRequest)
 			rw.Write([]byte(err.Error()))
 			return
@@ -226,6 +241,7 @@ func (h *Handler) GetHandlerJSON() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		content, err := ioutil.ReadAll(r.Body)
 		if err != nil {
+			h.logger.Err(err)
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Write([]byte(err.Error()))
 			return
@@ -233,12 +249,14 @@ func (h *Handler) GetHandlerJSON() http.HandlerFunc {
 		defer r.Body.Close()
 		var m storage.Metrics
 		if err := json.Unmarshal(content, &m); err != nil {
+			h.logger.Err(err)
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Write([]byte(err.Error()))
 			return
 		}
 		m, err = h.GetMetric(m)
 		if err != nil {
+			h.logger.Err(err)
 			rw.WriteHeader(http.StatusNotFound)
 			rw.Write([]byte(err.Error()))
 			return
@@ -249,6 +267,7 @@ func (h *Handler) GetHandlerJSON() http.HandlerFunc {
 		//отправка обновленных метрик обратно
 		mJSON, errJSON := json.Marshal(m)
 		if errJSON != nil {
+			h.logger.Err(errJSON)
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Write([]byte(errJSON.Error()))
 			return
@@ -280,6 +299,7 @@ func (h *Handler) GetHandler() http.HandlerFunc {
 			//получение значений из gauge
 			value, err := h.GetGauge(name)
 			if err != nil {
+				h.logger.Err(err)
 				rw.WriteHeader(http.StatusNotFound)
 				rw.Write([]byte("incorrect name"))
 				return
@@ -292,6 +312,7 @@ func (h *Handler) GetHandler() http.HandlerFunc {
 			//получение значений из counter
 			value, err := h.GetCounter(name)
 			if err != nil {
+				h.logger.Err(err)
 				rw.WriteHeader(http.StatusNotFound)
 				rw.Write([]byte("incorrect name"))
 				return
@@ -309,8 +330,9 @@ func (h *Handler) GetHandler() http.HandlerFunc {
 
 func (h *Handler) PingDB() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		errPing := h.PingClient()
-		if errPing != nil {
+		err := h.PingClient()
+		if err != nil {
+			h.logger.Err(err)
 			http.Error(rw, "", http.StatusInternalServerError)
 		}
 		rw.WriteHeader(http.StatusOK)
@@ -323,6 +345,7 @@ func (h *Handler) CollectBatchHandler() http.HandlerFunc {
 		if r.Header.Get(`Content-Encoding`) == `gzip` {
 			gz, err := gzip.NewReader(r.Body)
 			if err != nil {
+				h.logger.Err(err)
 				http.Error(rw, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -333,6 +356,7 @@ func (h *Handler) CollectBatchHandler() http.HandlerFunc {
 		}
 		content, err := ioutil.ReadAll(reader)
 		if err != nil {
+			h.logger.Err(err)
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Write([]byte(err.Error()))
 			return
@@ -340,12 +364,14 @@ func (h *Handler) CollectBatchHandler() http.HandlerFunc {
 		defer r.Body.Close()
 		var m []storage.Metrics
 		if err := json.Unmarshal(content, &m); err != nil {
+			h.logger.Err(err)
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Write([]byte(err.Error()))
 			return
 		}
 		err = h.CollectMetrics(m)
 		if err != nil {
+			h.logger.Err(err)
 			rw.WriteHeader(http.StatusBadRequest)
 			rw.Write([]byte(err.Error()))
 			return
