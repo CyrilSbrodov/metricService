@@ -75,7 +75,7 @@ func (p *PGSStore) GetMetric(metric storage.Metrics) (storage.Metrics, error) {
 			p.logger.Err(err).Msg("wrong metric")
 			return m, fmt.Errorf("missing metric %s", metric.ID)
 		}
-		m.Hash, _ = hashing(p.Hash, &m)
+		m.Hash, _ = hashing(p.Hash, &m, p.logger)
 		return m, nil
 	} else {
 		p.logger.Error().Err(fmt.Errorf("wrong type"))
@@ -118,7 +118,7 @@ func (p *PGSStore) GetAll() (string, error) {
 func (p *PGSStore) CollectMetric(m storage.Metrics) error {
 
 	if m.Hash != "" {
-		_, ok := hashing(p.Hash, &m)
+		_, ok := hashing(p.Hash, &m, p.logger)
 		if !ok {
 			err := fmt.Errorf("hash is wrong")
 			p.logger.Error().Err(err).Msg("hash is wrong")
