@@ -42,7 +42,7 @@ func NewClient(ctx context.Context, maxAttempts int, cfg *config.ServerConfig, l
 }
 func DoWithTries(fn func() error, attempts int, delay time.Duration) (err error) {
 	for attempts > 0 {
-		if errors.Is(err, fn()); err != nil {
+		if errors.As(err, fn()); err != nil {
 			time.Sleep(delay)
 			attempts--
 
