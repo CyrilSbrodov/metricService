@@ -2,7 +2,6 @@ package postgresql
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -42,7 +41,7 @@ func NewClient(ctx context.Context, maxAttempts int, cfg *config.ServerConfig, l
 }
 func DoWithTries(fn func() error, attempts int, delay time.Duration) (err error) {
 	for attempts > 0 {
-		if errors.As(err, fn()); err != nil {
+		if err = fn(); err != nil {
 			time.Sleep(delay)
 			attempts--
 

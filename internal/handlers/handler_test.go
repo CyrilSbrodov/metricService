@@ -10,6 +10,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/CyrilSbrodov/metricService.git/cmd/config"
@@ -39,8 +40,9 @@ func TestHandler_GaugeHandler(t *testing.T) {
 	type want struct {
 		statusCode int
 	}
+	logger := zerolog.New(os.Stderr)
 	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase)
-	repo, _ := repositories.NewRepository(cfg)
+	repo, _ := repositories.NewRepository(cfg, logger)
 
 	type fields struct {
 		Storage storage.Storage
@@ -111,8 +113,9 @@ func TestHandler_CounterHandler(t *testing.T) {
 	type want struct {
 		statusCode int
 	}
+	logger := zerolog.New(os.Stderr)
 	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase)
-	repo, _ := repositories.NewRepository(cfg)
+	repo, _ := repositories.NewRepository(cfg, logger)
 
 	type fields struct {
 		Storage storage.Storage
@@ -183,8 +186,9 @@ func TestHandler_OtherHandler(t *testing.T) {
 	type want struct {
 		statusCode int
 	}
+	logger := zerolog.New(os.Stderr)
 	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase)
-	repo, _ := repositories.NewRepository(cfg)
+	repo, _ := repositories.NewRepository(cfg, logger)
 
 	type fields struct {
 		Storage storage.Storage
@@ -236,8 +240,9 @@ func TestHandler_CollectHandler(t *testing.T) {
 		statusCode int
 	}
 	var value float64 = 123123
+	logger := zerolog.New(os.Stderr)
 	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase)
-	repo, _ := repositories.NewRepository(cfg)
+	repo, _ := repositories.NewRepository(cfg, logger)
 
 	type fields struct {
 		Storage storage.Storage
@@ -299,70 +304,3 @@ func TestHandler_CollectHandler(t *testing.T) {
 		})
 	}
 }
-
-//func TestHandler_Ping(t *testing.T) {
-//	type want struct {
-//		statusCode int
-//	}
-//	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase)
-//	repo, _ := repositories.NewRepository(cfg)
-//	//client, err := postgresql.NewClient(context.Background(), 2, cfg)
-//	//if err != nil {
-//	//	fmt.Println(err)
-//	//	os.Exit(1)
-//	//}
-//	//db, err := repositories.NewDB(cfg, client)
-//	//if err != nil {
-//	//	fmt.Println(err)
-//	//	os.Exit(1)
-//	//}
-//
-//	type fields struct {
-//		Storage storage.Storage
-//		//DB      repositories.DB
-//	}
-//	tests := []struct {
-//		name    string
-//		request string
-//		fields  fields
-//		want    want
-//	}{
-//		{
-//			name: "code 200",
-//			fields: fields{
-//				repo,
-//				//*db,
-//			},
-//			request: "http://localhost:8080/ping",
-//			want: want{
-//				200,
-//			},
-//		},
-//		//{
-//		//	name: "code 501",
-//		//	fields: fields{
-//		//		repo,
-//		//		*db,
-//		//	},
-//		//	request: "http://localhost:8080/update/test/test/100",
-//		//	want: want{
-//		//		501,
-//		//	},
-//		//},
-//	}
-//	for _, tt := range tests {
-//		t.Run(tt.name, func(t *testing.T) {
-//			fmt.Println(flagDatabase)
-//			request := httptest.NewRequest(http.MethodGet, tt.request, nil)
-//			w := httptest.NewRecorder()
-//			h := handlers.Handler{
-//				Storage: tt.fields.Storage,
-//				//DB:      tt.fields.DB,
-//			}
-//			h.PingDB().ServeHTTP(w, request)
-//			result := w.Result()
-//			defer result.Body.Close()
-//			assert.Equal(t, tt.want.statusCode, result.StatusCode)
-//		})
-//	}
-//}
