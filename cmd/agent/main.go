@@ -6,19 +6,16 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/json"
-	//"flag"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
-	"os"
 	"reflect"
 	"runtime"
 	"time"
 
-	"github.com/rs/zerolog"
-
 	"github.com/CyrilSbrodov/metricService.git/cmd/config"
+	"github.com/CyrilSbrodov/metricService.git/cmd/loggers"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 )
 
@@ -29,7 +26,7 @@ func main() {
 
 	var count int64
 	metrics := storage.MetricsStore
-	logger := zerolog.New(os.Stderr).With().Timestamp().Logger()
+	logger := loggers.NewLogger()
 	//запуск тикера
 	tickerUpload := time.NewTicker(cfg.ReportInterval)
 	tickerUpdate := time.NewTicker(cfg.PollInterval)
@@ -109,7 +106,7 @@ func update(store map[string]storage.Metrics, count int64, cfg *config.AgentConf
 }
 
 //отправка метрики
-func upload(client *http.Client, url string, store map[string]storage.Metrics, logger zerolog.Logger) {
+func upload(client *http.Client, url string, store map[string]storage.Metrics, logger *loggers.Logger) {
 
 	for _, m := range store {
 		metricsJSON, errJSON := json.Marshal(m)
@@ -120,7 +117,7 @@ func upload(client *http.Client, url string, store map[string]storage.Metrics, l
 		req, err := http.NewRequest(http.MethodPost, "http://"+url+"/update/", bytes.NewBuffer(metricsJSON))
 
 		if err != nil {
-			logger.Error().Err(err).Msg("Failed to request")
+			logger.LogErr(err, "Failed to request")
 			fmt.Println(err)
 			break
 		}
@@ -129,32 +126,32 @@ func upload(client *http.Client, url string, store map[string]storage.Metrics, l
 
 		resp, err := client.Do(req)
 		if err != nil {
-			logger.Error().Err(err).Msg("Failed to do request")
+			logger.LogErr(err, "Failed to do request")
 			break
 		}
 		_, err = ioutil.ReadAll(resp.Body)
 		if err != nil {
-			logger.Error().Err(err).Msg("Failed to read body")
+			logger.LogErr(err, "Failed to read body")
 			break
 		}
 		resp.Body.Close()
 	}
 }
 
-func uploadBatch(client *http.Client, url string, store map[string]storage.Metrics, logger zerolog.Logger) {
+func uploadBatch(client *http.Client, url string, store map[string]storage.Metrics, logger *loggers.Logger) {
 	var metrics []storage.Metrics
 	for _, m := range store {
 		metrics = append(metrics, m)
 	}
 	metricsJSON, errJSON := json.Marshal(metrics)
 	if errJSON != nil {
-		logger.Error().Err(errJSON).Msg("Failed to Marshal metrics to JSON")
+		logger.LogErr(errJSON, "Failed to Marshal metrics to JSON")
 		fmt.Println(errJSON)
 		return
 	}
 	metricsCompress, err := compress(metricsJSON, logger)
 	if err != nil {
-		logger.Error().Err(errJSON).Msg("Failed to compress metrics")
+		logger.LogErr(errJSON, "Failed to compress metrics")
 		return
 	}
 	if len(metricsCompress) == 0 {
@@ -163,7 +160,7 @@ func uploadBatch(client *http.Client, url string, store map[string]storage.Metri
 	req, err := http.NewRequest(http.MethodPost, "http://"+url+"/updates/", bytes.NewBuffer(metricsCompress))
 
 	if err != nil {
-		logger.Error().Err(errJSON).Msg("Failed to request")
+		logger.LogErr(err, "Failed to request")
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
@@ -171,12 +168,12 @@ func uploadBatch(client *http.Client, url string, store map[string]storage.Metri
 
 	resp, err := client.Do(req)
 	if err != nil {
-		logger.Error().Err(errJSON).Msg("Failed to do request")
+		logger.LogErr(err, "Failed to do request")
 		return
 	}
 	_, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
-		logger.Error().Err(errJSON).Msg("Failed to read body")
+		logger.LogErr(err, "Failed to read body")
 		return
 	}
 	resp.Body.Close()
@@ -195,18 +192,18 @@ func hashing(cfg *config.AgentConfig, m *storage.Metrics) string {
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
-func compress(store []byte, logger zerolog.Logger) ([]byte, error) {
+func compress(store []byte, logger *loggers.Logger) ([]byte, error) {
 	var b bytes.Buffer
 	w := gzip.NewWriter(&b)
 
 	_, err := w.Write(store)
 	if err != nil {
-		logger.Error().Err(err).Msg("failed to write data to compress temporary buffer")
+		logger.LogErr(err, "failed to write data to compress temporary buffer")
 		return nil, fmt.Errorf("failed to write data to compress temporary buffer: %v", err)
 	}
 	err = w.Close()
 	if err != nil {
-		logger.Error().Err(err).Msg("failed compress data")
+		logger.LogErr(err, "failed compress data")
 		return nil, fmt.Errorf("failed compress data: %v", err)
 	}
 	return b.Bytes(), nil

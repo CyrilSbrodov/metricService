@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -10,9 +9,9 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/rs/zerolog"
 
 	"github.com/CyrilSbrodov/metricService.git/cmd/config"
+	"github.com/CyrilSbrodov/metricService.git/cmd/loggers"
 	"github.com/CyrilSbrodov/metricService.git/internal/handlers"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage/repositories"
@@ -21,7 +20,7 @@ import (
 
 func main() {
 	cfg := config.ServerConfigInit()
-	logger := zerolog.New(os.Stderr).With().Timestamp().Logger()
+	logger := loggers.NewLogger()
 
 	//определение роутера
 	router := chi.NewRouter()
@@ -53,15 +52,15 @@ func main() {
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Err(err).Msg("server not started")
+			logger.LogErr(err, "server not started")
 		}
 	}()
-	logger.Info().Str("server is listen:", cfg.Addr).Msg("start server")
+	logger.LogInfo("server is listen:", cfg.Addr, "start server")
 
 	//gracefullshutdown
 	<-done
 
-	logger.Info().Msg("server stopped")
+	logger.LogInfo("", "", "server stopped")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer func() {
@@ -69,14 +68,14 @@ func main() {
 	}()
 
 	if err = srv.Shutdown(ctx); err != nil {
-		log.Fatalf("Server Shutdown Failed:%+v", err)
+		logger.LogErr(err, "Server Shutdown Failed")
 	}
-	logger.Info().Msg("Server Exited Properly")
+	logger.LogInfo("", "", "Server Exited Properly")
 }
 
-func checkError(err error, logger zerolog.Logger) {
+func checkError(err error, logger *loggers.Logger) {
 	if err != nil {
-		logger.Err(err)
+		logger.LogErr(err, "")
 		os.Exit(1)
 	}
 }
