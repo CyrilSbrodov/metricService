@@ -1,5 +1,7 @@
 package storage
 
+import "sync"
+
 type User struct {
 	ID        string
 	FirstName string
@@ -171,3 +173,12 @@ type Metrics struct {
 }
 
 var MetricsStore = map[string]Metrics{}
+
+type AgentMetrics struct {
+	Store map[string]Metrics
+	sync.Mutex
+}
+
+var AgentStore = AgentMetrics{
+	Store: MetricsStore,
+}

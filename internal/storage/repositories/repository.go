@@ -9,6 +9,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
+	"sync"
 	"time"
 
 	"github.com/CyrilSbrodov/metricService.git/cmd/config"
@@ -27,6 +29,7 @@ type Repository struct {
 	Hash          string
 	Dsn           string
 	logger        loggers.Logger
+	sync          sync.Mutex
 }
 
 func NewRepository(cfg *config.ServerConfig, logger *loggers.Logger) (*Repository, error) {
@@ -149,14 +152,17 @@ func (r *Repository) GetMetric(m storage.Metrics) (storage.Metrics, error) {
 //получение всех метрик
 func (r *Repository) GetAll() (string, error) {
 	result := ""
-	for s, f := range r.Metrics {
-		if f.MType == "gauge" {
-			if f.Value != nil {
-				result += fmt.Sprintf("%s : %f\n", s, *f.Value)
-			}
-			continue
-		} else if f.MType == "counter" {
-			result += fmt.Sprintf("%s : %d\n", s, *f.Delta)
+	keys := make([]string, 0, len(r.Metrics))
+	for k := range r.Metrics {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, key := range keys {
+		if r.Metrics[key].MType == "gauge" {
+			result += fmt.Sprintf("%s : %f<br>\n", key, *r.Metrics[key].Value)
+		} else if r.Metrics[key].MType == "counter" {
+			result += fmt.Sprintf("%s : %d<br>\n", key, *r.Metrics[key].Delta)
 		}
 	}
 	return result, nil
