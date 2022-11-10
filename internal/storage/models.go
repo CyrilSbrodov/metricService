@@ -176,9 +176,15 @@ var MetricsStore = map[string]Metrics{}
 
 type AgentMetrics struct {
 	Store map[string]Metrics
-	sync.Mutex
+	Sync  sync.Mutex
 }
 
-var AgentStore = AgentMetrics{
-	Store: MetricsStore,
+func NewAgentMetrics() *AgentMetrics {
+	return &AgentMetrics{
+		Store: make(map[string]Metrics),
+	}
 }
+
+//var AgentStore = AgentMetrics{
+//	Store: MetricsStore,
+//}
