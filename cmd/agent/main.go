@@ -51,7 +51,6 @@ func main() {
 			go updateOtherMetrics(metrics, wg, &cfg)
 		}
 	}
-	wg.Wait()
 }
 
 //сбор метрики
