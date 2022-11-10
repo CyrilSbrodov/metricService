@@ -10,6 +10,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/CyrilSbrodov/metricService.git/cmd/config"
@@ -23,6 +24,8 @@ var (
 	flagRestore       = "RESTORE"
 	flagStoreInterval = "STORE_INTERVAL"
 	flagStoreFile     = "STORE_FILE"
+	flagHash          = "KEY"
+	flagDatabase      = "DATABASE_DSN"
 )
 
 func init() {
@@ -30,13 +33,16 @@ func init() {
 	flag.StringVar(&flagRestore, "r", "true", "restore from file")
 	flag.StringVar(&flagStoreInterval, "i", "300", "upload interval")
 	flag.StringVar(&flagStoreFile, "f", "/tmp/devops-metrics-db.json", "name of file")
+	flag.StringVar(&flagHash, "k", "КЛЮЧ", "key of hash")
+	flag.StringVar(&flagDatabase, "d", "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable", "name of database")
 }
 func TestHandler_GaugeHandler(t *testing.T) {
 	type want struct {
 		statusCode int
 	}
-	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore)
-	repo, _ := repositories.NewRepository(cfg)
+	logger := zerolog.New(os.Stderr)
+	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase)
+	repo, _ := repositories.NewRepository(cfg, logger)
 
 	type fields struct {
 		Storage storage.Storage
@@ -107,8 +113,9 @@ func TestHandler_CounterHandler(t *testing.T) {
 	type want struct {
 		statusCode int
 	}
-	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore)
-	repo, _ := repositories.NewRepository(cfg)
+	logger := zerolog.New(os.Stderr)
+	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase)
+	repo, _ := repositories.NewRepository(cfg, logger)
 
 	type fields struct {
 		Storage storage.Storage
@@ -179,8 +186,9 @@ func TestHandler_OtherHandler(t *testing.T) {
 	type want struct {
 		statusCode int
 	}
-	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore)
-	repo, _ := repositories.NewRepository(cfg)
+	logger := zerolog.New(os.Stderr)
+	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase)
+	repo, _ := repositories.NewRepository(cfg, logger)
 
 	type fields struct {
 		Storage storage.Storage
@@ -232,8 +240,9 @@ func TestHandler_CollectHandler(t *testing.T) {
 		statusCode int
 	}
 	var value float64 = 123123
-	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore)
-	repo, _ := repositories.NewRepository(cfg)
+	logger := zerolog.New(os.Stderr)
+	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase)
+	repo, _ := repositories.NewRepository(cfg, logger)
 
 	type fields struct {
 		Storage storage.Storage

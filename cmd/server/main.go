@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -12,29 +10,36 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/rs/zerolog"
 
 	"github.com/CyrilSbrodov/metricService.git/cmd/config"
 	"github.com/CyrilSbrodov/metricService.git/internal/handlers"
+	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage/repositories"
+	"github.com/CyrilSbrodov/metricService.git/pkg/client/postgresql"
 )
 
 func main() {
-	flagAddress, flagStoreInterval, flagStoreFile, flagRestore := config.ServerFlagsInit()
-	flag.Parse()
+	cfg := config.ServerConfigInit()
+	logger := zerolog.New(os.Stderr).With().Timestamp().Logger()
 
-	cfg := config.NewConfigServer(*flagAddress, *flagStoreInterval, *flagStoreFile, *flagRestore)
-	tickerUpload := time.NewTicker(cfg.StoreInterval)
 	//определение роутера
 	router := chi.NewRouter()
 	//определение БД
-	repo, err := repositories.NewRepository(cfg)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	//service := storage.NewService(repo)
+	var store storage.Storage
+	var err error
 	//определение хендлера
-	handler := handlers.NewHandler(repo)
+	if len(cfg.DatabaseDSN) != 0 {
+		client, err := postgresql.NewClient(context.Background(), 5, &cfg, logger)
+		checkError(err, logger)
+		store, err = repositories.NewPGSStore(client, &cfg, logger)
+		checkError(err, logger)
+	} else {
+		store, err = repositories.NewRepository(&cfg, logger)
+		checkError(err, logger)
+	}
+
+	handler := handlers.NewHandler(store, logger)
 	//регистрация хендлера
 	handler.Register(router)
 
@@ -43,49 +48,35 @@ func main() {
 		Handler: router,
 	}
 
-	//gracefullshutdown
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
-	//отправка данных на диск, если запись разрешена и файл создан
-	if repo.Check {
-		go uploadWithTicker(tickerUpload, repo, done)
-	}
-
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("listen: %s\n", err)
+			logger.Err(err).Msg("server not started")
 		}
 	}()
-	log.Println("server is listen on", cfg.Addr)
+	logger.Info().Str("server is listen:", cfg.Addr).Msg("start server")
 
+	//gracefullshutdown
 	<-done
 
-	log.Print("Server Stopped")
+	logger.Info().Msg("server stopped")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer func() {
 		cancel()
 	}()
 
-	if err := srv.Shutdown(ctx); err != nil {
+	if err = srv.Shutdown(ctx); err != nil {
 		log.Fatalf("Server Shutdown Failed:%+v", err)
 	}
-	log.Print("Server Exited Properly")
+	logger.Info().Msg("Server Exited Properly")
 }
 
-func uploadWithTicker(ticker *time.Ticker, repo *repositories.Repository, done chan os.Signal) {
-	for {
-		select {
-		case <-ticker.C:
-			err := repo.Upload()
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-		case <-done:
-			ticker.Stop()
-			return
-		}
+func checkError(err error, logger zerolog.Logger) {
+	if err != nil {
+		logger.Err(err)
+		os.Exit(1)
 	}
 }
