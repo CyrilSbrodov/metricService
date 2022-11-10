@@ -9,9 +9,6 @@ import (
 	"syscall"
 	"time"
 
-	//"os/signal"
-	//"syscall"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog"
 
