@@ -184,7 +184,3 @@ func NewAgentMetrics() *AgentMetrics {
 		Store: make(map[string]Metrics),
 	}
 }
-
-//var AgentStore = AgentMetrics{
-//	Store: MetricsStore,
-//}
