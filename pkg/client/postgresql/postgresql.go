@@ -7,9 +7,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/rs/zerolog"
 
 	"github.com/CyrilSbrodov/metricService.git/cmd/config"
+	"github.com/CyrilSbrodov/metricService.git/cmd/loggers"
 )
 
 type Client interface {
@@ -21,7 +21,7 @@ type Client interface {
 	Ping(ctx context.Context) error
 }
 
-func NewClient(ctx context.Context, maxAttempts int, cfg *config.ServerConfig, logger zerolog.Logger) (pool *pgxpool.Pool, err error) {
+func NewClient(ctx context.Context, maxAttempts int, cfg *config.ServerConfig, logger *loggers.Logger) (pool *pgxpool.Pool, err error) {
 	err = DoWithTries(func() error {
 		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 
@@ -29,13 +29,13 @@ func NewClient(ctx context.Context, maxAttempts int, cfg *config.ServerConfig, l
 
 		pool, err = pgxpool.New(ctx, cfg.DatabaseDSN)
 		if err != nil {
-			logger.Error().Err(err).Msg("Failure to connect to PostgreSQL")
+			logger.LogErr(err, "Failure to connect to PostgreSQL")
 		}
 		return nil
 
 	}, maxAttempts, 5*time.Second)
 	if err != nil {
-		logger.Error().Err(err).Msg("Failure to connect to PostgreSQL")
+		logger.LogErr(err, "Failure to connect to PostgreSQL")
 	}
 	return
 }
