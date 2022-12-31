@@ -124,7 +124,7 @@ func upload(client *http.Client, url string, store *storage.AgentMetrics, logger
 			fmt.Println(errJSON)
 			break
 		}
-		req, err := http.NewRequest(http.MethodPost, url+"/update/", bytes.NewBuffer(metricsJSON))
+		req, err := http.NewRequest(http.MethodPost, "http://"+url+"/update/", bytes.NewBuffer(metricsJSON))
 
 		if err != nil {
 			logger.LogErr(err, "Failed to request")
@@ -171,7 +171,7 @@ func uploadBatch(client *http.Client, url string, store *storage.AgentMetrics, l
 	if len(metricsCompress) == 0 {
 		return
 	}
-	req, err := http.NewRequest(http.MethodPost, url+"/updates/", bytes.NewBuffer(metricsCompress))
+	req, err := http.NewRequest(http.MethodPost, "http://"+url+"/updates/", bytes.NewBuffer(metricsCompress))
 
 	if err != nil {
 		logger.LogErr(err, "Failed to request")
