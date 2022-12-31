@@ -148,6 +148,7 @@ func upload(client *http.Client, url string, store *storage.AgentMetrics, logger
 	}
 }
 
+//отправка метрики батчами.
 func uploadBatch(client *http.Client, url string, store *storage.AgentMetrics, logger *loggers.Logger, wg *sync.WaitGroup) {
 	store.Sync.Lock()
 	defer store.Sync.Unlock()
@@ -192,6 +193,7 @@ func uploadBatch(client *http.Client, url string, store *storage.AgentMetrics, l
 	resp.Body.Close()
 }
 
+//функция хеширования.
 func hashing(cfg *config.AgentConfig, m *storage.Metrics) string {
 	var hash string
 	switch m.MType {
@@ -205,6 +207,7 @@ func hashing(cfg *config.AgentConfig, m *storage.Metrics) string {
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
+//функция сжатия данных.
 func compress(store []byte, logger *loggers.Logger) ([]byte, error) {
 	var b bytes.Buffer
 	w := gzip.NewWriter(&b)
@@ -222,6 +225,7 @@ func compress(store []byte, logger *loggers.Logger) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
+//сбор остальных метрик.
 func updateOtherMetrics(store *storage.AgentMetrics, wg *sync.WaitGroup, cfg *config.AgentConfig) {
 	store.Sync.Lock()
 	defer store.Sync.Unlock()

@@ -36,6 +36,118 @@ func init() {
 	flag.StringVar(&flagHash, "k", "КЛЮЧ", "key of hash")
 	flag.StringVar(&flagDatabase, "d", "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable", "name of database")
 }
+func TestHandler_CollectHandler(t *testing.T) {
+	type want struct {
+		statusCode int
+	}
+	var value float64 = 123123
+	logger := loggers.NewLogger()
+	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase)
+	repo, _ := repositories.NewRepository(cfg, logger)
+
+	type fields struct {
+		Storage storage.Storage
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		want    want
+		request string
+		req     storage.Metrics
+	}{
+		{
+			name: "Test ok",
+			fields: fields{
+				repo,
+			},
+			request: "http://localhost:8080/update",
+			want: want{
+				200,
+			},
+			req: storage.Metrics{
+				ID:    "Alloc",
+				MType: "gauge",
+				Value: &value,
+			},
+		},
+		{
+			name: "Test ok",
+			fields: fields{
+				repo,
+			},
+			request: "http://localhost:8080/update/",
+			want: want{
+				200,
+			},
+			req: storage.Metrics{
+				ID:    "Alloc",
+				MType: "gauge",
+				Value: &value,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metricsJSON, err := json.Marshal(tt.req)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			request := httptest.NewRequest(http.MethodPost, tt.request, bytes.NewBuffer(metricsJSON))
+			w := httptest.NewRecorder()
+			h := handlers.Handler{
+				Storage: tt.fields.Storage,
+			}
+			h.CollectHandler().ServeHTTP(w, request)
+			result := w.Result()
+			defer result.Body.Close()
+			assert.Equal(t, tt.want.statusCode, result.StatusCode)
+		})
+	}
+}
+
+func TestHandler_GetAllHandler(t *testing.T) {
+	type want struct {
+		statusCode int
+	}
+
+	logger := loggers.NewLogger()
+	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase)
+	repo, _ := repositories.NewRepository(cfg, logger)
+
+	type fields struct {
+		Storage storage.Storage
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   want
+	}{
+		{
+			name: "status 200",
+			fields: fields{
+				Storage: repo,
+			},
+			want: want{
+				statusCode: http.StatusOK,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodGet, "/", nil)
+			w := httptest.NewRecorder()
+			h := handlers.Handler{
+				Storage: tt.fields.Storage,
+			}
+			h.GetAllHandler().ServeHTTP(w, request)
+			result := w.Result()
+			defer result.Body.Close()
+			assert.Equal(t, tt.want.statusCode, result.StatusCode)
+		})
+	}
+}
+
 func TestHandler_GaugeHandler(t *testing.T) {
 	type want struct {
 		statusCode int
@@ -71,6 +183,16 @@ func TestHandler_GaugeHandler(t *testing.T) {
 			request: "http://localhost:8080/update/gaug/test/100",
 			want: want{
 				501,
+			},
+		},
+		{
+			name: "Test 404",
+			fields: fields{
+				repo,
+			},
+			request: "http://localhost:8080/updat/gaug/test/100",
+			want: want{
+				404,
 			},
 		},
 		{
@@ -235,7 +357,140 @@ func TestHandler_OtherHandler(t *testing.T) {
 	}
 }
 
-func TestHandler_CollectHandler(t *testing.T) {
+func TestHandler_GetHandlerJSON(t *testing.T) {
+	var delta int64 = 100
+	logger := loggers.NewLogger()
+	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase)
+	repo, _ := repositories.NewRepository(cfg, logger)
+	repo.Metrics = make(map[string]storage.Metrics)
+	var m = storage.Metrics{
+		ID:    "test",
+		MType: "counter",
+		Delta: &delta,
+	}
+	repo.Metrics[m.ID] = m
+
+	type fields struct {
+		Storage storage.Storage
+		logger  loggers.Logger
+	}
+	tests := []struct {
+		name         string
+		body         storage.Metrics
+		expectedCode int
+		fields       fields
+	}{
+		{
+			name: "Test ok",
+			body: m,
+			fields: fields{
+				Storage: repo,
+				logger:  *logger,
+			},
+			expectedCode: http.StatusOK,
+		},
+		{
+			name: "Test 404",
+			body: storage.Metrics{
+				ID:    "testWrong",
+				MType: "counter",
+				Delta: &delta,
+			},
+			fields: fields{
+				Storage: repo,
+				logger:  *logger,
+			},
+			expectedCode: http.StatusNotFound,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metricsJSON, err := json.Marshal(tt.body)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			request := httptest.NewRequest(http.MethodPost, "/value/", bytes.NewBuffer(metricsJSON))
+			w := httptest.NewRecorder()
+			h := handlers.Handler{
+				Storage: tt.fields.Storage,
+			}
+			h.GetHandlerJSON().ServeHTTP(w, request)
+			result := w.Result()
+			defer result.Body.Close()
+			assert.Equal(t, tt.expectedCode, result.StatusCode)
+		})
+	}
+}
+
+func TestHandler_GetHandler(t *testing.T) {
+	var delta int64 = 100
+	var val float64 = 100
+	logger := loggers.NewLogger()
+	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase)
+	repo, _ := repositories.NewRepository(cfg, logger)
+	repo.Metrics = make(map[string]storage.Metrics)
+	var m = storage.Metrics{
+		ID:    "test",
+		MType: "gauge",
+		Value: &val,
+	}
+	repo.Counter[m.ID] = delta
+	repo.Metrics[m.ID] = m
+	type fields struct {
+		Storage storage.Storage
+		logger  loggers.Logger
+	}
+	tests := []struct {
+		name         string
+		request      string
+		expectedCode int
+		fields       fields
+	}{
+		{
+			name:    "Test ok",
+			request: "http://localhost:8080/value/counter/test/100",
+			fields: fields{
+				Storage: repo,
+				logger:  *logger,
+			},
+			expectedCode: http.StatusOK,
+		},
+		{
+			name:    "Test 404",
+			request: "http://localhost:8080/value/gauge/testWrong/100",
+			fields: fields{
+				Storage: repo,
+				logger:  *logger,
+			},
+			expectedCode: http.StatusNotFound,
+		},
+		{
+			name:    "Test 501",
+			request: "http://localhost:8080/value/test/100",
+			fields: fields{
+				Storage: repo,
+				logger:  *logger,
+			},
+			expectedCode: http.StatusNotImplemented,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodGet, tt.request, nil)
+			w := httptest.NewRecorder()
+			h := handlers.Handler{
+				Storage: tt.fields.Storage,
+			}
+			h.GetHandler().ServeHTTP(w, request)
+			result := w.Result()
+			defer result.Body.Close()
+			assert.Equal(t, tt.expectedCode, result.StatusCode)
+		})
+	}
+}
+
+func TestHandler_CollectBatchHandler(t *testing.T) {
 	type want struct {
 		statusCode int
 	}
@@ -247,57 +502,43 @@ func TestHandler_CollectHandler(t *testing.T) {
 	type fields struct {
 		Storage storage.Storage
 	}
+
 	tests := []struct {
 		name    string
 		fields  fields
 		want    want
 		request string
-		req     storage.Metrics
+		req     []storage.Metrics
 	}{
 		{
 			name: "Test ok",
 			fields: fields{
 				repo,
 			},
-			request: "http://localhost:8080/update",
+			request: "http://localhost:8080/updates",
 			want: want{
 				200,
 			},
-			req: storage.Metrics{
-				ID:    "Alloc",
-				MType: "gauge",
-				Value: &value,
-			},
-		},
-		{
-			name: "Test ok",
-			fields: fields{
-				repo,
-			},
-			request: "http://localhost:8080/update/",
-			want: want{
-				200,
-			},
-			req: storage.Metrics{
-				ID:    "Alloc",
-				MType: "gauge",
-				Value: &value,
+			req: []storage.Metrics{
+				{
+					ID:    "Alloc",
+					MType: "gauge",
+					Value: &value,
+				},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			metricsJSON, err := json.Marshal(tt.req)
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
+			assert.NoError(t, err)
+
 			request := httptest.NewRequest(http.MethodPost, tt.request, bytes.NewBuffer(metricsJSON))
 			w := httptest.NewRecorder()
 			h := handlers.Handler{
 				Storage: tt.fields.Storage,
 			}
-			h.CollectHandler().ServeHTTP(w, request)
+			h.CollectBatchHandler().ServeHTTP(w, request)
 			result := w.Result()
 			defer result.Body.Close()
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)

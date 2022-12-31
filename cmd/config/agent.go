@@ -9,6 +9,7 @@ import (
 	"github.com/caarlos0/env/v6"
 )
 
+// AgentConfig структура конфига для агента.
 type AgentConfig struct {
 	Addr           string        `env:"ADDRESS"`
 	PollInterval   time.Duration `env:"POLL_INTERVAL"`
@@ -18,6 +19,7 @@ type AgentConfig struct {
 
 var cfgAgent AgentConfig
 
+// AgentConfigInit инициализая конфига.
 func AgentConfigInit() AgentConfig {
 	flag.StringVar(&cfgAgent.Addr, "a", "localhost:8080", "ADDRESS")
 	flag.DurationVar(&cfgAgent.PollInterval, "p", time.Duration(2)*time.Second, "update interval")

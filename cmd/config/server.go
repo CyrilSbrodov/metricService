@@ -9,6 +9,7 @@ import (
 	"github.com/caarlos0/env/v6"
 )
 
+// ServerConfig структура конфига для сервера.
 type ServerConfig struct {
 	Addr          string        `env:"ADDRESS"`
 	StoreInterval time.Duration `env:"STORE_INTERVAL"`
@@ -20,6 +21,7 @@ type ServerConfig struct {
 
 var cfgSrv ServerConfig
 
+// ServerConfigInit инициализация конфига.
 func ServerConfigInit() ServerConfig {
 	flag.StringVar(&cfgSrv.Addr, "a", "localhost:8080", "ADDRESS")
 	flag.DurationVar(&cfgSrv.StoreInterval, "i", time.Duration(300)*time.Second, "STORE_INTERVAL")
