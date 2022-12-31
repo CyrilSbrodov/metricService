@@ -146,7 +146,7 @@ func TestRepository_CollectMetrics(t *testing.T) {
 func TestRepository_CollectOrChangeGauge(t *testing.T) {
 	repo, _ := NewRepository(&CFG, nil)
 	type fields struct {
-		repo Repository
+		repo *Repository
 	}
 	var value float64 = 100
 	type args struct {
@@ -160,7 +160,7 @@ func TestRepository_CollectOrChangeGauge(t *testing.T) {
 		{
 			name: "test OK",
 			fields: fields{
-				repo: *repo,
+				repo: repo,
 			},
 			args: args{m: storage.Metrics{
 				ID:    "test",
@@ -182,7 +182,7 @@ func TestRepository_CollectOrChangeGauge(t *testing.T) {
 func TestRepository_CollectOrIncreaseCounter(t *testing.T) {
 	repo, _ := NewRepository(&CFG, nil)
 	type fields struct {
-		repo Repository
+		repo *Repository
 	}
 	var delta int64 = 100
 	type args struct {
@@ -196,7 +196,7 @@ func TestRepository_CollectOrIncreaseCounter(t *testing.T) {
 		{
 			name: "test OK",
 			fields: fields{
-				repo: *repo,
+				repo: repo,
 			},
 			args: args{m: storage.Metrics{
 				ID:    "test",
@@ -218,7 +218,7 @@ func TestRepository_CollectOrIncreaseCounter(t *testing.T) {
 func TestRepository_GetAll(t *testing.T) {
 	repo, _ := NewRepository(&CFG, nil)
 	type fields struct {
-		repo Repository
+		repo *Repository
 	}
 	var delta int64 = 100
 	repo.Metrics["test"] = storage.Metrics{
@@ -237,7 +237,7 @@ func TestRepository_GetAll(t *testing.T) {
 		{
 			name: "test OK",
 			fields: fields{
-				repo: *repo,
+				repo: repo,
 			},
 			want: "test : 100<br>\n",
 		},
