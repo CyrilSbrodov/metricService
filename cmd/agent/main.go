@@ -144,7 +144,6 @@ func upload(client *http.Client, url string, store *storage.AgentMetrics, logger
 			logger.LogErr(err, "Failed to read body")
 			break
 		}
-	_:
 		resp.Body.Close()
 	}
 }
@@ -191,7 +190,7 @@ func uploadBatch(client *http.Client, url string, store *storage.AgentMetrics, l
 		logger.LogErr(err, "Failed to read body")
 		return
 	}
-_:
+
 	resp.Body.Close()
 }
 
