@@ -28,8 +28,6 @@ type Handler struct {
 
 // Register создание роутеров
 func (h *Handler) Register(r *chi.Mux) {
-	//compressor := middleware.NewCompressor(gzip.DefaultCompression)
-	//r.Use(compressor.Handler)
 	r.Post("/value/", gzipHandle(h.GetHandlerJSON()))
 	r.Get("/value/*", gzipHandle(h.GetHandler()))
 	r.Get("/", gzipHandle(h.GetAllHandler()))
