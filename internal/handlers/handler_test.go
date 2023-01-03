@@ -42,8 +42,8 @@ func TestHandler_CollectHandler(t *testing.T) {
 	}
 	var value float64 = 123123
 	logger := loggers.NewLogger()
-	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase)
-	repo, _ := repositories.NewRepository(cfg, logger)
+	cfg := config.ServerConfigInit()
+	repo, _ := repositories.NewRepository(&cfg, logger)
 
 	type fields struct {
 		Storage storage.Storage
