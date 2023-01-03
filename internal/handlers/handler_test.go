@@ -3,7 +3,6 @@ package handlers_test
 import (
 	"bytes"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -20,30 +19,22 @@ import (
 )
 
 var (
-	flagAddress       = "ADDRESS"
-	flagRestore       = "RESTORE"
-	flagStoreInterval = "STORE_INTERVAL"
-	flagStoreFile     = "STORE_FILE"
-	flagHash          = "KEY"
-	flagDatabase      = "DATABASE_DSN"
+	CFG config.ServerConfig
 )
 
-func init() {
-	flag.StringVar(&flagAddress, "a", "localhost:8080", "address of service")
-	flag.StringVar(&flagRestore, "r", "true", "restore from file")
-	flag.StringVar(&flagStoreInterval, "i", "300", "upload interval")
-	flag.StringVar(&flagStoreFile, "f", "/tmp/devops-metrics-db.json", "name of file")
-	flag.StringVar(&flagHash, "k", "КЛЮЧ", "key of hash")
-	flag.StringVar(&flagDatabase, "d", "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable", "name of database")
+func TestMain(m *testing.M) {
+	cfg := config.ServerConfigInit()
+	CFG = cfg
+	os.Exit(m.Run())
 }
+
 func TestHandler_CollectHandler(t *testing.T) {
 	type want struct {
 		statusCode int
 	}
 	var value float64 = 123123
 	logger := loggers.NewLogger()
-	cfg := config.ServerConfigInit()
-	repo, _ := repositories.NewRepository(&cfg, logger)
+	repo, _ := repositories.NewRepository(&CFG, logger)
 
 	type fields struct {
 		Storage storage.Storage
@@ -112,8 +103,7 @@ func TestHandler_GetAllHandler(t *testing.T) {
 	}
 
 	logger := loggers.NewLogger()
-	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase)
-	repo, _ := repositories.NewRepository(cfg, logger)
+	repo, _ := repositories.NewRepository(&CFG, logger)
 
 	type fields struct {
 		Storage storage.Storage
@@ -153,8 +143,7 @@ func TestHandler_GaugeHandler(t *testing.T) {
 		statusCode int
 	}
 	logger := loggers.NewLogger()
-	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase)
-	repo, _ := repositories.NewRepository(cfg, logger)
+	repo, _ := repositories.NewRepository(&CFG, logger)
 
 	type fields struct {
 		Storage storage.Storage
@@ -236,8 +225,7 @@ func TestHandler_CounterHandler(t *testing.T) {
 		statusCode int
 	}
 	logger := loggers.NewLogger()
-	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase)
-	repo, _ := repositories.NewRepository(cfg, logger)
+	repo, _ := repositories.NewRepository(&CFG, logger)
 
 	type fields struct {
 		Storage storage.Storage
@@ -309,8 +297,7 @@ func TestHandler_OtherHandler(t *testing.T) {
 		statusCode int
 	}
 	logger := loggers.NewLogger()
-	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase)
-	repo, _ := repositories.NewRepository(cfg, logger)
+	repo, _ := repositories.NewRepository(&CFG, logger)
 
 	type fields struct {
 		Storage storage.Storage
@@ -360,8 +347,8 @@ func TestHandler_OtherHandler(t *testing.T) {
 func TestHandler_GetHandlerJSON(t *testing.T) {
 	var delta int64 = 100
 	logger := loggers.NewLogger()
-	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase)
-	repo, _ := repositories.NewRepository(cfg, logger)
+	repo, _ := repositories.NewRepository(&CFG, logger)
+
 	repo.Metrics = make(map[string]storage.Metrics)
 	var m = storage.Metrics{
 		ID:    "test",
@@ -427,8 +414,8 @@ func TestHandler_GetHandler(t *testing.T) {
 	var delta int64 = 100
 	var val float64 = 100
 	logger := loggers.NewLogger()
-	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase)
-	repo, _ := repositories.NewRepository(cfg, logger)
+	repo, _ := repositories.NewRepository(&CFG, logger)
+
 	repo.Metrics = make(map[string]storage.Metrics)
 	var m = storage.Metrics{
 		ID:    "test",
@@ -496,8 +483,7 @@ func TestHandler_CollectBatchHandler(t *testing.T) {
 	}
 	var value float64 = 123123
 	logger := loggers.NewLogger()
-	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase)
-	repo, _ := repositories.NewRepository(cfg, logger)
+	repo, _ := repositories.NewRepository(&CFG, logger)
 
 	type fields struct {
 		Storage storage.Storage
@@ -548,8 +534,7 @@ func TestHandler_CollectBatchHandler(t *testing.T) {
 
 func newRepo() *repositories.Repository {
 	logger := loggers.NewLogger()
-	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase)
-	repo, _ := repositories.NewRepository(cfg, logger)
+	repo, _ := repositories.NewRepository(&CFG, logger)
 	return repo
 }
 
