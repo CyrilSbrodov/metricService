@@ -1,3 +1,6 @@
+/*
+Package handlers работа с эндпоинтами
+*/
 package handlers
 
 import (

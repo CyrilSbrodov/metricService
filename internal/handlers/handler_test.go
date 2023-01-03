@@ -42,8 +42,8 @@ func TestHandler_CollectHandler(t *testing.T) {
 	}
 	var value float64 = 123123
 	logger := loggers.NewLogger()
-	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase)
-	repo, _ := repositories.NewRepository(cfg, logger)
+	cfg := config.ServerConfigInit()
+	repo, _ := repositories.NewRepository(&cfg, logger)
 
 	type fields struct {
 		Storage storage.Storage
@@ -544,4 +544,80 @@ func TestHandler_CollectBatchHandler(t *testing.T) {
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 		})
 	}
+}
+
+func newRepo() *repositories.Repository {
+	logger := loggers.NewLogger()
+	cfg := config.NewConfigServer(flagAddress, flagStoreInterval, flagStoreFile, flagRestore, flagHash, flagDatabase)
+	repo, _ := repositories.NewRepository(cfg, logger)
+	return repo
+}
+
+func newMetric() storage.Metrics {
+	var value float64 = 100
+	return storage.Metrics{
+		ID:    "test",
+		MType: "gauge",
+		Delta: nil,
+		Value: &value,
+		Hash:  "",
+	}
+}
+func ExampleHandler_CollectHandler() {
+	repo := newRepo()
+	m := newMetric()
+
+	metricsJSON, err := json.Marshal(m)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	req := "http://localhost:8080/update/"
+	request := httptest.NewRequest(http.MethodPost, req, bytes.NewBuffer(metricsJSON))
+	w := httptest.NewRecorder()
+	h := handlers.Handler{
+		Storage: repo,
+	}
+	h.CollectHandler().ServeHTTP(w, request)
+	result := w.Result()
+	defer result.Body.Close()
+	fmt.Println(result.StatusCode)
+
+	//Output:
+	//200
+}
+
+func ExampleHandler_GetAllHandler() {
+	repo := newRepo()
+	var value float64 = 150
+	repo.Metrics["test"] = storage.Metrics{
+		ID:    "test",
+		MType: "gauge",
+		Delta: nil,
+		Value: &value,
+		Hash:  "",
+	}
+	repo.Metrics["Alloc"] = newMetric()
+
+	request := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+	h := handlers.Handler{
+		Storage: repo,
+	}
+	h.GetAllHandler().ServeHTTP(w, request)
+	metrics, err := h.GetAll()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	result := w.Result()
+	defer result.Body.Close()
+	fmt.Println(result.StatusCode)
+	fmt.Println(metrics)
+
+	//Output:
+	//200
+	//Alloc : 100.000000<br>
+	//test : 150.000000<br>
+
 }
