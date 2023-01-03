@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
@@ -30,12 +31,21 @@ func main() {
 	//определение хендлера
 	if len(cfg.DatabaseDSN) != 0 {
 		client, err := postgresql.NewClient(context.Background(), 5, &cfg, logger)
-		checkError(err, logger)
+		if err != nil {
+			logger.LogErr(err, "")
+			os.Exit(1)
+		}
 		store, err = repositories.NewPGSStore(client, &cfg, logger)
-		checkError(err, logger)
+		if err != nil {
+			logger.LogErr(err, "")
+			os.Exit(1)
+		}
 	} else {
 		store, err = repositories.NewRepository(&cfg, logger)
-		checkError(err, logger)
+		if err != nil {
+			logger.LogErr(err, "")
+			os.Exit(1)
+		}
 	}
 
 	handler := handlers.NewHandler(store, logger)
@@ -71,11 +81,4 @@ func main() {
 		logger.LogErr(err, "Server Shutdown Failed")
 	}
 	logger.LogInfo("", "", "Server Exited Properly")
-}
-
-func checkError(err error, logger *loggers.Logger) {
-	if err != nil {
-		logger.LogErr(err, "")
-		os.Exit(1)
-	}
 }

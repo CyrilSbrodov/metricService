@@ -18,7 +18,7 @@ import (
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 )
 
-//создание структуры репозитория
+// Repository структура репозитория.
 type Repository struct {
 	Metrics       map[string]storage.Metrics
 	Gauge         map[string]float64
@@ -32,13 +32,14 @@ type Repository struct {
 	sync          sync.Mutex
 }
 
+// NewRepository создание нового репозитория.
 func NewRepository(cfg *config.ServerConfig, logger *loggers.Logger) (*Repository, error) {
 	metrics := storage.MetricsStore
 	gauge := storage.GaugeData
 	counter := storage.CounterData
 	check := false
 
-	//определение сбора данных из файла
+	//определение сбора данных из файла.
 	if cfg.Restore {
 		err := restore(&metrics, cfg, logger)
 		if err != nil {
@@ -64,6 +65,7 @@ func NewRepository(cfg *config.ServerConfig, logger *loggers.Logger) (*Repositor
 		Check:         check,
 		StoreInterval: cfg.StoreInterval,
 	}
+
 	if file != nil {
 		ticker := time.NewTicker(cfg.StoreInterval)
 		go uploadWithTicker(ticker, repo, logger)
@@ -81,6 +83,7 @@ func NewRepository(cfg *config.ServerConfig, logger *loggers.Logger) (*Repositor
 	}, nil
 }
 
+// CollectMetric сохранение метрики.
 func (r *Repository) CollectMetric(m storage.Metrics) error {
 	if m.Hash != "" {
 		_, ok := hashing(r.Hash, &m, &r.logger)
@@ -110,6 +113,7 @@ func (r *Repository) CollectMetric(m storage.Metrics) error {
 	return nil
 }
 
+// CollectMetrics сохранение метрик батчами.
 func (r *Repository) CollectMetrics(metrics []storage.Metrics) error {
 	for _, m := range metrics {
 		switch m.MType {
@@ -132,6 +136,7 @@ func (r *Repository) CollectMetrics(metrics []storage.Metrics) error {
 	return nil
 }
 
+// GetMetric выгрузка метрики.
 func (r *Repository) GetMetric(m storage.Metrics) (storage.Metrics, error) {
 	if m.MType == "gauge" || m.MType == "counter" {
 		metric, ok := r.Metrics[m.ID]
@@ -149,7 +154,7 @@ func (r *Repository) GetMetric(m storage.Metrics) (storage.Metrics, error) {
 	}
 }
 
-//получение всех метрик
+// GetAll получение всех метрик.
 func (r *Repository) GetAll() (string, error) {
 	result := ""
 	keys := make([]string, 0, len(r.Metrics))
@@ -168,6 +173,7 @@ func (r *Repository) GetAll() (string, error) {
 	return result, nil
 }
 
+// CollectOrChangeGauge сохранение или изменение метрики типа Gauge.
 func (r *Repository) CollectOrChangeGauge(name string, value float64) error {
 	r.Gauge[name] = value
 	var m storage.Metrics
@@ -178,6 +184,7 @@ func (r *Repository) CollectOrChangeGauge(name string, value float64) error {
 	return nil
 }
 
+// CollectOrIncreaseCounter сохранение или изменение метрики типа Counter.
 func (r *Repository) CollectOrIncreaseCounter(name string, value int64) error {
 	val, ok := r.Counter[name]
 	if !ok {
@@ -189,6 +196,7 @@ func (r *Repository) CollectOrIncreaseCounter(name string, value int64) error {
 	return nil
 }
 
+// GetGauge выгрузка метрики типа Gauge.
 func (r *Repository) GetGauge(name string) (float64, error) {
 	value, ok := r.Metrics[name]
 	if !ok {
@@ -198,6 +206,7 @@ func (r *Repository) GetGauge(name string) (float64, error) {
 	return *value.Value, nil
 }
 
+// GetCounter выгрузка метрики типа Counter.
 func (r *Repository) GetCounter(name string) (int64, error) {
 	value, ok := r.Counter[name]
 	if !ok {
@@ -207,6 +216,7 @@ func (r *Repository) GetCounter(name string) (int64, error) {
 	return value, nil
 }
 
+// PingClient проверка клиента.
 func (r *Repository) PingClient() error {
 	db, err := sql.Open("postgres", r.Dsn)
 	if err != nil {
@@ -217,7 +227,7 @@ func (r *Repository) PingClient() error {
 	return db.Ping()
 }
 
-//функция забора данных из файла при запуске
+//функция забора данных из файла при запуске.
 func restore(store *map[string]storage.Metrics, cfg *config.ServerConfig, logger *loggers.Logger) error {
 
 	file, err := os.OpenFile(cfg.StoreFile, os.O_RDONLY|os.O_CREATE, 0777)
@@ -239,7 +249,7 @@ func restore(store *map[string]storage.Metrics, cfg *config.ServerConfig, logger
 	return nil
 }
 
-//функция загрузки данных на диск
+// Upload функция загрузки данных на диск.
 func (r *Repository) Upload() error {
 	data, err := json.Marshal(&r.Metrics)
 	if err != nil {
@@ -260,6 +270,7 @@ func (r *Repository) Upload() error {
 	return nil
 }
 
+//функция хеширования.
 func hashing(hashKey string, m *storage.Metrics, logger *loggers.Logger) (string, bool) {
 	var hash string
 	switch m.MType {
@@ -278,6 +289,7 @@ func hashing(hashKey string, m *storage.Metrics, logger *loggers.Logger) (string
 	return fmt.Sprintf("%x", h.Sum(nil)), hmac.Equal(h.Sum(nil), hashAccept)
 }
 
+//создание нового файла.
 func newStoreFile(filename string, logger *loggers.Logger) (*os.File, error) {
 	if len(filename) == 0 {
 		return nil, nil
@@ -290,6 +302,7 @@ func newStoreFile(filename string, logger *loggers.Logger) (*os.File, error) {
 	return file, nil
 }
 
+//функция загрузки данных в файл по тикеру.
 func uploadWithTicker(ticker *time.Ticker, repo *Repository, logger *loggers.Logger) {
 	for range ticker.C {
 		if err := repo.Upload(); err != nil {
