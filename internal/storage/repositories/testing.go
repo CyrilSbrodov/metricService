@@ -14,7 +14,7 @@ import (
 func TestPGStore(t *testing.T, cfg config.ServerConfig) (*PGSStore, func(...string)) {
 	t.Helper()
 
-	cfg.DatabaseDSN = "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
+	cfg.DatabaseDSN = "postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable"
 	logger := loggers.NewLogger()
 	client, err := postgresql.NewClient(context.Background(), 5, &cfg, logger)
 	if err != nil {
