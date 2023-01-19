@@ -16,12 +16,14 @@ import (
 	"github.com/CyrilSbrodov/metricService.git/pkg/client/postgresql"
 )
 
+// PGSStore объявление структуры PostgreSQL.
 type PGSStore struct {
 	client postgresql.Client
 	Hash   string
 	logger loggers.Logger
 }
 
+// Создание таблиц в базе.
 func createTable(ctx context.Context, client postgresql.Client, logger *loggers.Logger) error {
 	tx, err := client.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
@@ -48,6 +50,7 @@ func createTable(ctx context.Context, client postgresql.Client, logger *loggers.
 	return tx.Commit(ctx)
 }
 
+// NewPGSStore создание новой базы.
 func NewPGSStore(client postgresql.Client, cfg *config.ServerConfig, logger *loggers.Logger) (*PGSStore, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -63,6 +66,7 @@ func NewPGSStore(client postgresql.Client, cfg *config.ServerConfig, logger *log
 	}, nil
 }
 
+// GetMetric выгрузка метрики.
 func (p *PGSStore) GetMetric(metric storage.Metrics) (storage.Metrics, error) {
 	var m storage.Metrics
 	if metric.MType == "counter" || metric.MType == "gauge" {
@@ -83,6 +87,7 @@ func (p *PGSStore) GetMetric(metric storage.Metrics) (storage.Metrics, error) {
 	}
 }
 
+// GetAll выгрузка всех метрик.
 func (p *PGSStore) GetAll() (string, error) {
 	var metrics []storage.Metrics
 	q := `SELECT id, mType, delta, value, hash FROM metrics`
@@ -115,6 +120,7 @@ func (p *PGSStore) GetAll() (string, error) {
 	return result, nil
 }
 
+// CollectMetric Сохранение метрики в БД.
 func (p *PGSStore) CollectMetric(m storage.Metrics) error {
 
 	if m.Hash != "" {
@@ -143,6 +149,7 @@ func (p *PGSStore) CollectMetric(m storage.Metrics) error {
 	return nil
 }
 
+// CollectOrChangeGauge Сохранение или изменение метрики типа Gauge.
 func (p *PGSStore) CollectOrChangeGauge(id string, value float64) error {
 	mType := "gauge"
 	hash := ""
@@ -158,6 +165,7 @@ func (p *PGSStore) CollectOrChangeGauge(id string, value float64) error {
 	return nil
 }
 
+// CollectOrIncreaseCounter Сохранение или изменение метрики типа Counter.
 func (p *PGSStore) CollectOrIncreaseCounter(id string, delta int64) error {
 	mType := "counter"
 	hash := ""
@@ -173,6 +181,7 @@ func (p *PGSStore) CollectOrIncreaseCounter(id string, delta int64) error {
 	return nil
 }
 
+// GetGauge Выгрузка метрики типа Gauge.
 func (p *PGSStore) GetGauge(id string) (float64, error) {
 	var value float64
 	mType := "gauge"
@@ -188,6 +197,7 @@ func (p *PGSStore) GetGauge(id string) (float64, error) {
 	return value, nil
 }
 
+// GetCounter Выгрузка метрики типа Counter.
 func (p *PGSStore) GetCounter(id string) (int64, error) {
 	var delta int64
 	mType := "counter"
@@ -207,6 +217,7 @@ func (p *PGSStore) PingClient() error {
 	return p.client.Ping(context.Background())
 }
 
+// CollectMetrics Сохранение метрики батчами.
 func (p *PGSStore) CollectMetrics(metrics []storage.Metrics) error {
 
 	tx, err := p.client.BeginTx(context.Background(), pgx.TxOptions{})
