@@ -77,7 +77,7 @@ func (a *AgentApp) upload(store *storage.AgentMetrics, wg *sync.WaitGroup) {
 			fmt.Println(errJSON)
 			break
 		}
-		req, err := http.NewRequest(http.MethodPost, a.cfg.Addr+"/update/", bytes.NewBuffer(metricsJSON))
+		req, err := http.NewRequest(http.MethodPost, "http://"+a.cfg.Addr+"/update/", bytes.NewBuffer(metricsJSON))
 		//"http://"+
 		if err != nil {
 			a.logger.LogErr(err, "Failed to request")
@@ -124,7 +124,7 @@ func (a *AgentApp) uploadBatch(store *storage.AgentMetrics, wg *sync.WaitGroup) 
 	if len(metricsCompress) == 0 {
 		return
 	}
-	req, err := http.NewRequest(http.MethodPost, a.cfg.Addr+"/updates/", bytes.NewBuffer(metricsCompress))
+	req, err := http.NewRequest(http.MethodPost, "http://"+a.cfg.Addr+"/updates/", bytes.NewBuffer(metricsCompress))
 	//"http://"+
 	if err != nil {
 		a.logger.LogErr(err, "Failed to request")
