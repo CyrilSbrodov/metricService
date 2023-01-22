@@ -1,3 +1,6 @@
+/*
+	Package config создание конфиг файла для агента
+*/
 package config
 
 import (
@@ -12,9 +15,9 @@ import (
 // AgentConfig структура конфига для агента.
 type AgentConfig struct {
 	Addr           string        `env:"ADDRESS"`
+	Hash           string        `env:"KEY"`
 	PollInterval   time.Duration `env:"POLL_INTERVAL"`
 	ReportInterval time.Duration `env:"REPORT_INTERVAL"`
-	Hash           string        `env:"KEY"`
 }
 
 var cfgAgent AgentConfig

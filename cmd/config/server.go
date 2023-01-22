@@ -1,3 +1,6 @@
+/*
+	Package config создание конфиг файла для сервера
+*/
 package config
 
 import (
@@ -12,11 +15,11 @@ import (
 // ServerConfig структура конфига для сервера.
 type ServerConfig struct {
 	Addr          string        `env:"ADDRESS"`
-	StoreInterval time.Duration `env:"STORE_INTERVAL"`
 	StoreFile     string        `env:"STORE_FILE"`
-	Restore       bool          `env:"RESTORE"`
 	Hash          string        `env:"KEY"`
 	DatabaseDSN   string        `env:"DATABASE_DSN"`
+	Restore       bool          `env:"RESTORE"`
+	StoreInterval time.Duration `env:"STORE_INTERVAL"`
 }
 
 var cfgSrv ServerConfig
