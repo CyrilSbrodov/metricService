@@ -22,7 +22,7 @@ func main() {
 	if buildVersion == "" {
 		buildVersion = "N/A"
 	}
-	fmt.Printf("Build version: %s\nbuildDate: %s\nbuildCommit: %s\n", buildVersion, buildDate, buildCommit)
+	fmt.Printf("Build version: %s\nBuild date: %s\nBuild commit: %s\n", buildVersion, buildDate, buildCommit)
 
 	agent := app.NewAgentApp()
 	agent.Run()

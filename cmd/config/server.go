@@ -32,7 +32,6 @@ func ServerConfigInit() ServerConfig {
 	flag.BoolVar(&cfgSrv.Restore, "r", true, "RESTORE")
 	flag.StringVar(&cfgSrv.Hash, "k", "", "KEY")
 	flag.StringVar(&cfgSrv.DatabaseDSN, "d", "", "DATABASE_DSN")
-	//"postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
 	flag.Parse()
 	if err := env.Parse(&cfgSrv); err != nil {
 		fmt.Println(err)

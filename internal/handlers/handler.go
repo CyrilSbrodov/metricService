@@ -1,5 +1,5 @@
 /*
-Package handlers работа с эндпоинтами
+	Package handlers работа с эндпоинтами
 */
 package handlers
 
