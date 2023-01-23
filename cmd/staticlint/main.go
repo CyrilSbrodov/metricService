@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/multichecker"
 	"golang.org/x/tools/go/analysis/passes/asmdecl"
@@ -48,17 +46,18 @@ import (
 	"golang.org/x/tools/go/analysis/passes/usesgenerics"
 	"honnef.co/go/tools/staticcheck"
 	"honnef.co/go/tools/stylecheck"
+
+	"github.com/CyrilSbrodov/metricService.git/cmd/staticlint/checkosexit"
 )
 
 func main() {
-	// определяем map подключаемых правил
-
+	// создаем слайс анализаторов
 	var mychecks []*analysis.Analyzer
 	for _, v := range staticcheck.Analyzers {
 		// добавляем в массив нужные проверки
 		mychecks = append(mychecks, v.Analyzer)
 	}
-
+	// определяем подключаемые анализаторы
 	mychecks = append(mychecks,
 		asmdecl.Analyzer, assign.Analyzer, atomic.Analyzer, atomicalign.Analyzer, bools.Analyzer,
 		buildssa.Analyzer, buildtag.Analyzer, cgocall.Analyzer, composite.Analyzer, copylock.Analyzer,
@@ -74,11 +73,10 @@ func main() {
 	for _, ch := range stylecheck.Analyzers {
 		mychecks = append(mychecks, ch.Analyzer)
 	}
-
-	fmt.Println(mychecks)
+	// добавляем собственный анализатор
+	mychecks = append(mychecks, checkosexit.Analyzer)
 
 	multichecker.Main(
 		mychecks...,
 	)
-	fmt.Println(staticcheck.Analyzers)
 }

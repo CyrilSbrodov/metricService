@@ -92,4 +92,5 @@ func (a *ServerApp) Run() {
 		a.logger.LogErr(err, "Server Shutdown Failed")
 	}
 	a.logger.LogInfo("", "", "Server Exited Properly")
+	os.Exit(1)
 }
