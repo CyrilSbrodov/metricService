@@ -1,3 +1,6 @@
+/*
+	Package loggers создание логгера
+*/
 package loggers
 
 import (

@@ -1,5 +1,5 @@
 /*
-Package handlers работа с эндпоинтами
+	Package handlers работа с эндпоинтами
 */
 package handlers
 
@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -53,7 +52,7 @@ func NewHandler(storage storage.Storage, logger *loggers.Logger) Handlers {
 // CollectHandler хендлер получения метрик
 func (h *Handler) CollectHandler() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		content, err := ioutil.ReadAll(r.Body)
+		content, err := io.ReadAll(r.Body)
 		if err != nil {
 			h.logger.LogErr(err, "")
 			rw.WriteHeader(http.StatusInternalServerError)
@@ -239,7 +238,7 @@ func (h *Handler) OtherHandler() http.HandlerFunc {
 // GetHandlerJSON хендлер получения данных из gauge and counter в формате JSON
 func (h *Handler) GetHandlerJSON() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		content, err := ioutil.ReadAll(r.Body)
+		content, err := io.ReadAll(r.Body)
 		if err != nil {
 			h.logger.LogErr(err, "")
 			rw.WriteHeader(http.StatusInternalServerError)
@@ -354,7 +353,7 @@ func (h *Handler) CollectBatchHandler() http.HandlerFunc {
 		} else {
 			reader = r.Body
 		}
-		content, err := ioutil.ReadAll(reader)
+		content, err := io.ReadAll(reader)
 		if err != nil {
 			h.logger.LogErr(err, "")
 			rw.WriteHeader(http.StatusInternalServerError)
