@@ -47,7 +47,7 @@ func NewServerApp() *ServerApp {
 		}
 		return &ServerApp{
 			router:   router,
-			cfg:      cfg,
+			cfg:      *cfg,
 			logger:   logger,
 			Cryptoer: c,
 			private:  p,
@@ -55,7 +55,7 @@ func NewServerApp() *ServerApp {
 	}
 	return &ServerApp{
 		router:   router,
-		cfg:      cfg,
+		cfg:      *cfg,
 		logger:   logger,
 		Cryptoer: nil,
 		private:  nil,

@@ -50,14 +50,14 @@ func NewAgentApp() *AgentApp {
 		}
 		return &AgentApp{
 			client: client,
-			cfg:    cfg,
+			cfg:    *cfg,
 			logger: logger,
 			public: public,
 		}
 	}
 	return &AgentApp{
 		client: client,
-		cfg:    cfg,
+		cfg:    *cfg,
 		logger: logger,
 		public: nil,
 	}
