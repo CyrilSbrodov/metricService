@@ -42,8 +42,9 @@ func AgentConfigInit() AgentConfig {
 	return cfg
 }
 
+//parseFromAgentConfigFile загрузка конфига из файла
 func parseFromAgentConfigFile() AgentConfig {
-	flag.StringVar(&cfgAgent.Config, "c/-config", "config.json", "path to config file")
+	flag.StringVar(&cfgAgent.Config, "c/-config", "", "path to config file")
 	flag.Parse()
 	if err := env.Parse(&cfgAgent); err != nil {
 		fmt.Println(err)

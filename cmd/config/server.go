@@ -46,8 +46,9 @@ func ServerConfigInit() ServerConfig {
 	return cfg
 }
 
+//parseFromServerConfigFile загрузка конфига из файла
 func parseFromServerConfigFile() ServerConfig {
-	flag.StringVar(&cfgSrv.Config, "c/-config", "config.json", "path to config file")
+	flag.StringVar(&cfgSrv.Config, "c/-config", "", "path to config file")
 	flag.Parse()
 	if err := env.Parse(&cfgSrv); err != nil {
 		fmt.Println(err)
