@@ -56,11 +56,11 @@ func parseFromServerConfigFile() ServerConfig {
 	}
 	if cfgSrv.Config != "" {
 		configFile, err := os.Open(cfgSrv.Config)
-		defer configFile.Close()
 		if err != nil {
 			fmt.Println(err.Error())
-			//TODO
+			os.Exit(1)
 		}
+		defer configFile.Close()
 		jsonParser := json.NewDecoder(configFile)
 		jsonParser.Decode(&cfgSrv)
 		return cfgSrv

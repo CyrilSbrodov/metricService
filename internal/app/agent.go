@@ -71,14 +71,20 @@ func (a *AgentApp) Run() {
 	//запуск тикера
 	tickerUpload := time.NewTicker(a.cfg.ReportInterval)
 	tickerUpdate := time.NewTicker(a.cfg.PollInterval)
+
 	for {
 		select {
 		//отправка метрики 10 сек
 		case <-tickerUpload.C:
 			//отправка данных по адресу
 			wg.Add(2)
-			go a.upload(metrics, wg)
-			go a.uploadBatch(metrics, wg)
+			if a.cfg.Config != "" {
+				go a.uploadCrypto(metrics, wg)
+				go a.uploadBatchCrypto(metrics, wg)
+			} else {
+				go a.upload(metrics, wg)
+				go a.uploadBatch(metrics, wg)
+			}
 			//обновление метрики 2 сек
 		case <-tickerUpdate.C:
 			count++
@@ -91,6 +97,41 @@ func (a *AgentApp) Run() {
 
 //отправка метрики
 func (a *AgentApp) upload(store *storage.AgentMetrics, wg *sync.WaitGroup) {
+	store.Sync.Lock()
+	defer store.Sync.Unlock()
+	defer wg.Done()
+	for _, m := range store.Store {
+		metricsJSON, errJSON := json.Marshal(m)
+		if errJSON != nil {
+			fmt.Println(errJSON)
+			break
+		}
+		req, err := http.NewRequest(http.MethodPost, "http://"+a.cfg.Addr+"/update/", bytes.NewBuffer(metricsJSON))
+
+		if err != nil {
+			a.logger.LogErr(err, "Failed to request")
+			fmt.Println(err)
+			break
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Add("Accept", "application/json")
+
+		resp, err := a.client.Do(req)
+		if err != nil {
+			a.logger.LogErr(err, "Failed to do request")
+			break
+		}
+		_, err = io.ReadAll(resp.Body)
+		if err != nil {
+			a.logger.LogErr(err, "Failed to read body")
+			break
+		}
+		resp.Body.Close()
+	}
+}
+
+//отправка метрики Crypto
+func (a *AgentApp) uploadCrypto(store *storage.AgentMetrics, wg *sync.WaitGroup) {
 	store.Sync.Lock()
 	defer store.Sync.Unlock()
 	defer wg.Done()
@@ -127,12 +168,57 @@ func (a *AgentApp) upload(store *storage.AgentMetrics, wg *sync.WaitGroup) {
 			break
 		}
 		resp.Body.Close()
-
 	}
 }
 
 //отправка метрики батчами.
 func (a *AgentApp) uploadBatch(store *storage.AgentMetrics, wg *sync.WaitGroup) {
+	store.Sync.Lock()
+	defer store.Sync.Unlock()
+	defer wg.Done()
+	var metrics []storage.Metrics
+	for _, m := range store.Store {
+		metrics = append(metrics, m)
+	}
+	metricsJSON, errJSON := json.Marshal(metrics)
+	if errJSON != nil {
+		a.logger.LogErr(errJSON, "Failed to Marshal metrics to JSON")
+		fmt.Println(errJSON)
+		return
+	}
+	//шифрование данных с помощью публичного ключа
+	metricsCompress, err := a.compress(metricsJSON)
+	if err != nil {
+		a.logger.LogErr(errJSON, "Failed to compress metrics")
+		return
+	}
+	if len(metricsCompress) == 0 {
+		return
+	}
+	req, err := http.NewRequest(http.MethodPost, "http://"+a.cfg.Addr+"/updates/", bytes.NewBuffer(metricsCompress))
+
+	if err != nil {
+		a.logger.LogErr(err, "Failed to request")
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("Content-Encoding", "gzip")
+
+	resp, err := a.client.Do(req)
+	if err != nil {
+		a.logger.LogErr(err, "Failed to do request")
+		return
+	}
+	_, err = io.ReadAll(resp.Body)
+	if err != nil {
+		a.logger.LogErr(err, "Failed to read body")
+		return
+	}
+	resp.Body.Close()
+}
+
+//отправка метрики батчами Crypto.
+func (a *AgentApp) uploadBatchCrypto(store *storage.AgentMetrics, wg *sync.WaitGroup) {
 	store.Sync.Lock()
 	defer store.Sync.Unlock()
 	defer wg.Done()
@@ -179,7 +265,6 @@ func (a *AgentApp) uploadBatch(store *storage.AgentMetrics, wg *sync.WaitGroup) 
 		a.logger.LogErr(err, "Failed to read body")
 		return
 	}
-
 	resp.Body.Close()
 }
 

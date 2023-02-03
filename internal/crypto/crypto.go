@@ -109,7 +109,7 @@ func (c *Crypto) AddCryptoKey(filenamePublicKey, filenamePrivateKey, filenameCer
 }
 
 func (c *Crypto) CreateNewCryptoFile(PEM bytes.Buffer, filename string) error {
-	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
+	file, err := os.OpenFile("../../cmd/server/"+filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
 	//"../../internal/crypto/"+
 	if err != nil {
 		c.logger.LogErr(err, "failed to open/create file")
@@ -298,6 +298,7 @@ func EncryptedData(msg []byte, public *rsa.PublicKey, logger *loggers.Logger) ([
 
 		encryptedBlockBytes, err := rsa.EncryptOAEP(sha256.New(), rng, public, msg[start:finish], label)
 		if err != nil {
+			logger.LogErr(err, "failed to encrypted data")
 			return nil, err
 		}
 

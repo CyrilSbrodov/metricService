@@ -33,7 +33,7 @@ func AgentConfigInit() AgentConfig {
 	flag.DurationVar(&cfg.ReportInterval, "r", time.Duration(10)*time.Second, "upload interval")
 	flag.StringVar(&cfg.Hash, "k", "", "hash")
 	flag.StringVar(&cfg.CryptoPROKey, "crypto-key", "", "path to file")
-
+	//public.pem
 	flag.Parse()
 	if err := env.Parse(&cfg); err != nil {
 		fmt.Println(err)
@@ -52,11 +52,11 @@ func parseFromAgentConfigFile() AgentConfig {
 	}
 	if cfgAgent.Config != "" {
 		configFile, err := os.Open(cfgAgent.Config)
-		defer configFile.Close()
 		if err != nil {
 			fmt.Println(err.Error())
-			//TODO
+			os.Exit(1)
 		}
+		defer configFile.Close()
 		jsonParser := json.NewDecoder(configFile)
 		jsonParser.Decode(&cfgAgent)
 		return cfgAgent

@@ -69,16 +69,20 @@ func (h *Handler) CollectHandler() http.HandlerFunc {
 			return
 		}
 		defer r.Body.Close()
+
 		//дешифрование данных с помощью приватного ключа
-		mByte, err := h.Cryptoer.DecryptedData(content, h.private)
-		if err != nil {
-			h.logger.LogErr(err, "error from decrypted")
-			rw.WriteHeader(http.StatusInternalServerError)
-			rw.Write([]byte(err.Error()))
-			return
+		if h.cfg.CryptoPROKey != "" {
+			content, err = h.Cryptoer.DecryptedData(content, h.private)
+			if err != nil {
+				h.logger.LogErr(err, "error from decrypted")
+				rw.WriteHeader(http.StatusInternalServerError)
+				rw.Write([]byte(err.Error()))
+				return
+			}
 		}
+
 		var m storage.Metrics
-		if err := json.Unmarshal(mByte, &m); err != nil {
+		if err := json.Unmarshal(content, &m); err != nil {
 			h.logger.LogErr(err, "")
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Write([]byte(err.Error()))
@@ -264,16 +268,17 @@ func (h *Handler) GetHandlerJSON() http.HandlerFunc {
 		}
 		defer r.Body.Close()
 		//дешифрование данных с помощью приватного ключа
-		mByte, err := h.Cryptoer.DecryptedData(content, h.private)
-		if err != nil {
-			h.logger.LogErr(err, "error from decrypted")
-			rw.WriteHeader(http.StatusInternalServerError)
-			rw.Write([]byte(err.Error()))
-			return
+		if h.cfg.CryptoPROKey != "" {
+			content, err = h.Cryptoer.DecryptedData(content, h.private)
+			if err != nil {
+				h.logger.LogErr(err, "error from decrypted")
+				rw.WriteHeader(http.StatusInternalServerError)
+				rw.Write([]byte(err.Error()))
+				return
+			}
 		}
-
 		var m storage.Metrics
-		if err := json.Unmarshal(mByte, &m); err != nil {
+		if err := json.Unmarshal(content, &m); err != nil {
 			h.logger.LogErr(err, "")
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Write([]byte(err.Error()))
@@ -388,15 +393,17 @@ func (h *Handler) CollectBatchHandler() http.HandlerFunc {
 		}
 		defer r.Body.Close()
 		//дешифрование данных с помощью приватного ключа
-		mByte, err := h.Cryptoer.DecryptedData(content, h.private)
-		if err != nil {
-			h.logger.LogErr(err, "error from decrypted")
-			rw.WriteHeader(http.StatusInternalServerError)
-			rw.Write([]byte(err.Error()))
-			return
+		if h.cfg.CryptoPROKey != "" {
+			content, err = h.Cryptoer.DecryptedData(content, h.private)
+			if err != nil {
+				h.logger.LogErr(err, "error from decrypted")
+				rw.WriteHeader(http.StatusInternalServerError)
+				rw.Write([]byte(err.Error()))
+				return
+			}
 		}
 		var m []storage.Metrics
-		if err := json.Unmarshal(mByte, &m); err != nil {
+		if err := json.Unmarshal(content, &m); err != nil {
 			h.logger.LogErr(err, "")
 			rw.WriteHeader(http.StatusInternalServerError)
 			rw.Write([]byte(err.Error()))
