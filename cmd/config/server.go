@@ -25,8 +25,6 @@ type ServerConfig struct {
 	StoreInterval time.Duration `json:"store_interval" env:"STORE_INTERVAL"`
 }
 
-//var cfgSrv ServerConfig
-
 // ServerConfigInit инициализация конфига.
 func ServerConfigInit() *ServerConfig {
 	cfgSrv := &ServerConfig{}
@@ -42,14 +40,13 @@ func ServerConfigInit() *ServerConfig {
 		jsonParser := json.NewDecoder(configFile)
 		jsonParser.Decode(&cfgSrv)
 	}
-	flag.StringVar(&cfgSrv.Addr, "a", "localhost:8285", "ADDRESS")
+	flag.StringVar(&cfgSrv.Addr, "a", "localhost:8080", "ADDRESS")
 	flag.DurationVar(&cfgSrv.StoreInterval, "i", time.Duration(300)*time.Second, "STORE_INTERVAL")
 	flag.StringVar(&cfgSrv.StoreFile, "f", "/tmp/devops-metrics-db.json", "STORE_FILE")
 	flag.BoolVar(&cfgSrv.Restore, "r", true, "RESTORE")
 	flag.StringVar(&cfgSrv.Hash, "k", "", "KEY")
 	flag.StringVar(&cfgSrv.DatabaseDSN, "d", "postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable", "DATABASE_DSN")
 	flag.StringVar(&cfgSrv.CryptoPROKey, "crypto-key", "", "path to file")
-	// ../../internal/crypto/privateKeyPEM
 	flag.Parse()
 	if err := env.Parse(cfgSrv); err != nil {
 		fmt.Println(err)

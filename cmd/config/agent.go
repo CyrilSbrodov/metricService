@@ -23,8 +23,6 @@ type AgentConfig struct {
 	ReportInterval time.Duration `json:"report_interval" env:"REPORT_INTERVAL"`
 }
 
-//var cfgAgent AgentConfig
-
 // AgentConfigInit инициализая конфига.
 func AgentConfigInit() *AgentConfig {
 	cfgAgent := &AgentConfig{}
@@ -45,7 +43,6 @@ func AgentConfigInit() *AgentConfig {
 	flag.DurationVar(&cfgAgent.ReportInterval, "r", time.Duration(10)*time.Second, "upload interval")
 	flag.StringVar(&cfgAgent.Hash, "k", "", "hash")
 	flag.StringVar(&cfgAgent.CryptoPROKey, "crypto-key", "", "path to file")
-
 	flag.Parse()
 	if err := env.Parse(cfgAgent); err != nil {
 		fmt.Println(err)
