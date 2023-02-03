@@ -4,6 +4,7 @@
 package config
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -14,25 +15,50 @@ import (
 
 // AgentConfig структура конфига для агента.
 type AgentConfig struct {
-	Addr           string        `env:"ADDRESS"`
+	Addr           string        `json:"address" env:"ADDRESS"`
+	Config         string        `env:"CONFIG"`
 	Hash           string        `env:"KEY"`
-	PollInterval   time.Duration `env:"POLL_INTERVAL"`
-	ReportInterval time.Duration `env:"REPORT_INTERVAL"`
+	CryptoPROKey   string        `json:"crypto_key" env:"CRYPTO_KEY"`
+	PollInterval   time.Duration `json:"poll_interval" env:"POLL_INTERVAL"`
+	ReportInterval time.Duration `json:"report_interval" env:"REPORT_INTERVAL"`
 }
 
 var cfgAgent AgentConfig
 
 // AgentConfigInit инициализая конфига.
 func AgentConfigInit() AgentConfig {
-	flag.StringVar(&cfgAgent.Addr, "a", "localhost:8080", "ADDRESS")
-	flag.DurationVar(&cfgAgent.PollInterval, "p", time.Duration(2)*time.Second, "update interval")
-	flag.DurationVar(&cfgAgent.ReportInterval, "r", time.Duration(10)*time.Second, "upload interval")
-	flag.StringVar(&cfgAgent.Hash, "k", "", "hash")
+	cfg := parseFromAgentConfigFile()
+	flag.StringVar(&cfg.Addr, "a", "localhost:8080", "ADDRESS")
+	flag.DurationVar(&cfg.PollInterval, "p", time.Duration(2)*time.Second, "update interval")
+	flag.DurationVar(&cfg.ReportInterval, "r", time.Duration(10)*time.Second, "upload interval")
+	flag.StringVar(&cfg.Hash, "k", "", "hash")
+	flag.StringVar(&cfg.CryptoPROKey, "crypto-key", "public.pem", "path to file")
 
+	flag.Parse()
+	if err := env.Parse(&cfg); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	return cfg
+}
+
+func parseFromAgentConfigFile() AgentConfig {
+	flag.StringVar(&cfgAgent.Config, "c/-config", "config.json", "path to config file")
 	flag.Parse()
 	if err := env.Parse(&cfgAgent); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
+	}
+	if cfgAgent.Config != "" {
+		configFile, err := os.Open(cfgAgent.Config)
+		defer configFile.Close()
+		if err != nil {
+			fmt.Println(err.Error())
+			//TODO
+		}
+		jsonParser := json.NewDecoder(configFile)
+		jsonParser.Decode(&cfgAgent)
+		return cfgAgent
 	}
 	return cfgAgent
 }

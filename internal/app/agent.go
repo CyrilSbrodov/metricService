@@ -4,12 +4,18 @@ import (
 	"bytes"
 	"compress/gzip"
 	"crypto/hmac"
+	"crypto/rsa"
 	"crypto/sha256"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"math/rand"
+	"net"
 	"net/http"
+	"os"
 	"reflect"
 	"runtime"
 	"sync"
@@ -20,34 +26,55 @@ import (
 
 	"github.com/CyrilSbrodov/metricService.git/cmd/config"
 	"github.com/CyrilSbrodov/metricService.git/cmd/loggers"
+	"github.com/CyrilSbrodov/metricService.git/internal/crypto"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 )
+
+type Agenter interface {
+	NewAgentApp() *AgentApp
+}
 
 type AgentApp struct {
 	client *http.Client
 	cfg    config.AgentConfig
 	logger *loggers.Logger
+	public *rsa.PublicKey
 }
 
 func NewAgentApp() *AgentApp {
-	client := &http.Client{}
 	cfg := config.AgentConfigInit()
 	logger := loggers.NewLogger()
+	client := &http.Client{Transport: transport(&cfg, logger)}
+
+	if cfg.CryptoPROKey != "" {
+		public, err := crypto.LoadPublicPEMKey(cfg.CryptoPROKey, logger)
+		if err != nil {
+			logger.LogErr(err, "filed to load file")
+			os.Exit(1)
+		}
+		return &AgentApp{
+			client: client,
+			cfg:    cfg,
+			logger: logger,
+			public: public,
+		}
+	}
 	return &AgentApp{
 		client: client,
 		cfg:    cfg,
 		logger: logger,
+		public: nil,
 	}
 }
 
 func (a *AgentApp) Run() {
+
 	wg := &sync.WaitGroup{}
 	var count int64
 	metrics := storage.NewAgentMetrics()
 	//запуск тикера
 	tickerUpload := time.NewTicker(a.cfg.ReportInterval)
 	tickerUpdate := time.NewTicker(a.cfg.PollInterval)
-
 	for {
 		select {
 		//отправка метрики 10 сек
@@ -77,7 +104,13 @@ func (a *AgentApp) upload(store *storage.AgentMetrics, wg *sync.WaitGroup) {
 			fmt.Println(errJSON)
 			break
 		}
-		req, err := http.NewRequest(http.MethodPost, "http://"+a.cfg.Addr+"/update/", bytes.NewBuffer(metricsJSON))
+		//шифрование данных с помощью публичного ключа
+		mByte, err := crypto.EncryptedData(metricsJSON, a.public, a.logger)
+		if err != nil {
+			a.logger.LogErr(err, "error from encrypted")
+			break
+		}
+		req, err := http.NewRequest(http.MethodPost, "http://"+a.cfg.Addr+"/update/", bytes.NewBuffer(mByte))
 
 		if err != nil {
 			a.logger.LogErr(err, "Failed to request")
@@ -98,6 +131,7 @@ func (a *AgentApp) upload(store *storage.AgentMetrics, wg *sync.WaitGroup) {
 			break
 		}
 		resp.Body.Close()
+
 	}
 }
 
@@ -116,7 +150,13 @@ func (a *AgentApp) uploadBatch(store *storage.AgentMetrics, wg *sync.WaitGroup) 
 		fmt.Println(errJSON)
 		return
 	}
-	metricsCompress, err := a.compress(metricsJSON)
+	//шифрование данных с помощью публичного ключа
+	mByte, err := crypto.EncryptedData(metricsJSON, a.public, a.logger)
+	if err != nil {
+		a.logger.LogErr(err, "error from encrypted")
+		return
+	}
+	metricsCompress, err := a.compress(mByte)
 	if err != nil {
 		a.logger.LogErr(errJSON, "Failed to compress metrics")
 		return
@@ -270,4 +310,42 @@ func (a *AgentApp) compress(store []byte) ([]byte, error) {
 		return nil, fmt.Errorf("failed compress data: %v", err)
 	}
 	return b.Bytes(), nil
+}
+
+func transport(cfg *config.AgentConfig, logger *loggers.Logger) *http.Transport {
+	return &http.Transport{
+		// Original configurations from `http.DefaultTransport` variable.
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+		ForceAttemptHTTP2:     true, // Set it to false to enforce HTTP/1
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+
+		// Our custom configurations.
+		ResponseHeaderTimeout: 10 * time.Second,
+		DisableCompression:    true,
+		// Set DisableKeepAlives to true when using HTTP/1 otherwise it will cause error: dial tcp [::1]:8090: socket: too many open files
+		DisableKeepAlives: false,
+		TLSClientConfig:   tlsConfig(cfg, logger),
+	}
+}
+
+func tlsConfig(cfg *config.AgentConfig, logger *loggers.Logger) *tls.Config {
+	crt, err := ioutil.ReadFile("../../cmd/server/" + cfg.CryptoPROKey)
+	if err != nil {
+		logger.LogErr(err, "filed to rear file")
+	}
+
+	rootCAs := x509.NewCertPool()
+	rootCAs.AppendCertsFromPEM(crt)
+
+	return &tls.Config{
+		RootCAs:            rootCAs,
+		InsecureSkipVerify: false,
+		ServerName:         "localhost",
+	}
 }
