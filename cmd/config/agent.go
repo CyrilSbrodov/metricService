@@ -32,7 +32,7 @@ func AgentConfigInit() AgentConfig {
 	flag.DurationVar(&cfg.PollInterval, "p", time.Duration(2)*time.Second, "update interval")
 	flag.DurationVar(&cfg.ReportInterval, "r", time.Duration(10)*time.Second, "upload interval")
 	flag.StringVar(&cfg.Hash, "k", "", "hash")
-	flag.StringVar(&cfg.CryptoPROKey, "crypto-key", "public.pem", "path to file")
+	flag.StringVar(&cfg.CryptoPROKey, "crypto-key", "", "path to file")
 
 	flag.Parse()
 	if err := env.Parse(&cfg); err != nil {

@@ -6,14 +6,10 @@ import (
 	"crypto/hmac"
 	"crypto/rsa"
 	"crypto/sha256"
-	"crypto/tls"
-	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/rand"
-	"net"
 	"net/http"
 	"os"
 	"reflect"
@@ -44,7 +40,7 @@ type AgentApp struct {
 func NewAgentApp() *AgentApp {
 	cfg := config.AgentConfigInit()
 	logger := loggers.NewLogger()
-	client := &http.Client{Transport: transport(&cfg, logger)}
+	client := &http.Client{}
 
 	if cfg.CryptoPROKey != "" {
 		public, err := crypto.LoadPublicPEMKey(cfg.CryptoPROKey, logger)
@@ -312,40 +308,40 @@ func (a *AgentApp) compress(store []byte) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func transport(cfg *config.AgentConfig, logger *loggers.Logger) *http.Transport {
-	return &http.Transport{
-		// Original configurations from `http.DefaultTransport` variable.
-		DialContext: (&net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 30 * time.Second,
-		}).DialContext,
-		ForceAttemptHTTP2:     true, // Set it to false to enforce HTTP/1
-		MaxIdleConns:          100,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-
-		// Our custom configurations.
-		ResponseHeaderTimeout: 10 * time.Second,
-		DisableCompression:    true,
-		// Set DisableKeepAlives to true when using HTTP/1 otherwise it will cause error: dial tcp [::1]:8090: socket: too many open files
-		DisableKeepAlives: false,
-		TLSClientConfig:   tlsConfig(cfg, logger),
-	}
-}
-
-func tlsConfig(cfg *config.AgentConfig, logger *loggers.Logger) *tls.Config {
-	crt, err := ioutil.ReadFile("../../cmd/server/" + cfg.CryptoPROKey)
-	if err != nil {
-		logger.LogErr(err, "filed to rear file")
-	}
-
-	rootCAs := x509.NewCertPool()
-	rootCAs.AppendCertsFromPEM(crt)
-
-	return &tls.Config{
-		RootCAs:            rootCAs,
-		InsecureSkipVerify: false,
-		ServerName:         "localhost",
-	}
-}
+//func transport(cfg *config.AgentConfig, logger *loggers.Logger) *http.Transport {
+//	return &http.Transport{
+//		// Original configurations from `http.DefaultTransport` variable.
+//		DialContext: (&net.Dialer{
+//			Timeout:   30 * time.Second,
+//			KeepAlive: 30 * time.Second,
+//		}).DialContext,
+//		ForceAttemptHTTP2:     true, // Set it to false to enforce HTTP/1
+//		MaxIdleConns:          100,
+//		IdleConnTimeout:       90 * time.Second,
+//		TLSHandshakeTimeout:   10 * time.Second,
+//		ExpectContinueTimeout: 1 * time.Second,
+//
+//		// Our custom configurations.
+//		ResponseHeaderTimeout: 10 * time.Second,
+//		DisableCompression:    true,
+//		// Set DisableKeepAlives to true when using HTTP/1 otherwise it will cause error: dial tcp [::1]:8090: socket: too many open files
+//		DisableKeepAlives: false,
+//		TLSClientConfig:   tlsConfig(cfg, logger),
+//	}
+//}
+//
+//func tlsConfig(cfg *config.AgentConfig, logger *loggers.Logger) *tls.Config {
+//	crt, err := ioutil.ReadFile("../../cmd/server/" + cfg.CryptoPROKey)
+//	if err != nil {
+//		logger.LogErr(err, "filed to rear file")
+//	}
+//
+//	rootCAs := x509.NewCertPool()
+//	rootCAs.AppendCertsFromPEM(crt)
+//
+//	return &tls.Config{
+//		RootCAs:            rootCAs,
+//		InsecureSkipVerify: false,
+//		ServerName:         "localhost",
+//	}
+//}

@@ -36,7 +36,7 @@ func ServerConfigInit() ServerConfig {
 	flag.BoolVar(&cfg.Restore, "r", true, "RESTORE")
 	flag.StringVar(&cfg.Hash, "k", "", "KEY")
 	flag.StringVar(&cfg.DatabaseDSN, "d", "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable", "DATABASE_DSN")
-	flag.StringVar(&cfg.CryptoPROKey, "crypto-key", "private.pem", "path to file")
+	flag.StringVar(&cfg.CryptoPROKey, "crypto-key", "", "path to file")
 	// ../../internal/crypto/privateKeyPEM
 	flag.Parse()
 	if err := env.Parse(&cfg); err != nil {
