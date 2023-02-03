@@ -22,7 +22,7 @@ var (
 
 func TestMain(m *testing.M) {
 	cfg := config.AgentConfigInit()
-	CFG = cfg
+	CFG = *cfg
 	os.Exit(m.Run())
 }
 
