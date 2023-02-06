@@ -12,9 +12,11 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"os/signal"
 	"reflect"
 	"runtime"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/cpu"
@@ -64,6 +66,9 @@ func NewAgentApp() *AgentApp {
 }
 
 func (a *AgentApp) Run() {
+	var shutdown bool
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	wg := &sync.WaitGroup{}
 	var count int64
@@ -72,7 +77,7 @@ func (a *AgentApp) Run() {
 	tickerUpload := time.NewTicker(a.cfg.ReportInterval)
 	tickerUpdate := time.NewTicker(a.cfg.PollInterval)
 
-	for {
+	for !shutdown {
 		select {
 		//отправка метрики 10 сек
 		case <-tickerUpload.C:
@@ -91,8 +96,13 @@ func (a *AgentApp) Run() {
 			wg.Add(2)
 			go a.update(metrics, count, wg)
 			go a.updateOtherMetrics(metrics, wg)
+		case <-done:
+			a.logger.LogInfo("", "", "Agent shutdown")
+			shutdown = true
+			close(done)
 		}
 	}
+	a.logger.LogInfo("", "", "Agent Shutdown gracefully")
 }
 
 //отправка метрики
