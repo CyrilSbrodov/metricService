@@ -88,12 +88,11 @@ func (a *AgentApp) Run() {
 	}()
 
 	//прослушивание канала на сигналы завершения работы
-	select {
-	case <-done:
-		a.logger.LogInfo("", "", "Agent Shutdown")
-		//остановка агента, если в канал поступает сигнал
-		a.Stop()
-	}
+	<-done
+
+	a.logger.LogInfo("", "", "Agent Shutdown")
+	//остановка агента, если в канал поступает сигнал
+	a.Stop()
 	a.logger.LogInfo("", "", "Agent Shutdown gracefully")
 }
 
