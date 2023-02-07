@@ -146,7 +146,7 @@ func (a *AgentApp) upload(store *storage.AgentMetrics) {
 			fmt.Println(errJSON)
 			break
 		}
-		req, err := http.NewRequest(http.MethodPost, "http://"+a.cfg.Addr+"/update/", bytes.NewBuffer(metricsJSON))
+		req, err := http.NewRequest(http.MethodPost, a.url+a.cfg.Addr+"/update/", bytes.NewBuffer(metricsJSON))
 
 		if err != nil {
 			a.logger.LogErr(err, "Failed to request")
