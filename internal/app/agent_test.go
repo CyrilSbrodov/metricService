@@ -6,7 +6,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"reflect"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -129,7 +128,6 @@ func TestAgentApp_hashing(t *testing.T) {
 
 func TestAgentApp_update(t *testing.T) {
 	store := storage.NewAgentMetrics()
-	wg := &sync.WaitGroup{}
 	type fields struct {
 		client *http.Client
 		cfg    config.AgentConfig
@@ -138,7 +136,6 @@ func TestAgentApp_update(t *testing.T) {
 	type args struct {
 		store *storage.AgentMetrics
 		count int64
-		wg    *sync.WaitGroup
 	}
 	tests := []struct {
 		name   string
@@ -154,7 +151,6 @@ func TestAgentApp_update(t *testing.T) {
 			args: args{
 				store: store,
 				count: 0,
-				wg:    wg,
 			},
 		},
 	}
@@ -165,7 +161,7 @@ func TestAgentApp_update(t *testing.T) {
 				cfg:    tt.fields.cfg,
 				logger: tt.fields.logger,
 			}
-			tt.args.wg.Add(1)
+			a.wg.Add(1)
 			a.update(tt.args.store, tt.args.count)
 			assert.NotNil(t, tt.args.store)
 		})
@@ -174,7 +170,6 @@ func TestAgentApp_update(t *testing.T) {
 
 func TestAgentApp_updateOtherMetrics(t *testing.T) {
 	store := storage.NewAgentMetrics()
-	wg := &sync.WaitGroup{}
 	type fields struct {
 		client *http.Client
 		cfg    config.AgentConfig
@@ -183,7 +178,6 @@ func TestAgentApp_updateOtherMetrics(t *testing.T) {
 	type args struct {
 		store *storage.AgentMetrics
 		count int64
-		wg    *sync.WaitGroup
 	}
 	tests := []struct {
 		name   string
@@ -199,7 +193,6 @@ func TestAgentApp_updateOtherMetrics(t *testing.T) {
 			args: args{
 				store: store,
 				count: 0,
-				wg:    wg,
 			},
 		},
 	}
@@ -210,7 +203,7 @@ func TestAgentApp_updateOtherMetrics(t *testing.T) {
 				cfg:    tt.fields.cfg,
 				logger: tt.fields.logger,
 			}
-			tt.args.wg.Add(1)
+			a.wg.Add(1)
 			a.updateOtherMetrics(tt.args.store)
 			assert.NotNil(t, tt.args.store)
 		})
@@ -221,7 +214,6 @@ func TestAgentApp_uploadBatch(t *testing.T) {
 	client := http.DefaultClient
 	store := storage.NewAgentMetrics()
 	logger := loggers.NewLogger()
-	wg := &sync.WaitGroup{}
 	var delta int64 = 1
 	var m = storage.Metrics{
 		ID:    "1",
@@ -238,7 +230,6 @@ func TestAgentApp_uploadBatch(t *testing.T) {
 	}
 	type args struct {
 		store *storage.AgentMetrics
-		wg    *sync.WaitGroup
 	}
 	tests := []struct {
 		name   string
@@ -253,7 +244,6 @@ func TestAgentApp_uploadBatch(t *testing.T) {
 			},
 			args: args{
 				store: store,
-				wg:    wg,
 			},
 		},
 	}
@@ -270,7 +260,7 @@ func TestAgentApp_uploadBatch(t *testing.T) {
 				cfg:    tt.fields.cfg,
 				logger: tt.fields.logger,
 			}
-			tt.args.wg.Add(1)
+			a.wg.Add(1)
 			a.uploadBatch(tt.args.store)
 		})
 	}
@@ -280,7 +270,6 @@ func TestAgentApp_upload(t *testing.T) {
 	client := http.DefaultClient
 	store := storage.NewAgentMetrics()
 	logger := loggers.NewLogger()
-	wg := &sync.WaitGroup{}
 	var delta int64 = 1
 	var m = storage.Metrics{
 		ID:    "1",
@@ -297,7 +286,6 @@ func TestAgentApp_upload(t *testing.T) {
 	}
 	type args struct {
 		store *storage.AgentMetrics
-		wg    *sync.WaitGroup
 	}
 	tests := []struct {
 		name   string
@@ -312,7 +300,6 @@ func TestAgentApp_upload(t *testing.T) {
 			},
 			args: args{
 				store: store,
-				wg:    wg,
 			},
 		},
 	}
@@ -329,7 +316,7 @@ func TestAgentApp_upload(t *testing.T) {
 				cfg:    tt.fields.cfg,
 				logger: tt.fields.logger,
 			}
-			tt.args.wg.Add(1)
+			a.wg.Add(1)
 			a.upload(tt.args.store)
 		})
 	}
