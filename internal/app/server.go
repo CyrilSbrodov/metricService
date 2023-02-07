@@ -21,11 +21,11 @@ import (
 )
 
 type ServerApp struct {
-	router *chi.Mux
-	cfg    config.ServerConfig
-	logger *loggers.Logger
-	crypto.Cryptoer
-	private *rsa.PrivateKey
+	router   *chi.Mux
+	cfg      config.ServerConfig
+	logger   *loggers.Logger
+	Cryptoer crypto.Cryptoer
+	private  *rsa.PrivateKey
 }
 
 func NewServerApp() *ServerApp {
@@ -35,7 +35,7 @@ func NewServerApp() *ServerApp {
 
 	if cfg.CryptoPROKey != "" {
 		c := crypto.NewCrypto()
-		err := c.AddCryptoKey("public.pem", cfg.CryptoPROKey, "cert.pem")
+		err := c.AddCryptoKey("public.pem", cfg.CryptoPROKey, "cert.pem", cfg.CryptoPROKeyPath)
 		if err != nil {
 			logger.LogErr(err, "filed to create file")
 			os.Exit(1)

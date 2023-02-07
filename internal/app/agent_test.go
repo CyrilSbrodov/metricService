@@ -229,7 +229,7 @@ func TestAgentApp_update(t *testing.T) {
 				logger: tt.fields.logger,
 			}
 			tt.args.wg.Add(1)
-			a.update(tt.args.store, tt.args.count, tt.args.wg)
+			a.update(tt.args.store, tt.args.count)
 			assert.NotNil(t, tt.args.store)
 		})
 	}
@@ -274,7 +274,7 @@ func TestAgentApp_updateOtherMetrics(t *testing.T) {
 				logger: tt.fields.logger,
 			}
 			tt.args.wg.Add(1)
-			a.updateOtherMetrics(tt.args.store, tt.args.wg)
+			a.updateOtherMetrics(tt.args.store)
 			assert.NotNil(t, tt.args.store)
 		})
 	}
@@ -334,7 +334,7 @@ func TestAgentApp_uploadBatch(t *testing.T) {
 				logger: tt.fields.logger,
 			}
 			tt.args.wg.Add(1)
-			a.uploadBatch(tt.args.store, tt.args.wg)
+			a.uploadBatch(tt.args.store)
 		})
 	}
 }
@@ -393,7 +393,7 @@ func TestAgentApp_upload(t *testing.T) {
 				logger: tt.fields.logger,
 			}
 			tt.args.wg.Add(1)
-			a.upload(tt.args.store, tt.args.wg)
+			a.upload(tt.args.store)
 		})
 	}
 }

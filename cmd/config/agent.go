@@ -15,12 +15,13 @@ import (
 
 // AgentConfig структура конфига для агента.
 type AgentConfig struct {
-	Addr           string `json:"address" env:"ADDRESS"`
-	Config         string
-	Hash           string        `env:"KEY"`
-	CryptoPROKey   string        `json:"crypto_key" env:"CRYPTO_KEY"`
-	PollInterval   time.Duration `json:"poll_interval" env:"POLL_INTERVAL"`
-	ReportInterval time.Duration `json:"report_interval" env:"REPORT_INTERVAL"`
+	Addr             string `json:"address" env:"ADDRESS"`
+	Config           string
+	Hash             string        `env:"KEY"`
+	CryptoPROKey     string        `json:"crypto_key" env:"CRYPTO_KEY"`
+	CryptoPROKeyPath string        `json:"crypto_key_path" env:"CRYPTO_KEY_PATH"`
+	PollInterval     time.Duration `json:"poll_interval" env:"POLL_INTERVAL"`
+	ReportInterval   time.Duration `json:"report_interval" env:"REPORT_INTERVAL"`
 }
 
 // AgentConfigInit инициализая конфига.
@@ -43,6 +44,7 @@ func AgentConfigInit() *AgentConfig {
 	flag.DurationVar(&cfgAgent.ReportInterval, "r", time.Duration(10)*time.Second, "upload interval")
 	flag.StringVar(&cfgAgent.Hash, "k", "", "hash")
 	flag.StringVar(&cfgAgent.CryptoPROKey, "crypto-key", "", "path to file")
+	flag.StringVar(&cfgAgent.CryptoPROKeyPath, "crypto-key-path", "../../cmd/server/", "path to folder")
 	flag.Parse()
 	if err := env.Parse(cfgAgent); err != nil {
 		fmt.Println(err)

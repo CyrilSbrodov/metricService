@@ -18,8 +18,8 @@ import (
 )
 
 type Cryptoer interface {
-	AddCryptoKey(filenamePublicKey, filenamePrivateKey, filenameCert string) error
-	CreateNewCryptoFile(PEM bytes.Buffer, filename string) error
+	AddCryptoKey(filenamePublicKey, filenamePrivateKey, filenameCert, path string) error
+	CreateNewCryptoFile(PEM bytes.Buffer, filename, path string) error
 	DecryptedData(b []byte, privateKey *rsa.PrivateKey) ([]byte, error)
 	EncryptedData(b []byte, publicKey *rsa.PublicKey) ([]byte, error)
 	LoadPrivatePEMKey(filename string) (*rsa.PrivateKey, error)
@@ -37,7 +37,7 @@ func NewCrypto() *Crypto {
 	}
 }
 
-func (c *Crypto) AddCryptoKey(filenamePublicKey, filenamePrivateKey, filenameCert string) error {
+func (c *Crypto) AddCryptoKey(filenamePublicKey, filenamePrivateKey, filenameCert, path string) error {
 	// создаём шаблон сертификата
 	cert := &x509.Certificate{
 		// указываем уникальный номер сертификата
@@ -94,23 +94,22 @@ func (c *Crypto) AddCryptoKey(filenamePublicKey, filenamePrivateKey, filenameCer
 		Bytes: x509.MarshalPKCS1PublicKey(&privateKey.PublicKey),
 	})
 
-	if err = c.CreateNewCryptoFile(certPEM, filenameCert); err != nil {
+	if err = c.CreateNewCryptoFile(certPEM, filenameCert, path); err != nil {
 		c.logger.LogErr(err, "filed to create new file")
 		return err
 	}
-	if err = c.CreateNewCryptoFile(privateKeyPEM, filenamePrivateKey); err != nil {
+	if err = c.CreateNewCryptoFile(privateKeyPEM, filenamePrivateKey, path); err != nil {
 		c.logger.LogErr(err, "filed to create new file")
 		return err
 	}
-	if err = c.CreateNewCryptoFile(publicKeyPEM, filenamePublicKey); err != nil {
+	if err = c.CreateNewCryptoFile(publicKeyPEM, filenamePublicKey, path); err != nil {
 		c.logger.LogErr(err, "filed to create new file")
 	}
 	return nil
 }
 
-func (c *Crypto) CreateNewCryptoFile(PEM bytes.Buffer, filename string) error {
-	file, err := os.OpenFile("../../cmd/server/"+filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
-	//"../../internal/crypto/"+
+func (c *Crypto) CreateNewCryptoFile(PEM bytes.Buffer, filename, path string) error {
+	file, err := os.OpenFile(path+filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
 	if err != nil {
 		c.logger.LogErr(err, "failed to open/create file")
 		return err
@@ -124,17 +123,6 @@ func (c *Crypto) CreateNewCryptoFile(PEM bytes.Buffer, filename string) error {
 	defer file.Close()
 	return nil
 }
-
-//func (c *Crypto) DecryptedData(b []byte, privateKey *rsa.PrivateKey) ([]byte, error) {
-//	label := []byte("OAEP Encrypted")
-//	rng := rand.Reader
-//	plaintext, err := rsa.DecryptOAEP(sha256.New(), rng, privateKey, b, label)
-//	if err != nil {
-//		c.logger.LogErr(err, "error from decryption")
-//		return nil, err
-//	}
-//	return plaintext, nil
-//}
 
 func (c *Crypto) DecryptedData(msg []byte, private *rsa.PrivateKey) ([]byte, error) {
 	label := []byte("OAEP Encrypted")
@@ -173,7 +161,6 @@ func (c *Crypto) EncryptedData(b []byte, publicKey *rsa.PublicKey) ([]byte, erro
 
 func (c *Crypto) LoadPrivatePEMKey(filename string) (*rsa.PrivateKey, error) {
 	privateKeyFile, err := os.Open(filename)
-	//"../../internal/crypto/" +
 	if err != nil {
 		c.logger.LogErr(err, "filed to open file")
 		return nil, err
@@ -237,9 +224,8 @@ func (c *Crypto) LoadPublicPEMKey(filename string) (*rsa.PublicKey, error) {
 	return public, nil
 }
 
-func LoadPublicPEMKey(filename string, logger *loggers.Logger) (*rsa.PublicKey, error) {
-	publicKeyFile, err := os.Open("../../cmd/server/" + filename)
-	//"../../internal/crypto/" +
+func LoadPublicPEMKey(filename string, logger *loggers.Logger, path string) (*rsa.PublicKey, error) {
+	publicKeyFile, err := os.Open(path + filename)
 	if err != nil {
 		logger.LogErr(err, "filed to open file")
 		return nil, err
@@ -269,17 +255,6 @@ func LoadPublicPEMKey(filename string, logger *loggers.Logger) (*rsa.PublicKey, 
 	}
 	return public, nil
 }
-
-//func EncryptedData(b []byte, publicKey *rsa.PublicKey, logger *loggers.Logger) ([]byte, error) {
-//	label := []byte("OAEP Encrypted")
-//
-//	rng := rand.Reader
-//	ciphertext, err := rsa.EncryptOAEP(sha256.New(), rng, publicKey, b, label)
-//	if err != nil {
-//		logger.LogErr(err, "error from encryption")
-//	}
-//	return ciphertext, nil
-//}
 
 func EncryptedData(msg []byte, public *rsa.PublicKey, logger *loggers.Logger) ([]byte, error) {
 	label := []byte("OAEP Encrypted")

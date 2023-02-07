@@ -32,84 +32,114 @@ type Agenter interface {
 	NewAgentApp() *AgentApp
 }
 
+//AgentApp структура агента
 type AgentApp struct {
+	closed chan struct{}
 	client *http.Client
 	cfg    config.AgentConfig
 	logger *loggers.Logger
 	public *rsa.PublicKey
+	url    string
+	wg     sync.WaitGroup
 }
 
+//NewAgentApp создание нового агента
 func NewAgentApp() *AgentApp {
 	cfg := config.AgentConfigInit()
 	logger := loggers.NewLogger()
 	client := &http.Client{}
 
 	if cfg.CryptoPROKey != "" {
-		public, err := crypto.LoadPublicPEMKey(cfg.CryptoPROKey, logger)
+		public, err := crypto.LoadPublicPEMKey(cfg.CryptoPROKey, logger, cfg.CryptoPROKeyPath)
 		if err != nil {
 			logger.LogErr(err, "filed to load file")
 			os.Exit(1)
 		}
 		return &AgentApp{
+			closed: make(chan struct{}),
 			client: client,
 			cfg:    *cfg,
 			logger: logger,
 			public: public,
+			url:    "http://",
 		}
 	}
 	return &AgentApp{
+		closed: make(chan struct{}),
 		client: client,
 		cfg:    *cfg,
 		logger: logger,
 		public: nil,
+		url:    "http://",
 	}
 }
 
+// Run запуск агента
 func (a *AgentApp) Run() {
-	var shutdown bool
+
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
-	wg := &sync.WaitGroup{}
+	//запуск тикеров
+	a.wg.Add(1)
+	go func() {
+		defer a.wg.Done()
+		a.RunTickers()
+	}()
+
+	//прослушивание канала на сигналы завершения работы
+	select {
+	case <-done:
+		a.logger.LogInfo("", "", "Agent Shutdown")
+		//остановка агента, если в канал поступает сигнал
+		a.Stop()
+	}
+	a.logger.LogInfo("", "", "Agent Shutdown gracefully")
+}
+
+// RunTickers запуск тикеров
+func (a *AgentApp) RunTickers() {
 	var count int64
 	metrics := storage.NewAgentMetrics()
 	//запуск тикера
 	tickerUpload := time.NewTicker(a.cfg.ReportInterval)
 	tickerUpdate := time.NewTicker(a.cfg.PollInterval)
-
-	for !shutdown {
+	for {
 		select {
 		//отправка метрики 10 сек
 		case <-tickerUpload.C:
 			//отправка данных по адресу
-			wg.Add(2)
-			if a.cfg.Config != "" {
-				go a.uploadCrypto(metrics, wg)
-				go a.uploadBatchCrypto(metrics, wg)
+			a.wg.Add(2)
+			if a.cfg.CryptoPROKey != "" {
+				go a.uploadCrypto(metrics)
+				go a.uploadBatchCrypto(metrics)
 			} else {
-				go a.upload(metrics, wg)
-				go a.uploadBatch(metrics, wg)
+				go a.upload(metrics)
+				go a.uploadBatch(metrics)
 			}
 			//обновление метрики 2 сек
 		case <-tickerUpdate.C:
 			count++
-			wg.Add(2)
-			go a.update(metrics, count, wg)
-			go a.updateOtherMetrics(metrics, wg)
-		case <-done:
-			a.logger.LogInfo("", "", "Agent shutdown")
-			shutdown = true
-			close(done)
+			a.wg.Add(2)
+			go a.update(metrics, count)
+			go a.updateOtherMetrics(metrics)
+		case <-a.closed:
+			return
 		}
 	}
-	a.logger.LogInfo("", "", "Agent Shutdown gracefully")
+}
+
+// Stop остановка агента
+func (a *AgentApp) Stop() {
+	close(a.closed)
+	a.wg.Wait()
 }
 
 //отправка метрики
-func (a *AgentApp) upload(store *storage.AgentMetrics, wg *sync.WaitGroup) {
+func (a *AgentApp) upload(store *storage.AgentMetrics) {
 	store.Sync.Lock()
 	defer store.Sync.Unlock()
-	defer wg.Done()
+	defer a.wg.Done()
 	for _, m := range store.Store {
 		metricsJSON, errJSON := json.Marshal(m)
 		if errJSON != nil {
@@ -141,10 +171,10 @@ func (a *AgentApp) upload(store *storage.AgentMetrics, wg *sync.WaitGroup) {
 }
 
 //отправка метрики Crypto
-func (a *AgentApp) uploadCrypto(store *storage.AgentMetrics, wg *sync.WaitGroup) {
+func (a *AgentApp) uploadCrypto(store *storage.AgentMetrics) {
 	store.Sync.Lock()
 	defer store.Sync.Unlock()
-	defer wg.Done()
+	defer a.wg.Done()
 	for _, m := range store.Store {
 		metricsJSON, errJSON := json.Marshal(m)
 		if errJSON != nil {
@@ -157,7 +187,7 @@ func (a *AgentApp) uploadCrypto(store *storage.AgentMetrics, wg *sync.WaitGroup)
 			a.logger.LogErr(err, "error from encrypted")
 			break
 		}
-		req, err := http.NewRequest(http.MethodPost, "http://"+a.cfg.Addr+"/update/", bytes.NewBuffer(mByte))
+		req, err := http.NewRequest(http.MethodPost, a.url+a.cfg.Addr+"/update/", bytes.NewBuffer(mByte))
 
 		if err != nil {
 			a.logger.LogErr(err, "Failed to request")
@@ -182,10 +212,10 @@ func (a *AgentApp) uploadCrypto(store *storage.AgentMetrics, wg *sync.WaitGroup)
 }
 
 //отправка метрики батчами.
-func (a *AgentApp) uploadBatch(store *storage.AgentMetrics, wg *sync.WaitGroup) {
+func (a *AgentApp) uploadBatch(store *storage.AgentMetrics) {
 	store.Sync.Lock()
 	defer store.Sync.Unlock()
-	defer wg.Done()
+	defer a.wg.Done()
 	var metrics []storage.Metrics
 	for _, m := range store.Store {
 		metrics = append(metrics, m)
@@ -205,7 +235,7 @@ func (a *AgentApp) uploadBatch(store *storage.AgentMetrics, wg *sync.WaitGroup) 
 	if len(metricsCompress) == 0 {
 		return
 	}
-	req, err := http.NewRequest(http.MethodPost, "http://"+a.cfg.Addr+"/updates/", bytes.NewBuffer(metricsCompress))
+	req, err := http.NewRequest(http.MethodPost, a.url+a.cfg.Addr+"/updates/", bytes.NewBuffer(metricsCompress))
 
 	if err != nil {
 		a.logger.LogErr(err, "Failed to request")
@@ -228,10 +258,10 @@ func (a *AgentApp) uploadBatch(store *storage.AgentMetrics, wg *sync.WaitGroup) 
 }
 
 //отправка метрики батчами Crypto.
-func (a *AgentApp) uploadBatchCrypto(store *storage.AgentMetrics, wg *sync.WaitGroup) {
+func (a *AgentApp) uploadBatchCrypto(store *storage.AgentMetrics) {
 	store.Sync.Lock()
 	defer store.Sync.Unlock()
-	defer wg.Done()
+	defer a.wg.Done()
 	var metrics []storage.Metrics
 	for _, m := range store.Store {
 		metrics = append(metrics, m)
@@ -256,7 +286,7 @@ func (a *AgentApp) uploadBatchCrypto(store *storage.AgentMetrics, wg *sync.WaitG
 	if len(metricsCompress) == 0 {
 		return
 	}
-	req, err := http.NewRequest(http.MethodPost, "http://"+a.cfg.Addr+"/updates/", bytes.NewBuffer(metricsCompress))
+	req, err := http.NewRequest(http.MethodPost, a.url+a.cfg.Addr+"/updates/", bytes.NewBuffer(metricsCompress))
 
 	if err != nil {
 		a.logger.LogErr(err, "Failed to request")
@@ -279,10 +309,10 @@ func (a *AgentApp) uploadBatchCrypto(store *storage.AgentMetrics, wg *sync.WaitG
 }
 
 //сбор метрики
-func (a *AgentApp) update(store *storage.AgentMetrics, count int64, wg *sync.WaitGroup) {
+func (a *AgentApp) update(store *storage.AgentMetrics, count int64) {
 	store.Sync.Lock()
 	defer store.Sync.Unlock()
-	defer wg.Done()
+	defer a.wg.Done()
 
 	var memory runtime.MemStats
 	runtime.ReadMemStats(&memory)
@@ -339,10 +369,10 @@ func (a *AgentApp) update(store *storage.AgentMetrics, count int64, wg *sync.Wai
 }
 
 //сбор остальных метрик.
-func (a *AgentApp) updateOtherMetrics(store *storage.AgentMetrics, wg *sync.WaitGroup) {
+func (a *AgentApp) updateOtherMetrics(store *storage.AgentMetrics) {
 	store.Sync.Lock()
 	defer store.Sync.Unlock()
-	defer wg.Done()
+	defer a.wg.Done()
 	var value float64
 	v, _ := mem.VirtualMemory()
 	cpuValue, _ := cpu.Percent(0, false)
@@ -402,41 +432,3 @@ func (a *AgentApp) compress(store []byte) ([]byte, error) {
 	}
 	return b.Bytes(), nil
 }
-
-//func transport(cfg *config.AgentConfig, logger *loggers.Logger) *http.Transport {
-//	return &http.Transport{
-//		// Original configurations from `http.DefaultTransport` variable.
-//		DialContext: (&net.Dialer{
-//			Timeout:   30 * time.Second,
-//			KeepAlive: 30 * time.Second,
-//		}).DialContext,
-//		ForceAttemptHTTP2:     true, // Set it to false to enforce HTTP/1
-//		MaxIdleConns:          100,
-//		IdleConnTimeout:       90 * time.Second,
-//		TLSHandshakeTimeout:   10 * time.Second,
-//		ExpectContinueTimeout: 1 * time.Second,
-//
-//		// Our custom configurations.
-//		ResponseHeaderTimeout: 10 * time.Second,
-//		DisableCompression:    true,
-//		// Set DisableKeepAlives to true when using HTTP/1 otherwise it will cause error: dial tcp [::1]:8090: socket: too many open files
-//		DisableKeepAlives: false,
-//		TLSClientConfig:   tlsConfig(cfg, logger),
-//	}
-//}
-//
-//func tlsConfig(cfg *config.AgentConfig, logger *loggers.Logger) *tls.Config {
-//	crt, err := ioutil.ReadFile("../../cmd/server/" + cfg.CryptoPROKey)
-//	if err != nil {
-//		logger.LogErr(err, "filed to rear file")
-//	}
-//
-//	rootCAs := x509.NewCertPool()
-//	rootCAs.AppendCertsFromPEM(crt)
-//
-//	return &tls.Config{
-//		RootCAs:            rootCAs,
-//		InsecureSkipVerify: false,
-//		ServerName:         "localhost",
-//	}
-//}
