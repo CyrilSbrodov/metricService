@@ -5,6 +5,7 @@ package handlers
 
 import (
 	"compress/gzip"
+	"crypto/rsa"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,7 +16,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	"github.com/CyrilSbrodov/metricService.git/cmd/config"
 	"github.com/CyrilSbrodov/metricService.git/cmd/loggers"
+	"github.com/CyrilSbrodov/metricService.git/internal/crypto"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 )
 
@@ -25,7 +28,10 @@ type Handlers interface {
 
 type Handler struct {
 	storage.Storage
-	logger loggers.Logger
+	crypto.Cryptoer
+	logger  loggers.Logger
+	cfg     config.ServerConfig
+	private *rsa.PrivateKey
 }
 
 // Register создание роутеров
@@ -42,10 +48,13 @@ func (h *Handler) Register(r *chi.Mux) {
 	r.Mount("/debug", middleware.Profiler())
 }
 
-func NewHandler(storage storage.Storage, logger *loggers.Logger) Handlers {
+func NewHandler(storage storage.Storage, logger loggers.Logger, cpt crypto.Cryptoer, cfg config.ServerConfig, private *rsa.PrivateKey) Handlers {
 	return &Handler{
 		storage,
-		*logger,
+		cpt,
+		logger,
+		cfg,
+		private,
 	}
 }
 
@@ -60,6 +69,18 @@ func (h *Handler) CollectHandler() http.HandlerFunc {
 			return
 		}
 		defer r.Body.Close()
+
+		//дешифрование данных с помощью приватного ключа
+		if h.cfg.CryptoPROKey != "" {
+			content, err = h.Cryptoer.DecryptedData(content, h.private)
+			if err != nil {
+				h.logger.LogErr(err, "error from decrypted")
+				rw.WriteHeader(http.StatusInternalServerError)
+				rw.Write([]byte(err.Error()))
+				return
+			}
+		}
+
 		var m storage.Metrics
 		if err := json.Unmarshal(content, &m); err != nil {
 			h.logger.LogErr(err, "")
@@ -246,6 +267,16 @@ func (h *Handler) GetHandlerJSON() http.HandlerFunc {
 			return
 		}
 		defer r.Body.Close()
+		//дешифрование данных с помощью приватного ключа
+		if h.cfg.CryptoPROKey != "" {
+			content, err = h.Cryptoer.DecryptedData(content, h.private)
+			if err != nil {
+				h.logger.LogErr(err, "error from decrypted")
+				rw.WriteHeader(http.StatusInternalServerError)
+				rw.Write([]byte(err.Error()))
+				return
+			}
+		}
 		var m storage.Metrics
 		if err := json.Unmarshal(content, &m); err != nil {
 			h.logger.LogErr(err, "")
@@ -361,6 +392,16 @@ func (h *Handler) CollectBatchHandler() http.HandlerFunc {
 			return
 		}
 		defer r.Body.Close()
+		//дешифрование данных с помощью приватного ключа
+		if h.cfg.CryptoPROKey != "" {
+			content, err = h.Cryptoer.DecryptedData(content, h.private)
+			if err != nil {
+				h.logger.LogErr(err, "error from decrypted")
+				rw.WriteHeader(http.StatusInternalServerError)
+				rw.Write([]byte(err.Error()))
+				return
+			}
+		}
 		var m []storage.Metrics
 		if err := json.Unmarshal(content, &m); err != nil {
 			h.logger.LogErr(err, "")

@@ -4,15 +4,19 @@ import (
 	"bytes"
 	"compress/gzip"
 	"crypto/hmac"
+	"crypto/rsa"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
 	"net/http"
+	"os"
+	"os/signal"
 	"reflect"
 	"runtime"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/cpu"
@@ -20,64 +24,169 @@ import (
 
 	"github.com/CyrilSbrodov/metricService.git/cmd/config"
 	"github.com/CyrilSbrodov/metricService.git/cmd/loggers"
+	"github.com/CyrilSbrodov/metricService.git/internal/crypto"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 )
 
+type Agenter interface {
+	NewAgentApp() *AgentApp
+}
+
+//AgentApp структура агента
 type AgentApp struct {
+	closed chan struct{}
 	client *http.Client
 	cfg    config.AgentConfig
 	logger *loggers.Logger
+	public *rsa.PublicKey
+	url    string
+	wg     sync.WaitGroup
 }
 
+//NewAgentApp создание нового агента
 func NewAgentApp() *AgentApp {
-	client := &http.Client{}
 	cfg := config.AgentConfigInit()
 	logger := loggers.NewLogger()
+	client := &http.Client{}
+
+	if cfg.CryptoPROKey != "" {
+		public, err := crypto.LoadPublicPEMKey(cfg.CryptoPROKey, logger, cfg.CryptoPROKeyPath)
+		if err != nil {
+			logger.LogErr(err, "filed to load file")
+			os.Exit(1)
+		}
+		return &AgentApp{
+			closed: make(chan struct{}),
+			client: client,
+			cfg:    *cfg,
+			logger: logger,
+			public: public,
+			url:    "http://",
+		}
+	}
 	return &AgentApp{
+		closed: make(chan struct{}),
 		client: client,
-		cfg:    cfg,
+		cfg:    *cfg,
 		logger: logger,
+		public: nil,
+		url:    "http://",
 	}
 }
 
+// Run запуск агента
 func (a *AgentApp) Run() {
-	wg := &sync.WaitGroup{}
+
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+	//запуск тикеров
+	a.wg.Add(1)
+	go func() {
+		defer a.wg.Done()
+		a.RunTickers()
+	}()
+
+	//прослушивание канала на сигналы завершения работы
+	<-done
+
+	a.logger.LogInfo("", "", "Agent Shutdown")
+	//остановка агента, если в канал поступает сигнал
+	a.Stop()
+	a.logger.LogInfo("", "", "Agent Shutdown gracefully")
+}
+
+// RunTickers запуск тикеров
+func (a *AgentApp) RunTickers() {
 	var count int64
 	metrics := storage.NewAgentMetrics()
 	//запуск тикера
 	tickerUpload := time.NewTicker(a.cfg.ReportInterval)
 	tickerUpdate := time.NewTicker(a.cfg.PollInterval)
-
 	for {
 		select {
 		//отправка метрики 10 сек
 		case <-tickerUpload.C:
 			//отправка данных по адресу
-			wg.Add(2)
-			go a.upload(metrics, wg)
-			go a.uploadBatch(metrics, wg)
+			a.wg.Add(2)
+			if a.cfg.CryptoPROKey != "" {
+				go a.uploadCrypto(metrics)
+				go a.uploadBatchCrypto(metrics)
+			} else {
+				go a.upload(metrics)
+				go a.uploadBatch(metrics)
+			}
 			//обновление метрики 2 сек
 		case <-tickerUpdate.C:
 			count++
-			wg.Add(2)
-			go a.update(metrics, count, wg)
-			go a.updateOtherMetrics(metrics, wg)
+			a.wg.Add(2)
+			go a.update(metrics, count)
+			go a.updateOtherMetrics(metrics)
+		case <-a.closed:
+			return
 		}
 	}
 }
 
+// Stop остановка агента
+func (a *AgentApp) Stop() {
+	close(a.closed)
+	a.wg.Wait()
+}
+
 //отправка метрики
-func (a *AgentApp) upload(store *storage.AgentMetrics, wg *sync.WaitGroup) {
+func (a *AgentApp) upload(store *storage.AgentMetrics) {
 	store.Sync.Lock()
 	defer store.Sync.Unlock()
-	defer wg.Done()
+	defer a.wg.Done()
 	for _, m := range store.Store {
 		metricsJSON, errJSON := json.Marshal(m)
 		if errJSON != nil {
 			fmt.Println(errJSON)
 			break
 		}
-		req, err := http.NewRequest(http.MethodPost, "http://"+a.cfg.Addr+"/update/", bytes.NewBuffer(metricsJSON))
+		req, err := http.NewRequest(http.MethodPost, a.url+a.cfg.Addr+"/update/", bytes.NewBuffer(metricsJSON))
+
+		if err != nil {
+			a.logger.LogErr(err, "Failed to request")
+			fmt.Println(err)
+			break
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Add("Accept", "application/json")
+
+		resp, err := a.client.Do(req)
+		if err != nil {
+			a.logger.LogErr(err, "Failed to do request")
+			break
+		}
+		_, err = io.ReadAll(resp.Body)
+		if err != nil {
+			a.logger.LogErr(err, "Failed to read body")
+			break
+		}
+		resp.Body.Close()
+	}
+}
+
+//отправка метрики Crypto
+func (a *AgentApp) uploadCrypto(store *storage.AgentMetrics) {
+	store.Sync.Lock()
+	defer store.Sync.Unlock()
+	defer a.wg.Done()
+	for _, m := range store.Store {
+		metricsJSON, errJSON := json.Marshal(m)
+		if errJSON != nil {
+			fmt.Println(errJSON)
+			break
+		}
+		//шифрование данных с помощью публичного ключа
+		mByte, err := crypto.EncryptedData(metricsJSON, a.public, a.logger)
+		if err != nil {
+			a.logger.LogErr(err, "error from encrypted")
+			break
+		}
+		req, err := http.NewRequest(http.MethodPost, a.url+a.cfg.Addr+"/update/", bytes.NewBuffer(mByte))
 
 		if err != nil {
 			a.logger.LogErr(err, "Failed to request")
@@ -102,10 +211,10 @@ func (a *AgentApp) upload(store *storage.AgentMetrics, wg *sync.WaitGroup) {
 }
 
 //отправка метрики батчами.
-func (a *AgentApp) uploadBatch(store *storage.AgentMetrics, wg *sync.WaitGroup) {
+func (a *AgentApp) uploadBatch(store *storage.AgentMetrics) {
 	store.Sync.Lock()
 	defer store.Sync.Unlock()
-	defer wg.Done()
+	defer a.wg.Done()
 	var metrics []storage.Metrics
 	for _, m := range store.Store {
 		metrics = append(metrics, m)
@@ -116,6 +225,7 @@ func (a *AgentApp) uploadBatch(store *storage.AgentMetrics, wg *sync.WaitGroup) 
 		fmt.Println(errJSON)
 		return
 	}
+	//шифрование данных с помощью публичного ключа
 	metricsCompress, err := a.compress(metricsJSON)
 	if err != nil {
 		a.logger.LogErr(errJSON, "Failed to compress metrics")
@@ -124,7 +234,7 @@ func (a *AgentApp) uploadBatch(store *storage.AgentMetrics, wg *sync.WaitGroup) 
 	if len(metricsCompress) == 0 {
 		return
 	}
-	req, err := http.NewRequest(http.MethodPost, "http://"+a.cfg.Addr+"/updates/", bytes.NewBuffer(metricsCompress))
+	req, err := http.NewRequest(http.MethodPost, a.url+a.cfg.Addr+"/updates/", bytes.NewBuffer(metricsCompress))
 
 	if err != nil {
 		a.logger.LogErr(err, "Failed to request")
@@ -143,15 +253,65 @@ func (a *AgentApp) uploadBatch(store *storage.AgentMetrics, wg *sync.WaitGroup) 
 		a.logger.LogErr(err, "Failed to read body")
 		return
 	}
+	resp.Body.Close()
+}
 
+//отправка метрики батчами Crypto.
+func (a *AgentApp) uploadBatchCrypto(store *storage.AgentMetrics) {
+	store.Sync.Lock()
+	defer store.Sync.Unlock()
+	defer a.wg.Done()
+	var metrics []storage.Metrics
+	for _, m := range store.Store {
+		metrics = append(metrics, m)
+	}
+	metricsJSON, errJSON := json.Marshal(metrics)
+	if errJSON != nil {
+		a.logger.LogErr(errJSON, "Failed to Marshal metrics to JSON")
+		fmt.Println(errJSON)
+		return
+	}
+	//шифрование данных с помощью публичного ключа
+	mByte, err := crypto.EncryptedData(metricsJSON, a.public, a.logger)
+	if err != nil {
+		a.logger.LogErr(err, "error from encrypted")
+		return
+	}
+	metricsCompress, err := a.compress(mByte)
+	if err != nil {
+		a.logger.LogErr(errJSON, "Failed to compress metrics")
+		return
+	}
+	if len(metricsCompress) == 0 {
+		return
+	}
+	req, err := http.NewRequest(http.MethodPost, a.url+a.cfg.Addr+"/updates/", bytes.NewBuffer(metricsCompress))
+
+	if err != nil {
+		a.logger.LogErr(err, "Failed to request")
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("Content-Encoding", "gzip")
+
+	resp, err := a.client.Do(req)
+	if err != nil {
+		a.logger.LogErr(err, "Failed to do request")
+		return
+	}
+	_, err = io.ReadAll(resp.Body)
+	if err != nil {
+		a.logger.LogErr(err, "Failed to read body")
+		return
+	}
 	resp.Body.Close()
 }
 
 //сбор метрики
-func (a *AgentApp) update(store *storage.AgentMetrics, count int64, wg *sync.WaitGroup) {
+func (a *AgentApp) update(store *storage.AgentMetrics, count int64) {
 	store.Sync.Lock()
 	defer store.Sync.Unlock()
-	defer wg.Done()
+	defer a.wg.Done()
 
 	var memory runtime.MemStats
 	runtime.ReadMemStats(&memory)
@@ -208,10 +368,10 @@ func (a *AgentApp) update(store *storage.AgentMetrics, count int64, wg *sync.Wai
 }
 
 //сбор остальных метрик.
-func (a *AgentApp) updateOtherMetrics(store *storage.AgentMetrics, wg *sync.WaitGroup) {
+func (a *AgentApp) updateOtherMetrics(store *storage.AgentMetrics) {
 	store.Sync.Lock()
 	defer store.Sync.Unlock()
-	defer wg.Done()
+	defer a.wg.Done()
 	var value float64
 	v, _ := mem.VirtualMemory()
 	cpuValue, _ := cpu.Percent(0, false)

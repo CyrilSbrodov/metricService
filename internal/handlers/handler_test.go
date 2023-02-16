@@ -24,7 +24,7 @@ var (
 
 func TestMain(m *testing.M) {
 	cfg := config.ServerConfigInit()
-	CFG = cfg
+	CFG = *cfg
 	os.Exit(m.Run())
 }
 

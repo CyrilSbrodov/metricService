@@ -16,7 +16,7 @@ var (
 
 func TestMain(m *testing.M) {
 	cfg := config.ServerConfigInit()
-	CFG = cfg
+	CFG = *cfg
 	CFG.DatabaseDSN = "postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable"
 	os.Exit(m.Run())
 }

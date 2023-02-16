@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"crypto/rsa"
 	"net/http"
 	"os"
 	"os/signal"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/CyrilSbrodov/metricService.git/cmd/config"
 	"github.com/CyrilSbrodov/metricService.git/cmd/loggers"
+	"github.com/CyrilSbrodov/metricService.git/internal/crypto"
 	"github.com/CyrilSbrodov/metricService.git/internal/handlers"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage/repositories"
@@ -19,19 +21,44 @@ import (
 )
 
 type ServerApp struct {
-	router *chi.Mux
-	cfg    config.ServerConfig
-	logger *loggers.Logger
+	router   *chi.Mux
+	cfg      config.ServerConfig
+	logger   *loggers.Logger
+	Cryptoer crypto.Cryptoer
+	private  *rsa.PrivateKey
 }
 
 func NewServerApp() *ServerApp {
 	router := chi.NewRouter()
 	logger := loggers.NewLogger()
 	cfg := config.ServerConfigInit()
+
+	if cfg.CryptoPROKey != "" {
+		c := crypto.NewCrypto()
+		err := c.AddCryptoKey("public.pem", cfg.CryptoPROKey, "cert.pem", cfg.CryptoPROKeyPath)
+		if err != nil {
+			logger.LogErr(err, "filed to create file")
+			os.Exit(1)
+		}
+		p, err := c.LoadPrivatePEMKey(cfg.CryptoPROKey)
+		if err != nil {
+			logger.LogErr(err, "filed to load file")
+			os.Exit(1)
+		}
+		return &ServerApp{
+			router:   router,
+			cfg:      *cfg,
+			logger:   logger,
+			Cryptoer: c,
+			private:  p,
+		}
+	}
 	return &ServerApp{
-		router: router,
-		cfg:    cfg,
-		logger: logger,
+		router:   router,
+		cfg:      *cfg,
+		logger:   logger,
+		Cryptoer: nil,
+		private:  nil,
 	}
 }
 
@@ -59,7 +86,7 @@ func (a *ServerApp) Run() {
 		}
 	}
 
-	handler := handlers.NewHandler(store, a.logger)
+	handler := handlers.NewHandler(store, *a.logger, a.Cryptoer, a.cfg, a.private)
 	//регистрация хендлера
 	handler.Register(a.router)
 
@@ -69,7 +96,7 @@ func (a *ServerApp) Run() {
 	}
 
 	done := make(chan os.Signal, 1)
-	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -92,5 +119,4 @@ func (a *ServerApp) Run() {
 		a.logger.LogErr(err, "Server Shutdown Failed")
 	}
 	a.logger.LogInfo("", "", "Server Exited Properly")
-	os.Exit(1)
 }
