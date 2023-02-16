@@ -2,9 +2,13 @@ package handlers
 
 import (
 	"compress/gzip"
+	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"strings"
+
+	"github.com/CyrilSbrodov/metricService.git/cmd/config"
 )
 
 //создание структуры gzip сжатия
@@ -40,5 +44,36 @@ func gzipHandle(next http.HandlerFunc) http.HandlerFunc {
 		rw.Header().Set("Content-Encoding", "gzip")
 		// передаём обработчику страницы переменную типа gzipWriter для вывода данных
 		next.ServeHTTP(gzipWriter{ResponseWriter: rw, Writer: gz}, r)
+	}
+}
+
+func trustedSubnet(cfg config.ServerConfig, next http.HandlerFunc) http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		// проверяем, что значение CIDR не пустое
+		if cfg.TrustedSubnet == "" {
+			// если значение CIDR пустое, то передаём управление дальше
+			next.ServeHTTP(rw, r)
+			return
+		}
+
+		host, _, err := net.SplitHostPort(r.Header.Get("X-Real-IP"))
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		ipAddr, _, err := net.ParseCIDR(cfg.TrustedSubnet)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		if host == string(ipAddr) {
+			// если X-Real-IP соответствует CIDR, передаём управление
+			// дальше без изменений
+			next.ServeHTTP(rw, r)
+			return
+		} else {
+			rw.WriteHeader(http.StatusForbidden)
+			return
+		}
 	}
 }

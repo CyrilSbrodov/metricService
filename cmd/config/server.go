@@ -22,6 +22,7 @@ type ServerConfig struct {
 	DatabaseDSN      string        `json:"database_dsn" env:"DATABASE_DSN"`
 	CryptoPROKey     string        `json:"crypto_key" env:"CRYPTO_KEY"`
 	CryptoPROKeyPath string        `json:"crypto_pro_key_path" env:"CRYPTO_KEY_PATH"`
+	TrustedSubnet    string        `json:"trusted_subnet" env:"TRUSTED_SUBNET"`
 	Restore          bool          `json:"restore" env:"RESTORE"`
 	StoreInterval    time.Duration `json:"store_interval" env:"STORE_INTERVAL"`
 }
@@ -49,6 +50,7 @@ func ServerConfigInit() *ServerConfig {
 	flag.StringVar(&cfgSrv.DatabaseDSN, "d", "postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable", "DATABASE_DSN")
 	flag.StringVar(&cfgSrv.CryptoPROKey, "crypto-key", "", "path to file")
 	flag.StringVar(&cfgSrv.CryptoPROKeyPath, "crypto-key-path", "../../cmd/server/", "path to folder")
+	flag.StringVar(&cfgSrv.TrustedSubnet, "t", "", "CIDR")
 	flag.Parse()
 	if err := env.Parse(cfgSrv); err != nil {
 		fmt.Println(err)

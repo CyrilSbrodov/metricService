@@ -23,7 +23,6 @@ func main() {
 		buildVersion = "N/A"
 	}
 	fmt.Printf("Build version: %s\nBuild date: %s\nBuild commit: %s\n", buildVersion, buildDate, buildCommit)
-
 	agent := app.NewAgentApp()
 	agent.Run()
 }

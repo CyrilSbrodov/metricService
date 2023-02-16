@@ -152,6 +152,7 @@ func (a *AgentApp) upload(store *storage.AgentMetrics) {
 			fmt.Println(err)
 			break
 		}
+		req.Header.Set("X-Real-IP", getIP(req))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Add("Accept", "application/json")
 
@@ -193,6 +194,7 @@ func (a *AgentApp) uploadCrypto(store *storage.AgentMetrics) {
 			fmt.Println(err)
 			break
 		}
+		req.Header.Set("X-Real-IP", getIP(req))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Add("Accept", "application/json")
 
@@ -240,6 +242,7 @@ func (a *AgentApp) uploadBatch(store *storage.AgentMetrics) {
 		a.logger.LogErr(err, "Failed to request")
 		return
 	}
+	req.Header.Set("X-Real-IP", getIP(req))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Add("Content-Encoding", "gzip")
 
@@ -291,6 +294,7 @@ func (a *AgentApp) uploadBatchCrypto(store *storage.AgentMetrics) {
 		a.logger.LogErr(err, "Failed to request")
 		return
 	}
+	req.Header.Set("X-Real-IP", getIP(req))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Add("Content-Encoding", "gzip")
 
@@ -430,4 +434,12 @@ func (a *AgentApp) compress(store []byte) ([]byte, error) {
 		return nil, fmt.Errorf("failed compress data: %v", err)
 	}
 	return b.Bytes(), nil
+}
+
+func getIP(r *http.Request) string {
+	IP := r.RemoteAddr
+	if IP == "" {
+		IP = "127.0.0.1:8080"
+	}
+	return IP
 }
