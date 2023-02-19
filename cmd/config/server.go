@@ -48,7 +48,7 @@ func ServerConfigInit() *ServerConfig {
 	flag.StringVar(&cfgSrv.StoreFile, "f", "/tmp/devops-metrics-db.json", "STORE_FILE")
 	flag.BoolVar(&cfgSrv.Restore, "r", true, "RESTORE")
 	flag.StringVar(&cfgSrv.Hash, "k", "", "KEY")
-	flag.StringVar(&cfgSrv.DatabaseDSN, "d", "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable", "DATABASE_DSN")
+	flag.StringVar(&cfgSrv.DatabaseDSN, "d", "postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable", "DATABASE_DSN")
 	flag.StringVar(&cfgSrv.CryptoPROKey, "crypto-key", "", "path to file")
 	flag.StringVar(&cfgSrv.CryptoPROKeyPath, "crypto-key-path", "../../cmd/server/", "path to folder")
 	flag.StringVar(&cfgSrv.TrustedSubnet, "t", "", "CIDR")

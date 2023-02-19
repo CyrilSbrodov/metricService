@@ -28,7 +28,7 @@ type AgentMetrics struct {
 }
 
 type AgentMetricsProto struct {
-	Store map[string]pb.Metrics
+	Store map[string]*pb.Metrics
 	Sync  sync.Mutex
 }
 
@@ -41,7 +41,7 @@ func NewAgentMetrics() *AgentMetrics {
 
 func NewAgentMetricsProto() *AgentMetricsProto {
 	return &AgentMetricsProto{
-		Store: make(map[string]pb.Metrics),
+		Store: make(map[string]*pb.Metrics),
 	}
 }
 

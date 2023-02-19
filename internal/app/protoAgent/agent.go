@@ -156,7 +156,7 @@ func (a *AgentApp) update(store *storage.AgentMetricsProto, count int64) {
 		}
 
 		m.Hash = a.hashing(&m)
-		store.Store[m.ID] = m
+		store.Store[m.ID] = &m
 
 	}
 	var m = pb.Metrics{
@@ -166,7 +166,7 @@ func (a *AgentApp) update(store *storage.AgentMetricsProto, count int64) {
 	}
 
 	m.Hash = a.hashing(&m)
-	store.Store[m.ID] = m
+	store.Store[m.ID] = &m
 
 	value := rand.Intn(256)
 	v := float64(value)
@@ -176,7 +176,7 @@ func (a *AgentApp) update(store *storage.AgentMetricsProto, count int64) {
 		Value: v,
 	}
 	randomValue.Hash = a.hashing(&randomValue)
-	store.Store[randomValue.ID] = randomValue
+	store.Store[randomValue.ID] = &randomValue
 }
 
 //Сбор остальных метрик.
@@ -207,9 +207,9 @@ func (a *AgentApp) updateOtherMetrics(store *storage.AgentMetricsProto) {
 	total.Hash = a.hashing(&total)
 	free.Hash = a.hashing(&free)
 	cpu.Hash = a.hashing(&cpu)
-	store.Store[total.ID] = total
-	store.Store[free.ID] = free
-	store.Store[cpu.ID] = cpu
+	store.Store[total.ID] = &total
+	store.Store[free.ID] = &free
+	store.Store[cpu.ID] = &cpu
 }
 
 //Отправка метрики
@@ -219,7 +219,7 @@ func (a *AgentApp) upload(ctx context.Context, store *storage.AgentMetricsProto,
 	defer a.wg.Done()
 	for _, m := range store.Store {
 
-		resp, err := client.CollectMetric(ctx, a.AddMetric(&m))
+		resp, err := client.CollectMetric(ctx, a.AddMetric(m))
 		if err != nil {
 			a.logger.LogErr(err, "Failed to request")
 			fmt.Println(err)
@@ -279,7 +279,7 @@ func (a *AgentApp) uploadBatch(ctx context.Context, store *storage.AgentMetricsP
 	defer a.wg.Done()
 	var metrics []*pb.Metrics
 	for _, m := range store.Store {
-		metrics = append(metrics, &m)
+		metrics = append(metrics, m)
 	}
 	resp, err := client.CollectMetrics(ctx, a.AddMetrics(metrics))
 	if err != nil {
