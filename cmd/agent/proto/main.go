@@ -1,8 +1,8 @@
 package main
 
-import "github.com/CyrilSbrodov/metricService.git/internal/app/protoAgent"
+import "github.com/CyrilSbrodov/metricService.git/internal/app/protoagent"
 
 func main() {
-	c := protoAgent.NewAgentApp()
+	c := protoagent.NewAgentApp()
 	c.Run()
 }

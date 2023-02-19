@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package app;
 
-option go_package = "app/protoServer";
+option go_package = "app/protoserver";
 
 message Metrics {
   string ID = 1;

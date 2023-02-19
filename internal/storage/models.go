@@ -67,7 +67,7 @@ func (m *Metrics) ToProto() *pb.Metrics {
 	}
 }
 
-func (m *Metrics) ToMetric(metric pb.Metrics) *Metrics {
+func (m *Metrics) ToMetric(metric *pb.Metrics) *Metrics {
 	var value float64 = 0
 	var delta int64 = 0
 	if metric.Value == 0 {

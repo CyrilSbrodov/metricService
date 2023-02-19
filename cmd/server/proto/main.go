@@ -1,10 +1,10 @@
 package main
 
 import (
-	"github.com/CyrilSbrodov/metricService.git/internal/app/protoServer"
+	"github.com/CyrilSbrodov/metricService.git/internal/app/protoserver"
 )
 
 func main() {
-	srv := protoServer.NewServerApp()
+	srv := protoserver.NewServerApp()
 	srv.Run()
 }

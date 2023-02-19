@@ -1,4 +1,4 @@
-package protoServer
+package protoserver
 
 import (
 	"context"
@@ -131,7 +131,7 @@ func (a *ServerApp) Run() {
 func (s *StoreServer) CollectMetric(ctx context.Context, in *pb.AddMetricRequest) (*pb.AddMetricResponse, error) {
 	var response pb.AddMetricResponse
 	var m storage.Metrics
-	metric, err := s.storage.GetMetric(*m.ToMetric(*in.Metrics))
+	metric, err := s.storage.GetMetric(*m.ToMetric(in.Metrics))
 	if err != nil {
 		s.logger.LogErr(err, "")
 		return nil, err
@@ -145,7 +145,7 @@ func (s *StoreServer) CollectMetrics(ctx context.Context, in *pb.AddMetricsReque
 	var metrics []storage.Metrics
 	var m storage.Metrics
 	for _, metric := range in.Metrics {
-		metrics = append(metrics, *m.ToMetric(*metric))
+		metrics = append(metrics, *m.ToMetric(metric))
 	}
 	err := s.storage.CollectMetrics(metrics)
 	if err != nil {
@@ -173,25 +173,3 @@ func (s *StoreServer) CollectMetrics(ctx context.Context, in *pb.AddMetricsReque
 //func (s *StoreServer) PingClient(ctx context.Context, in *PingClientRequest) (*PingClientResponse, error) {
 //	return nil, status.Errorf(codes.Unimplemented, "method PingClient not implemented")
 //}
-
-func toMetric(metric pb.Metrics) *storage.Metrics {
-	var value float64 = 0
-	var delta int64 = 0
-	if metric.Value == 0 {
-		return &storage.Metrics{
-			ID:    metric.ID,
-			MType: metric.MType,
-			Delta: &metric.Delta,
-			Value: &value,
-			Hash:  metric.Hash,
-		}
-	} else {
-		return &storage.Metrics{
-			ID:    metric.ID,
-			MType: metric.MType,
-			Delta: &delta,
-			Value: &metric.Value,
-			Hash:  metric.Hash,
-		}
-	}
-}

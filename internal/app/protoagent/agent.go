@@ -1,4 +1,4 @@
-package protoAgent
+package protoagent
 
 import (
 	"bytes"
