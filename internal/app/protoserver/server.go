@@ -9,8 +9,6 @@ import (
 	"syscall"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"github.com/CyrilSbrodov/metricService.git/cmd/config"
 	"github.com/CyrilSbrodov/metricService.git/cmd/loggers"
@@ -163,21 +161,5 @@ func (s *StoreServer) GetAll(ctx context.Context, in *pb.GetAllMetricsRequest) (
 		return nil, err
 	}
 	response.AnswerToWeb.Msg = metrics
-	return &response, status.Errorf(codes.Unimplemented, "method GetAll not implemented")
+	return &response, nil
 }
-
-//func (s *StoreServer) CollectOrChangeGauge(ctx context.Context, in *CollectGaugeRequest) (*CollectGaugeResponse, error) {
-//	return nil, status.Errorf(codes.Unimplemented, "method CollectOrChangeGauge not implemented")
-//}
-//func (s *StoreServer) CollectOrIncreaseCounter(ctx context.Context, in *CollectCounterRequest) (*CollectCounterResponse, error) {
-//	return nil, status.Errorf(codes.Unimplemented, "method CollectOrIncreaseCounter not implemented")
-//}
-//func (s *StoreServer) GetGauge(ctx context.Context, in *GetGaugeRequest) (*GetGaugeResponse, error) {
-//	return nil, status.Errorf(codes.Unimplemented, "method GetGauge not implemented")
-//}
-//func (s *StoreServer) GetCounter(ctx context.Context, in *GetCounterRequest) (*GetCounterResponse, error) {
-//	return nil, status.Errorf(codes.Unimplemented, "method GetCounter not implemented")
-//}
-//func (s *StoreServer) PingClient(ctx context.Context, in *PingClientRequest) (*PingClientResponse, error) {
-//	return nil, status.Errorf(codes.Unimplemented, "method PingClient not implemented")
-//}
