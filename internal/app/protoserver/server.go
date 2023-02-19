@@ -9,6 +9,8 @@ import (
 	"syscall"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/CyrilSbrodov/metricService.git/cmd/config"
 	"github.com/CyrilSbrodov/metricService.git/cmd/loggers"
@@ -44,7 +46,7 @@ type ServerApp struct {
 func NewServerApp() *ServerApp {
 	logger := loggers.NewLogger()
 	cfg := config.ServerConfigInit()
-	listen, err := net.Listen("tcp", ":3202")
+	listen, err := net.Listen("tcp", cfg.GRPCAddr)
 	if err != nil {
 		logger.LogErr(err, " ")
 		os.Exit(1)
@@ -106,8 +108,6 @@ func (a *ServerApp) Run() {
 		}
 	}
 
-	pb.RegisterStorageServer(a.server, storage)
-
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
@@ -155,9 +155,17 @@ func (s *StoreServer) CollectMetrics(ctx context.Context, in *pb.AddMetricsReque
 	return &response, nil
 }
 
-//func (s *SStoreServer) GetAll(ctx context.Context, in *GetAllMetricsRequest) (*GetAllMetricsResponse, error) {
-//	return nil, status.Errorf(codes.Unimplemented, "method GetAll not implemented")
-//}
+func (s *StoreServer) GetAll(ctx context.Context, in *pb.GetAllMetricsRequest) (*pb.GetAllMetricsResponse, error) {
+	var response pb.GetAllMetricsResponse
+	metrics, err := s.storage.GetAll()
+	if err != nil {
+		s.logger.LogErr(err, "")
+		return nil, err
+	}
+	response.AnswerToWeb.Msg = metrics
+	return &response, status.Errorf(codes.Unimplemented, "method GetAll not implemented")
+}
+
 //func (s *StoreServer) CollectOrChangeGauge(ctx context.Context, in *CollectGaugeRequest) (*CollectGaugeResponse, error) {
 //	return nil, status.Errorf(codes.Unimplemented, "method CollectOrChangeGauge not implemented")
 //}

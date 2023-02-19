@@ -4,7 +4,7 @@
 // - protoc             v3.12.4
 // source: internal/app/proto/server.proto
 
-package protoServer
+package protoserver
 
 import (
 	context "context"

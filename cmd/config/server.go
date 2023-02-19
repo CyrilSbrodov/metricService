@@ -17,13 +17,13 @@ import (
 type ServerConfig struct {
 	Addr             string `json:"address" env:"ADDRESS"`
 	GRPCAddr         string `json:"grpc_addr" env:"GRPC_ADDRESS"`
+	StoreFile        string `json:"store_file" env:"STORE_FILE"`
+	Hash             string `env:"KEY"`
+	DatabaseDSN      string `json:"database_dsn" env:"DATABASE_DSN"`
+	CryptoPROKey     string `json:"crypto_key" env:"CRYPTO_KEY"`
+	CryptoPROKeyPath string `json:"crypto_pro_key_path" env:"CRYPTO_KEY_PATH"`
+	TrustedSubnet    string `json:"trusted_subnet" env:"TRUSTED_SUBNET"`
 	Config           string
-	StoreFile        string        `json:"store_file" env:"STORE_FILE"`
-	Hash             string        `env:"KEY"`
-	DatabaseDSN      string        `json:"database_dsn" env:"DATABASE_DSN"`
-	CryptoPROKey     string        `json:"crypto_key" env:"CRYPTO_KEY"`
-	CryptoPROKeyPath string        `json:"crypto_pro_key_path" env:"CRYPTO_KEY_PATH"`
-	TrustedSubnet    string        `json:"trusted_subnet" env:"TRUSTED_SUBNET"`
 	Restore          bool          `json:"restore" env:"RESTORE"`
 	StoreInterval    time.Duration `json:"store_interval" env:"STORE_INTERVAL"`
 }

@@ -8,7 +8,6 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"math/rand"
-	"net/http"
 	"os"
 	"os/signal"
 	"reflect"
@@ -53,7 +52,7 @@ func NewAgentApp() *AgentApp {
 
 // Run запуск агента
 func (a *AgentApp) Run() {
-	conn, err := grpc.Dial(":3202", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(a.cfg.GRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		a.logger.LogErr(err, "failed to dial")
 	}
@@ -229,49 +228,6 @@ func (a *AgentApp) upload(ctx context.Context, store *storage.AgentMetricsProto,
 	}
 }
 
-//
-////Отправка метрики Crypto
-//func (a *AgentApp) uploadCrypto(store *storage.AgentMetrics) {
-//	store.Sync.Lock()
-//	defer store.Sync.Unlock()
-//	defer a.wg.Done()
-//	for _, m := range store.Store {
-//		metricsJSON, errJSON := json.Marshal(m)
-//		if errJSON != nil {
-//			fmt.Println(errJSON)
-//			break
-//		}
-//		//шифрование данных с помощью публичного ключа
-//		mByte, err := crypto.EncryptedData(metricsJSON, a.public, a.logger)
-//		if err != nil {
-//			a.logger.LogErr(err, "error from encrypted")
-//			break
-//		}
-//		req, err := http.NewRequest(http.MethodPost, a.url+a.cfg.Addr+"/update/", bytes.NewBuffer(mByte))
-//
-//		if err != nil {
-//			a.logger.LogErr(err, "Failed to request")
-//			fmt.Println(err)
-//			break
-//		}
-//		req.Header.Set("X-Real-IP", getIP(req))
-//		req.Header.Set("Content-Type", "application/json")
-//		req.Header.Add("Accept", "application/json")
-//
-//		resp, err := a.client.Do(req)
-//		if err != nil {
-//			a.logger.LogErr(err, "Failed to do request")
-//			break
-//		}
-//		_, err = io.ReadAll(resp.Body)
-//		if err != nil {
-//			a.logger.LogErr(err, "Failed to read body")
-//			break
-//		}
-//		resp.Body.Close()
-//	}
-//}
-
 //Отправка метрики батчами.
 func (a *AgentApp) uploadBatch(ctx context.Context, store *storage.AgentMetricsProto, client pb.StorageClient) {
 	store.Sync.Lock()
@@ -289,58 +245,6 @@ func (a *AgentApp) uploadBatch(ctx context.Context, store *storage.AgentMetricsP
 	}
 	a.logger.LogInfo("metric:", resp.String(), "")
 }
-
-////Отправка метрики батчами Crypto.
-//func (a *AgentApp) uploadBatchCrypto(store *storage.AgentMetrics) {
-//	store.Sync.Lock()
-//	defer store.Sync.Unlock()
-//	defer a.wg.Done()
-//	var metrics []storage.Metrics
-//	for _, m := range store.Store {
-//		metrics = append(metrics, m)
-//	}
-//	metricsJSON, errJSON := json.Marshal(metrics)
-//	if errJSON != nil {
-//		a.logger.LogErr(errJSON, "Failed to Marshal metrics to JSON")
-//		fmt.Println(errJSON)
-//		return
-//	}
-//	//шифрование данных с помощью публичного ключа
-//	mByte, err := crypto.EncryptedData(metricsJSON, a.public, a.logger)
-//	if err != nil {
-//		a.logger.LogErr(err, "error from encrypted")
-//		return
-//	}
-//	metricsCompress, err := a.compress(mByte)
-//	if err != nil {
-//		a.logger.LogErr(errJSON, "Failed to compress metrics")
-//		return
-//	}
-//	if len(metricsCompress) == 0 {
-//		return
-//	}
-//	req, err := http.NewRequest(http.MethodPost, a.url+a.cfg.Addr+"/updates/", bytes.NewBuffer(metricsCompress))
-//
-//	if err != nil {
-//		a.logger.LogErr(err, "Failed to request")
-//		return
-//	}
-//	req.Header.Set("X-Real-IP", getIP(req))
-//	req.Header.Set("Content-Type", "application/json")
-//	req.Header.Add("Content-Encoding", "gzip")
-//
-//	resp, err := a.client.Do(req)
-//	if err != nil {
-//		a.logger.LogErr(err, "Failed to do request")
-//		return
-//	}
-//	_, err = io.ReadAll(resp.Body)
-//	if err != nil {
-//		a.logger.LogErr(err, "Failed to read body")
-//		return
-//	}
-//	resp.Body.Close()
-//}
 
 //Функция хеширования.
 func (a *AgentApp) hashing(m *pb.Metrics) string {
@@ -374,21 +278,12 @@ func (a *AgentApp) compress(store []byte) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func getIP(r *http.Request) string {
-	IP := r.RemoteAddr
-	if IP == "" {
-		IP = "127.0.0.1:8080"
-	}
-	return IP
-}
-
 func (a *AgentApp) AddMetric(metrics *pb.Metrics) *pb.AddMetricRequest {
 	return &pb.AddMetricRequest{
 		Metrics: metrics,
 	}
 }
 func (a *AgentApp) AddMetrics(metrics []*pb.Metrics) *pb.AddMetricsRequest {
-
 	return &pb.AddMetricsRequest{
 		Metrics: metrics,
 	}
