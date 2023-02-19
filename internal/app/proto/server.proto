@@ -1,0 +1,93 @@
+syntax = "proto3";
+
+package app;
+
+option go_package = "app/protoServer";
+
+message Metrics {
+  string ID = 1;
+  string MType = 2;
+  sint64 Delta = 3;
+  double Value = 4;
+  string Hash = 5;
+}
+
+message AnswerToWeb {
+  string msg = 1;
+}
+
+message AddMetricRequest {
+  Metrics metrics = 1;
+}
+
+message AddMetricResponse {
+  string error = 1; // ошибка
+  Metrics metrics = 2;
+}
+
+message AddMetricsRequest {
+  repeated Metrics metrics = 1;
+}
+
+message AddMetricsResponse {
+  string error = 1; // ошибка
+}
+
+message GetAllMetricsRequest {
+}
+
+message GetAllMetricsResponse {
+  AnswerToWeb answerToWeb = 1;
+  string error = 2;
+}
+
+message CollectGaugeRequest {
+  string metrics = 1;
+  double value = 2;
+}
+
+message CollectGaugeResponse {
+  string error = 1; // ошибка
+}
+
+message CollectCounterRequest {
+  string metrics = 1;
+  sint64 value = 2;
+}
+
+message CollectCounterResponse {
+  string error = 1; // ошибка
+}
+
+message GetGaugeRequest {
+  string metrics = 1;
+}
+
+message GetGaugeResponse {
+  double value = 1;
+  string error = 2; // ошибка
+}
+
+message GetCounterRequest {
+  string metrics = 1;
+}
+
+message GetCounterResponse {
+  sint64 value = 1;
+  string error = 2; // ошибка
+}
+message PingClientRequest {
+}
+message PingClientResponse {
+}
+
+service Storage {
+  rpc CollectMetric(AddMetricRequest) returns (AddMetricResponse); //получение метрики
+  rpc CollectMetrics(AddMetricsRequest) returns (AddMetricsResponse); //получение метрики батчами.
+  rpc GetAll (GetAllMetricsRequest) returns (GetAllMetricsResponse); //выгрузка всех метрик.
+  rpc CollectOrChangeGauge(CollectGaugeRequest) returns(CollectGaugeResponse);   //получение или изменение метрики типа Gauge.
+  rpc CollectOrIncreaseCounter(CollectCounterRequest) returns(CollectCounterResponse); //получение или изменение метрики типа Counter.
+  rpc GetGauge(GetGaugeRequest) returns (GetGaugeResponse);                   //выгрузка метрики типа Gauge.
+  rpc GetCounter(GetCounterRequest) returns (GetCounterResponse);                   //выгрузка метрики типа Counter.
+  rpc PingClient(PingClientRequest) returns(PingClientResponse);                                       //ping
+}

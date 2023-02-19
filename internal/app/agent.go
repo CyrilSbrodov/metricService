@@ -134,7 +134,7 @@ func (a *AgentApp) Stop() {
 	a.wg.Wait()
 }
 
-//отправка метрики
+//Отправка метрики
 func (a *AgentApp) upload(store *storage.AgentMetrics) {
 	store.Sync.Lock()
 	defer store.Sync.Unlock()
@@ -170,7 +170,7 @@ func (a *AgentApp) upload(store *storage.AgentMetrics) {
 	}
 }
 
-//отправка метрики Crypto
+//Отправка метрики Crypto
 func (a *AgentApp) uploadCrypto(store *storage.AgentMetrics) {
 	store.Sync.Lock()
 	defer store.Sync.Unlock()
@@ -212,7 +212,7 @@ func (a *AgentApp) uploadCrypto(store *storage.AgentMetrics) {
 	}
 }
 
-//отправка метрики батчами.
+//Отправка метрики батчами.
 func (a *AgentApp) uploadBatch(store *storage.AgentMetrics) {
 	store.Sync.Lock()
 	defer store.Sync.Unlock()
@@ -259,7 +259,7 @@ func (a *AgentApp) uploadBatch(store *storage.AgentMetrics) {
 	resp.Body.Close()
 }
 
-//отправка метрики батчами Crypto.
+//Отправка метрики батчами Crypto.
 func (a *AgentApp) uploadBatchCrypto(store *storage.AgentMetrics) {
 	store.Sync.Lock()
 	defer store.Sync.Unlock()
@@ -311,7 +311,7 @@ func (a *AgentApp) uploadBatchCrypto(store *storage.AgentMetrics) {
 	resp.Body.Close()
 }
 
-//сбор метрики
+//Сбор метрики
 func (a *AgentApp) update(store *storage.AgentMetrics, count int64) {
 	store.Sync.Lock()
 	defer store.Sync.Unlock()
@@ -371,7 +371,7 @@ func (a *AgentApp) update(store *storage.AgentMetrics, count int64) {
 	store.Store[randomValue.ID] = randomValue
 }
 
-//сбор остальных метрик.
+//Сбор остальных метрик.
 func (a *AgentApp) updateOtherMetrics(store *storage.AgentMetrics) {
 	store.Sync.Lock()
 	defer store.Sync.Unlock()
@@ -404,7 +404,7 @@ func (a *AgentApp) updateOtherMetrics(store *storage.AgentMetrics) {
 	store.Store[cpu.ID] = cpu
 }
 
-//функция хеширования.
+//Функция хеширования.
 func (a *AgentApp) hashing(m *storage.Metrics) string {
 	var hash string
 	switch m.MType {
@@ -418,7 +418,7 @@ func (a *AgentApp) hashing(m *storage.Metrics) string {
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
-//функция сжатия данных.
+//Функция сжатия данных.
 func (a *AgentApp) compress(store []byte) ([]byte, error) {
 	var b bytes.Buffer
 	w := gzip.NewWriter(&b)

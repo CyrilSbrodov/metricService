@@ -16,6 +16,7 @@ import (
 // ServerConfig структура конфига для сервера.
 type ServerConfig struct {
 	Addr             string `json:"address" env:"ADDRESS"`
+	GRPCAddr         string `json:"grpc_addr" env:"GRPC_ADDRESS"`
 	Config           string
 	StoreFile        string        `json:"store_file" env:"STORE_FILE"`
 	Hash             string        `env:"KEY"`
@@ -47,10 +48,11 @@ func ServerConfigInit() *ServerConfig {
 	flag.StringVar(&cfgSrv.StoreFile, "f", "/tmp/devops-metrics-db.json", "STORE_FILE")
 	flag.BoolVar(&cfgSrv.Restore, "r", true, "RESTORE")
 	flag.StringVar(&cfgSrv.Hash, "k", "", "KEY")
-	flag.StringVar(&cfgSrv.DatabaseDSN, "d", "postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable", "DATABASE_DSN")
+	flag.StringVar(&cfgSrv.DatabaseDSN, "d", "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable", "DATABASE_DSN")
 	flag.StringVar(&cfgSrv.CryptoPROKey, "crypto-key", "", "path to file")
 	flag.StringVar(&cfgSrv.CryptoPROKeyPath, "crypto-key-path", "../../cmd/server/", "path to folder")
 	flag.StringVar(&cfgSrv.TrustedSubnet, "t", "", "CIDR")
+	flag.StringVar(&cfgSrv.GRPCAddr, "grpc", ":3200", "grpc port")
 	flag.Parse()
 	if err := env.Parse(cfgSrv); err != nil {
 		fmt.Println(err)
