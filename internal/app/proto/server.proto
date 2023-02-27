@@ -4,8 +4,6 @@ package app;
 
 option go_package = "https://github.com/CyrilSbrodov/metricService/internal/app/protoserver";
 
-import "google/api/annotations.proto";
-
 message Metrics {
   string ID = 1;
   string MType = 2;
@@ -86,14 +84,5 @@ message PingClientResponse {
 service Storage {
   rpc CollectMetric(AddMetricRequest) returns (AddMetricResponse); //получение метрики
   rpc CollectMetrics(AddMetricsRequest) returns (AddMetricsResponse); //получение метрики батчами.
-  rpc GetAll (GetAllMetricsRequest) returns (GetAllMetricsResponse) {
-    option (google.api.http) = {
-      get: "/"
-    };
-  }; //выгрузка всех метрик.
-  rpc CollectOrChangeGauge(CollectGaugeRequest) returns(CollectGaugeResponse);   //получение или изменение метрики типа Gauge.
-  rpc CollectOrIncreaseCounter(CollectCounterRequest) returns(CollectCounterResponse); //получение или изменение метрики типа Counter.
-  rpc GetGauge(GetGaugeRequest) returns (GetGaugeResponse);                   //выгрузка метрики типа Gauge.
-  rpc GetCounter(GetCounterRequest) returns (GetCounterResponse);                   //выгрузка метрики типа Counter.
-  rpc PingClient(PingClientRequest) returns(PingClientResponse);                                       //ping
+  rpc GetAll (GetAllMetricsRequest) returns (GetAllMetricsResponse); //выгрузка всех метрик.
 }

@@ -48,7 +48,7 @@ func AgentConfigInit() *AgentConfig {
 	flag.StringVar(&cfgAgent.CryptoPROKey, "crypto-key", "", "path to file")
 	flag.StringVar(&cfgAgent.CryptoPROKeyPath, "crypto-key-path", "../../cmd/server/", "path to folder")
 	flag.StringVar(&cfgAgent.TrustedSubnet, "t", "", "CIDR")
-	flag.StringVar(&cfgAgent.GRPCAddr, "grpc", ":3200", "grpc port")
+	flag.StringVar(&cfgAgent.GRPCAddr, "grpc", "", "grpc port")
 	flag.Parse()
 	if err := env.Parse(cfgAgent); err != nil {
 		fmt.Println(err)

@@ -52,7 +52,7 @@ func ServerConfigInit() *ServerConfig {
 	flag.StringVar(&cfgSrv.CryptoPROKey, "crypto-key", "", "path to file")
 	flag.StringVar(&cfgSrv.CryptoPROKeyPath, "crypto-key-path", "../../cmd/server/", "path to folder")
 	flag.StringVar(&cfgSrv.TrustedSubnet, "t", "", "CIDR")
-	flag.StringVar(&cfgSrv.GRPCAddr, "grpc", ":3200", "grpc port")
+	flag.StringVar(&cfgSrv.GRPCAddr, "grpc", "", "grpc port")
 	flag.Parse()
 	if err := env.Parse(cfgSrv); err != nil {
 		fmt.Println(err)

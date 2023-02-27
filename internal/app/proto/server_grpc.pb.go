@@ -25,11 +25,6 @@ type StorageClient interface {
 	CollectMetric(ctx context.Context, in *AddMetricRequest, opts ...grpc.CallOption) (*AddMetricResponse, error)
 	CollectMetrics(ctx context.Context, in *AddMetricsRequest, opts ...grpc.CallOption) (*AddMetricsResponse, error)
 	GetAll(ctx context.Context, in *GetAllMetricsRequest, opts ...grpc.CallOption) (*GetAllMetricsResponse, error)
-	CollectOrChangeGauge(ctx context.Context, in *CollectGaugeRequest, opts ...grpc.CallOption) (*CollectGaugeResponse, error)
-	CollectOrIncreaseCounter(ctx context.Context, in *CollectCounterRequest, opts ...grpc.CallOption) (*CollectCounterResponse, error)
-	GetGauge(ctx context.Context, in *GetGaugeRequest, opts ...grpc.CallOption) (*GetGaugeResponse, error)
-	GetCounter(ctx context.Context, in *GetCounterRequest, opts ...grpc.CallOption) (*GetCounterResponse, error)
-	PingClient(ctx context.Context, in *PingClientRequest, opts ...grpc.CallOption) (*PingClientResponse, error)
 }
 
 type storageClient struct {
@@ -67,51 +62,6 @@ func (c *storageClient) GetAll(ctx context.Context, in *GetAllMetricsRequest, op
 	return out, nil
 }
 
-func (c *storageClient) CollectOrChangeGauge(ctx context.Context, in *CollectGaugeRequest, opts ...grpc.CallOption) (*CollectGaugeResponse, error) {
-	out := new(CollectGaugeResponse)
-	err := c.cc.Invoke(ctx, "/app.Storage/CollectOrChangeGauge", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *storageClient) CollectOrIncreaseCounter(ctx context.Context, in *CollectCounterRequest, opts ...grpc.CallOption) (*CollectCounterResponse, error) {
-	out := new(CollectCounterResponse)
-	err := c.cc.Invoke(ctx, "/app.Storage/CollectOrIncreaseCounter", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *storageClient) GetGauge(ctx context.Context, in *GetGaugeRequest, opts ...grpc.CallOption) (*GetGaugeResponse, error) {
-	out := new(GetGaugeResponse)
-	err := c.cc.Invoke(ctx, "/app.Storage/GetGauge", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *storageClient) GetCounter(ctx context.Context, in *GetCounterRequest, opts ...grpc.CallOption) (*GetCounterResponse, error) {
-	out := new(GetCounterResponse)
-	err := c.cc.Invoke(ctx, "/app.Storage/GetCounter", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *storageClient) PingClient(ctx context.Context, in *PingClientRequest, opts ...grpc.CallOption) (*PingClientResponse, error) {
-	out := new(PingClientResponse)
-	err := c.cc.Invoke(ctx, "/app.Storage/PingClient", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // StorageServer is the server API for Storage service.
 // All implementations must embed UnimplementedStorageServer
 // for forward compatibility
@@ -119,11 +69,6 @@ type StorageServer interface {
 	CollectMetric(context.Context, *AddMetricRequest) (*AddMetricResponse, error)
 	CollectMetrics(context.Context, *AddMetricsRequest) (*AddMetricsResponse, error)
 	GetAll(context.Context, *GetAllMetricsRequest) (*GetAllMetricsResponse, error)
-	CollectOrChangeGauge(context.Context, *CollectGaugeRequest) (*CollectGaugeResponse, error)
-	CollectOrIncreaseCounter(context.Context, *CollectCounterRequest) (*CollectCounterResponse, error)
-	GetGauge(context.Context, *GetGaugeRequest) (*GetGaugeResponse, error)
-	GetCounter(context.Context, *GetCounterRequest) (*GetCounterResponse, error)
-	PingClient(context.Context, *PingClientRequest) (*PingClientResponse, error)
 	mustEmbedUnimplementedStorageServer()
 }
 
@@ -139,21 +84,6 @@ func (UnimplementedStorageServer) CollectMetrics(context.Context, *AddMetricsReq
 }
 func (UnimplementedStorageServer) GetAll(context.Context, *GetAllMetricsRequest) (*GetAllMetricsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAll not implemented")
-}
-func (UnimplementedStorageServer) CollectOrChangeGauge(context.Context, *CollectGaugeRequest) (*CollectGaugeResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CollectOrChangeGauge not implemented")
-}
-func (UnimplementedStorageServer) CollectOrIncreaseCounter(context.Context, *CollectCounterRequest) (*CollectCounterResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CollectOrIncreaseCounter not implemented")
-}
-func (UnimplementedStorageServer) GetGauge(context.Context, *GetGaugeRequest) (*GetGaugeResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetGauge not implemented")
-}
-func (UnimplementedStorageServer) GetCounter(context.Context, *GetCounterRequest) (*GetCounterResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetCounter not implemented")
-}
-func (UnimplementedStorageServer) PingClient(context.Context, *PingClientRequest) (*PingClientResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method PingClient not implemented")
 }
 func (UnimplementedStorageServer) mustEmbedUnimplementedStorageServer() {}
 
@@ -222,96 +152,6 @@ func _Storage_GetAll_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Storage_CollectOrChangeGauge_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CollectGaugeRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(StorageServer).CollectOrChangeGauge(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/app.Storage/CollectOrChangeGauge",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StorageServer).CollectOrChangeGauge(ctx, req.(*CollectGaugeRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Storage_CollectOrIncreaseCounter_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CollectCounterRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(StorageServer).CollectOrIncreaseCounter(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/app.Storage/CollectOrIncreaseCounter",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StorageServer).CollectOrIncreaseCounter(ctx, req.(*CollectCounterRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Storage_GetGauge_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetGaugeRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(StorageServer).GetGauge(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/app.Storage/GetGauge",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StorageServer).GetGauge(ctx, req.(*GetGaugeRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Storage_GetCounter_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetCounterRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(StorageServer).GetCounter(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/app.Storage/GetCounter",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StorageServer).GetCounter(ctx, req.(*GetCounterRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Storage_PingClient_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PingClientRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(StorageServer).PingClient(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/app.Storage/PingClient",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StorageServer).PingClient(ctx, req.(*PingClientRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // Storage_ServiceDesc is the grpc.ServiceDesc for Storage service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -330,26 +170,6 @@ var Storage_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetAll",
 			Handler:    _Storage_GetAll_Handler,
-		},
-		{
-			MethodName: "CollectOrChangeGauge",
-			Handler:    _Storage_CollectOrChangeGauge_Handler,
-		},
-		{
-			MethodName: "CollectOrIncreaseCounter",
-			Handler:    _Storage_CollectOrIncreaseCounter_Handler,
-		},
-		{
-			MethodName: "GetGauge",
-			Handler:    _Storage_GetGauge_Handler,
-		},
-		{
-			MethodName: "GetCounter",
-			Handler:    _Storage_GetCounter_Handler,
-		},
-		{
-			MethodName: "PingClient",
-			Handler:    _Storage_PingClient_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

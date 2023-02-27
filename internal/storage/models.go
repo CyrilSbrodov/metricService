@@ -88,3 +88,11 @@ func (m *Metrics) ToMetric(metric *pb.Metrics) *Metrics {
 		}
 	}
 }
+
+func Convert(store *AgentMetrics) *AgentMetricsProto {
+	mProto := NewAgentMetricsProto()
+	for _, metrics := range store.Store {
+		mProto.Store[metrics.ID] = metrics.ToProto()
+	}
+	return mProto
+}

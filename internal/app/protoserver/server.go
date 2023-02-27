@@ -2,7 +2,6 @@ package protoserver
 
 import (
 	"context"
-	"crypto/rsa"
 	"net"
 	"os"
 	"os/signal"
@@ -13,123 +12,57 @@ import (
 	"github.com/CyrilSbrodov/metricService.git/cmd/config"
 	"github.com/CyrilSbrodov/metricService.git/cmd/loggers"
 	pb "github.com/CyrilSbrodov/metricService.git/internal/app/proto"
-	"github.com/CyrilSbrodov/metricService.git/internal/crypto"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
-	"github.com/CyrilSbrodov/metricService.git/internal/storage/repositories"
-	"github.com/CyrilSbrodov/metricService.git/pkg/client/postgresql"
 )
 
 type StoreServer struct {
-	storage storage.Storage
+	Storage storage.Storage
 	logger  loggers.Logger
+	cfg     config.ServerConfig
 	pb.UnimplementedStorageServer
 }
 
-func newStorageServer(s storage.Storage, logger loggers.Logger) *StoreServer {
+func NewStorageServer(cfg config.ServerConfig, logger loggers.Logger) *StoreServer {
+	var store storage.Storage
 	return &StoreServer{
-		storage: s,
+		Storage: store,
 		logger:  logger,
+		cfg:     cfg,
 	}
 }
 
-type ServerApp struct {
-	cfg      config.ServerConfig
-	logger   *loggers.Logger
-	Cryptoer crypto.Cryptoer
-	private  *rsa.PrivateKey
-	listen   *net.Listener
-	server   *grpc.Server
-}
-
-func NewServerApp() *ServerApp {
-	logger := loggers.NewLogger()
-	cfg := config.ServerConfigInit()
-	listen, err := net.Listen("tcp", cfg.GRPCAddr)
+func (s *StoreServer) Run() {
+	listen, err := net.Listen("tcp", s.cfg.GRPCAddr)
 	if err != nil {
-		logger.LogErr(err, " ")
+		s.logger.LogErr(err, " ")
 		os.Exit(1)
 	}
-	s := grpc.NewServer()
-	if cfg.CryptoPROKey != "" {
-		c := crypto.NewCrypto()
-		err := c.AddCryptoKey("public.pem", cfg.CryptoPROKey, "cert.pem", cfg.CryptoPROKeyPath)
-		if err != nil {
-			logger.LogErr(err, "filed to create file")
-			os.Exit(1)
-		}
-		p, err := c.LoadPrivatePEMKey(cfg.CryptoPROKey)
-		if err != nil {
-			logger.LogErr(err, "filed to load file")
-			os.Exit(1)
-		}
-		return &ServerApp{
-			listen:   &listen,
-			server:   s,
-			cfg:      *cfg,
-			logger:   logger,
-			Cryptoer: c,
-			private:  p,
-		}
-	}
-	return &ServerApp{
-		listen:   &listen,
-		server:   s,
-		cfg:      *cfg,
-		logger:   logger,
-		Cryptoer: nil,
-		private:  nil,
-	}
-}
-
-func (a *ServerApp) Run() {
-	var err error
-	//определение БД
-	var store storage.Storage
-	storage := newStorageServer(store, *a.logger)
-
-	if len(a.cfg.DatabaseDSN) != 0 {
-		client, err := postgresql.NewClient(context.Background(), 5, &a.cfg, a.logger)
-		if err != nil {
-			a.logger.LogErr(err, "")
-			os.Exit(1)
-		}
-		storage.storage, err = repositories.NewPGSStore(client, &a.cfg, a.logger)
-		if err != nil {
-			a.logger.LogErr(err, "")
-			os.Exit(1)
-		}
-	} else {
-		storage.storage, err = repositories.NewRepository(&a.cfg, a.logger)
-		if err != nil {
-			a.logger.LogErr(err, "")
-			os.Exit(1)
-		}
-	}
-
+	srv := grpc.NewServer()
+	pb.RegisterStorageServer(srv, s)
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	go func() {
-		if err = a.server.Serve(*a.listen); err != nil {
-			a.logger.LogErr(err, "")
+		if err = srv.Serve(listen); err != nil {
+			s.logger.LogErr(err, "")
 		}
 	}()
-	a.logger.LogInfo("server is listen:", a.cfg.GRPCAddr, "start server")
+	s.logger.LogInfo("server is listen:", s.cfg.GRPCAddr, "start server")
 
 	//gracefullshutdown
 	<-done
 
-	a.logger.LogInfo("", "", "server stopped")
+	s.logger.LogInfo("", "", "server stopped")
 
-	a.server.GracefulStop()
+	srv.GracefulStop()
 
-	a.logger.LogInfo("", "", "server stopped")
+	s.logger.LogInfo("", "", "server stopped")
 }
 
 func (s *StoreServer) CollectMetric(ctx context.Context, in *pb.AddMetricRequest) (*pb.AddMetricResponse, error) {
 	var response pb.AddMetricResponse
 	var m storage.Metrics
-	metric, err := s.storage.GetMetric(*m.ToMetric(in.Metrics))
+	metric, err := s.Storage.GetMetric(*m.ToMetric(in.Metrics))
 	if err != nil {
 		s.logger.LogErr(err, "")
 		return nil, err
@@ -145,7 +78,7 @@ func (s *StoreServer) CollectMetrics(ctx context.Context, in *pb.AddMetricsReque
 	for _, metric := range in.Metrics {
 		metrics = append(metrics, *m.ToMetric(metric))
 	}
-	err := s.storage.CollectMetrics(metrics)
+	err := s.Storage.CollectMetrics(metrics)
 	if err != nil {
 		s.logger.LogErr(err, "")
 		return nil, err
@@ -155,7 +88,7 @@ func (s *StoreServer) CollectMetrics(ctx context.Context, in *pb.AddMetricsReque
 
 func (s *StoreServer) GetAll(ctx context.Context, in *pb.GetAllMetricsRequest) (*pb.GetAllMetricsResponse, error) {
 	var response pb.GetAllMetricsResponse
-	metrics, err := s.storage.GetAll()
+	metrics, err := s.Storage.GetAll()
 	if err != nil {
 		s.logger.LogErr(err, "")
 		return nil, err
