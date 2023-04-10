@@ -6,7 +6,7 @@
 
 1. Необходимо запустить сервер.
 Предусмотрены различные конфигурации. Флаги, конфигурационный файл.
-```
+```GO
 type ServerConfig struct {
 	Addr             string `json:"address" env:"ADDRESS"` // адрес сервера
 	GRPCAddr         string `json:"grpc_addr" env:"GRPC_ADDRESS"` // gRPC адрес сервера
@@ -23,7 +23,7 @@ type ServerConfig struct {
 ```
 3. Зпустить агент по сбору метрик.
 Предусмотрены различные конфигурации. Флаги, конфигурационный файл.
-```
+```GO
 type AgentConfig struct {
 	Addr             string `json:"address" env:"ADDRESS"`
 	GRPCAddr         string `json:"grpc_addr" env:"GRPC_ADDRESS"`
