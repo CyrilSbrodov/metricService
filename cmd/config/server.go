@@ -16,12 +16,14 @@ import (
 // ServerConfig структура конфига для сервера.
 type ServerConfig struct {
 	Addr             string `json:"address" env:"ADDRESS"`
+	GRPCAddr         string `json:"grpc_addr" env:"GRPC_ADDRESS"`
+	StoreFile        string `json:"store_file" env:"STORE_FILE"`
+	Hash             string `env:"KEY"`
+	DatabaseDSN      string `json:"database_dsn" env:"DATABASE_DSN"`
+	CryptoPROKey     string `json:"crypto_key" env:"CRYPTO_KEY"`
+	CryptoPROKeyPath string `json:"crypto_pro_key_path" env:"CRYPTO_KEY_PATH"`
+	TrustedSubnet    string `json:"trusted_subnet" env:"TRUSTED_SUBNET"`
 	Config           string
-	StoreFile        string        `json:"store_file" env:"STORE_FILE"`
-	Hash             string        `env:"KEY"`
-	DatabaseDSN      string        `json:"database_dsn" env:"DATABASE_DSN"`
-	CryptoPROKey     string        `json:"crypto_key" env:"CRYPTO_KEY"`
-	CryptoPROKeyPath string        `json:"crypto_pro_key_path" env:"CRYPTO_KEY_PATH"`
 	Restore          bool          `json:"restore" env:"RESTORE"`
 	StoreInterval    time.Duration `json:"store_interval" env:"STORE_INTERVAL"`
 }
@@ -49,6 +51,8 @@ func ServerConfigInit() *ServerConfig {
 	flag.StringVar(&cfgSrv.DatabaseDSN, "d", "postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable", "DATABASE_DSN")
 	flag.StringVar(&cfgSrv.CryptoPROKey, "crypto-key", "", "path to file")
 	flag.StringVar(&cfgSrv.CryptoPROKeyPath, "crypto-key-path", "../../cmd/server/", "path to folder")
+	flag.StringVar(&cfgSrv.TrustedSubnet, "t", "", "CIDR")
+	flag.StringVar(&cfgSrv.GRPCAddr, "grpc", "", "grpc port")
 	flag.Parse()
 	if err := env.Parse(cfgSrv); err != nil {
 		fmt.Println(err)

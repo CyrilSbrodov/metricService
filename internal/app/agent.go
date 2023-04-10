@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"crypto/hmac"
 	"crypto/rsa"
 	"crypto/sha256"
@@ -21,20 +22,18 @@ import (
 
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/CyrilSbrodov/metricService.git/cmd/config"
 	"github.com/CyrilSbrodov/metricService.git/cmd/loggers"
+	pb "github.com/CyrilSbrodov/metricService.git/internal/app/proto"
 	"github.com/CyrilSbrodov/metricService.git/internal/crypto"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 )
 
-type Agenter interface {
-	NewAgentApp() *AgentApp
-}
-
 //AgentApp структура агента
 type AgentApp struct {
-	closed chan struct{}
 	client *http.Client
 	cfg    config.AgentConfig
 	logger *loggers.Logger
@@ -56,7 +55,6 @@ func NewAgentApp() *AgentApp {
 			os.Exit(1)
 		}
 		return &AgentApp{
-			closed: make(chan struct{}),
 			client: client,
 			cfg:    *cfg,
 			logger: logger,
@@ -65,7 +63,6 @@ func NewAgentApp() *AgentApp {
 		}
 	}
 	return &AgentApp{
-		closed: make(chan struct{}),
 		client: client,
 		cfg:    *cfg,
 		logger: logger,
@@ -79,42 +76,32 @@ func (a *AgentApp) Run() {
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-
 	//запуск тикеров
-	a.wg.Add(1)
-	go func() {
-		defer a.wg.Done()
-		a.RunTickers()
-	}()
 
-	//прослушивание канала на сигналы завершения работы
-	<-done
-
-	a.logger.LogInfo("", "", "Agent Shutdown")
-	//остановка агента, если в канал поступает сигнал
-	a.Stop()
-	a.logger.LogInfo("", "", "Agent Shutdown gracefully")
-}
-
-// RunTickers запуск тикеров
-func (a *AgentApp) RunTickers() {
 	var count int64
 	metrics := storage.NewAgentMetrics()
 	//запуск тикера
 	tickerUpload := time.NewTicker(a.cfg.ReportInterval)
 	tickerUpdate := time.NewTicker(a.cfg.PollInterval)
+
+TICK:
 	for {
 		select {
 		//отправка метрики 10 сек
 		case <-tickerUpload.C:
 			//отправка данных по адресу
 			a.wg.Add(2)
-			if a.cfg.CryptoPROKey != "" {
-				go a.uploadCrypto(metrics)
-				go a.uploadBatchCrypto(metrics)
+			if a.cfg.GRPCAddr != "" {
+				go a.uploadGRPC(metrics)
+				go a.uploadBatchGRPC(metrics)
 			} else {
-				go a.upload(metrics)
-				go a.uploadBatch(metrics)
+				if a.cfg.CryptoPROKey != "" {
+					go a.uploadCrypto(metrics)
+					go a.uploadBatchCrypto(metrics)
+				} else {
+					go a.upload(metrics)
+					go a.uploadBatch(metrics)
+				}
 			}
 			//обновление метрики 2 сек
 		case <-tickerUpdate.C:
@@ -122,19 +109,17 @@ func (a *AgentApp) RunTickers() {
 			a.wg.Add(2)
 			go a.update(metrics, count)
 			go a.updateOtherMetrics(metrics)
-		case <-a.closed:
-			return
+		case <-done:
+			a.logger.LogInfo("", "", "Agent Shutdown")
+			break TICK
 		}
 	}
-}
-
-// Stop остановка агента
-func (a *AgentApp) Stop() {
-	close(a.closed)
+	//остановка агента, если в канал поступает сигнал
 	a.wg.Wait()
+	a.logger.LogInfo("", "", "Agent Shutdown gracefully")
 }
 
-//отправка метрики
+//Отправка метрики
 func (a *AgentApp) upload(store *storage.AgentMetrics) {
 	store.Sync.Lock()
 	defer store.Sync.Unlock()
@@ -152,6 +137,7 @@ func (a *AgentApp) upload(store *storage.AgentMetrics) {
 			fmt.Println(err)
 			break
 		}
+		req.Header.Set("X-Real-IP", getIP(req))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Add("Accept", "application/json")
 
@@ -169,7 +155,7 @@ func (a *AgentApp) upload(store *storage.AgentMetrics) {
 	}
 }
 
-//отправка метрики Crypto
+//Отправка метрики Crypto
 func (a *AgentApp) uploadCrypto(store *storage.AgentMetrics) {
 	store.Sync.Lock()
 	defer store.Sync.Unlock()
@@ -193,6 +179,7 @@ func (a *AgentApp) uploadCrypto(store *storage.AgentMetrics) {
 			fmt.Println(err)
 			break
 		}
+		req.Header.Set("X-Real-IP", getIP(req))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Add("Accept", "application/json")
 
@@ -210,7 +197,7 @@ func (a *AgentApp) uploadCrypto(store *storage.AgentMetrics) {
 	}
 }
 
-//отправка метрики батчами.
+//Отправка метрики батчами.
 func (a *AgentApp) uploadBatch(store *storage.AgentMetrics) {
 	store.Sync.Lock()
 	defer store.Sync.Unlock()
@@ -240,6 +227,7 @@ func (a *AgentApp) uploadBatch(store *storage.AgentMetrics) {
 		a.logger.LogErr(err, "Failed to request")
 		return
 	}
+	req.Header.Set("X-Real-IP", getIP(req))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Add("Content-Encoding", "gzip")
 
@@ -256,7 +244,7 @@ func (a *AgentApp) uploadBatch(store *storage.AgentMetrics) {
 	resp.Body.Close()
 }
 
-//отправка метрики батчами Crypto.
+//Отправка метрики батчами Crypto.
 func (a *AgentApp) uploadBatchCrypto(store *storage.AgentMetrics) {
 	store.Sync.Lock()
 	defer store.Sync.Unlock()
@@ -291,6 +279,7 @@ func (a *AgentApp) uploadBatchCrypto(store *storage.AgentMetrics) {
 		a.logger.LogErr(err, "Failed to request")
 		return
 	}
+	req.Header.Set("X-Real-IP", getIP(req))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Add("Content-Encoding", "gzip")
 
@@ -307,7 +296,7 @@ func (a *AgentApp) uploadBatchCrypto(store *storage.AgentMetrics) {
 	resp.Body.Close()
 }
 
-//сбор метрики
+//Сбор метрики
 func (a *AgentApp) update(store *storage.AgentMetrics, count int64) {
 	store.Sync.Lock()
 	defer store.Sync.Unlock()
@@ -367,7 +356,7 @@ func (a *AgentApp) update(store *storage.AgentMetrics, count int64) {
 	store.Store[randomValue.ID] = randomValue
 }
 
-//сбор остальных метрик.
+//Сбор остальных метрик.
 func (a *AgentApp) updateOtherMetrics(store *storage.AgentMetrics) {
 	store.Sync.Lock()
 	defer store.Sync.Unlock()
@@ -400,7 +389,7 @@ func (a *AgentApp) updateOtherMetrics(store *storage.AgentMetrics) {
 	store.Store[cpu.ID] = cpu
 }
 
-//функция хеширования.
+//Функция хеширования.
 func (a *AgentApp) hashing(m *storage.Metrics) string {
 	var hash string
 	switch m.MType {
@@ -414,7 +403,7 @@ func (a *AgentApp) hashing(m *storage.Metrics) string {
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
-//функция сжатия данных.
+//Функция сжатия данных.
 func (a *AgentApp) compress(store []byte) ([]byte, error) {
 	var b bytes.Buffer
 	w := gzip.NewWriter(&b)
@@ -430,4 +419,73 @@ func (a *AgentApp) compress(store []byte) ([]byte, error) {
 		return nil, fmt.Errorf("failed compress data: %v", err)
 	}
 	return b.Bytes(), nil
+}
+
+func getIP(r *http.Request) string {
+	IP := r.RemoteAddr
+	if IP == "" {
+		IP = "127.0.0.1:8080"
+	}
+	return IP
+}
+
+func (a *AgentApp) uploadGRPC(store *storage.AgentMetrics) {
+	conn, err := a.connect()
+	if err != nil {
+		a.logger.LogErr(err, "failed to connect")
+		return
+	}
+	c := pb.NewStorageClient(conn)
+	store.Sync.Lock()
+	defer store.Sync.Unlock()
+	defer a.wg.Done()
+	storeProto := storage.Convert(store)
+	for _, m := range storeProto.Store {
+		resp, err := c.CollectMetric(context.Background(), a.addMetric(m))
+		if err != nil {
+			a.logger.LogErr(err, "Failed to request")
+			fmt.Println(err)
+			break
+		}
+		a.logger.LogInfo("metric:", resp.String(), "")
+	}
+}
+
+//Отправка метрики батчами.
+func (a *AgentApp) uploadBatchGRPC(store *storage.AgentMetrics) {
+	conn, err := a.connect()
+	if err != nil {
+		a.logger.LogErr(err, "failed to connect")
+		return
+	}
+	c := pb.NewStorageClient(conn)
+	store.Sync.Lock()
+	defer store.Sync.Unlock()
+	defer a.wg.Done()
+	storeProto := storage.Convert(store)
+	var metrics []*pb.Metrics
+	for _, m := range storeProto.Store {
+		metrics = append(metrics, m)
+	}
+	resp, err := c.CollectMetrics(context.Background(), a.addMetrics(metrics))
+	if err != nil {
+		a.logger.LogErr(err, "Failed to request")
+		fmt.Println(err)
+		return
+	}
+	a.logger.LogInfo("metric:", resp.String(), "")
+}
+
+func (a *AgentApp) addMetric(metrics *pb.Metrics) *pb.AddMetricRequest {
+	return &pb.AddMetricRequest{
+		Metrics: metrics,
+	}
+}
+func (a *AgentApp) addMetrics(metrics []*pb.Metrics) *pb.AddMetricsRequest {
+	return &pb.AddMetricsRequest{
+		Metrics: metrics,
+	}
+}
+func (a *AgentApp) connect() (*grpc.ClientConn, error) {
+	return grpc.Dial(a.cfg.GRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 }

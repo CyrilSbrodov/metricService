@@ -36,15 +36,15 @@ type Handler struct {
 
 // Register создание роутеров
 func (h *Handler) Register(r *chi.Mux) {
-	r.Post("/value/", gzipHandle(h.GetHandlerJSON()))
-	r.Get("/value/*", gzipHandle(h.GetHandler()))
+	r.Post("/value/", trustedSubnet(h.cfg, gzipHandle(h.GetHandlerJSON())))
+	r.Get("/value/*", trustedSubnet(h.cfg, gzipHandle(h.GetHandler())))
 	r.Get("/", gzipHandle(h.GetAllHandler()))
-	r.Post("/update/", gzipHandle(h.CollectHandler()))
-	r.Post("/update/gauge/*", gzipHandle(h.GaugeHandler()))
-	r.Post("/update/counter/*", gzipHandle(h.CounterHandler()))
-	r.Post("/*", gzipHandle(h.OtherHandler()))
+	r.Post("/update/", trustedSubnet(h.cfg, gzipHandle(h.CollectHandler())))
+	r.Post("/update/gauge/*", trustedSubnet(h.cfg, gzipHandle(h.GaugeHandler())))
+	r.Post("/update/counter/*", trustedSubnet(h.cfg, gzipHandle(h.CounterHandler())))
+	r.Post("/*", trustedSubnet(h.cfg, gzipHandle(h.OtherHandler())))
 	r.Get("/ping", h.PingDB())
-	r.Post("/updates/", gzipHandle(h.CollectBatchHandler()))
+	r.Post("/updates/", trustedSubnet(h.cfg, gzipHandle(h.CollectBatchHandler())))
 	r.Mount("/debug", middleware.Profiler())
 }
 

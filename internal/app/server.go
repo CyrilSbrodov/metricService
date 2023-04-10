@@ -13,9 +13,9 @@ import (
 
 	"github.com/CyrilSbrodov/metricService.git/cmd/config"
 	"github.com/CyrilSbrodov/metricService.git/cmd/loggers"
+	"github.com/CyrilSbrodov/metricService.git/internal/app/protoserver"
 	"github.com/CyrilSbrodov/metricService.git/internal/crypto"
 	"github.com/CyrilSbrodov/metricService.git/internal/handlers"
-	"github.com/CyrilSbrodov/metricService.git/internal/storage"
 	"github.com/CyrilSbrodov/metricService.git/internal/storage/repositories"
 	"github.com/CyrilSbrodov/metricService.git/pkg/client/postgresql"
 )
@@ -24,14 +24,14 @@ type ServerApp struct {
 	router   *chi.Mux
 	cfg      config.ServerConfig
 	logger   *loggers.Logger
-	Cryptoer crypto.Cryptoer
+	cryptoer crypto.Cryptoer
 	private  *rsa.PrivateKey
 }
 
 func NewServerApp() *ServerApp {
+	cfg := config.ServerConfigInit()
 	router := chi.NewRouter()
 	logger := loggers.NewLogger()
-	cfg := config.ServerConfigInit()
 
 	if cfg.CryptoPROKey != "" {
 		c := crypto.NewCrypto()
@@ -49,7 +49,7 @@ func NewServerApp() *ServerApp {
 			router:   router,
 			cfg:      *cfg,
 			logger:   logger,
-			Cryptoer: c,
+			cryptoer: c,
 			private:  p,
 		}
 	}
@@ -57,14 +57,14 @@ func NewServerApp() *ServerApp {
 		router:   router,
 		cfg:      *cfg,
 		logger:   logger,
-		Cryptoer: nil,
+		cryptoer: nil,
 		private:  nil,
 	}
 }
 
 func (a *ServerApp) Run() {
 	//определение БД
-	var store storage.Storage
+	store := protoserver.NewStorageServer(a.cfg, *a.logger)
 	var err error
 	//определение хендлера
 	if len(a.cfg.DatabaseDSN) != 0 {
@@ -73,50 +73,52 @@ func (a *ServerApp) Run() {
 			a.logger.LogErr(err, "")
 			os.Exit(1)
 		}
-		store, err = repositories.NewPGSStore(client, &a.cfg, a.logger)
+		store.Storage, err = repositories.NewPGSStore(client, &a.cfg, a.logger)
 		if err != nil {
 			a.logger.LogErr(err, "")
 			os.Exit(1)
 		}
 	} else {
-		store, err = repositories.NewRepository(&a.cfg, a.logger)
+		store.Storage, err = repositories.NewRepository(&a.cfg, a.logger)
 		if err != nil {
 			a.logger.LogErr(err, "")
 			os.Exit(1)
 		}
 	}
+	if a.cfg.GRPCAddr != "" {
+		store.Run()
+	} else {
+		handler := handlers.NewHandler(store.Storage, *a.logger, a.cryptoer, a.cfg, a.private)
+		//регистрация хендлера
+		handler.Register(a.router)
 
-	handler := handlers.NewHandler(store, *a.logger, a.Cryptoer, a.cfg, a.private)
-	//регистрация хендлера
-	handler.Register(a.router)
-
-	srv := http.Server{
-		Addr:    a.cfg.Addr,
-		Handler: a.router,
-	}
-
-	done := make(chan os.Signal, 1)
-	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-
-	go func() {
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			a.logger.LogErr(err, "server not started")
+		srv := http.Server{
+			Addr:    a.cfg.Addr,
+			Handler: a.router,
 		}
-	}()
-	a.logger.LogInfo("server is listen:", a.cfg.Addr, "start server")
+		done := make(chan os.Signal, 1)
+		signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
-	//gracefullshutdown
-	<-done
+		go func() {
+			if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				a.logger.LogErr(err, "server not started")
+			}
+		}()
+		a.logger.LogInfo("server is listen:", a.cfg.Addr, "start server")
 
-	a.logger.LogInfo("", "", "server stopped")
+		//gracefullshutdown
+		<-done
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer func() {
-		cancel()
-	}()
+		a.logger.LogInfo("", "", "server stopped")
 
-	if err = srv.Shutdown(ctx); err != nil {
-		a.logger.LogErr(err, "Server Shutdown Failed")
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer func() {
+			cancel()
+		}()
+
+		if err = srv.Shutdown(ctx); err != nil {
+			a.logger.LogErr(err, "Server Shutdown Failed")
+		}
+		a.logger.LogInfo("", "", "Server Exited Properly")
 	}
-	a.logger.LogInfo("", "", "Server Exited Properly")
 }

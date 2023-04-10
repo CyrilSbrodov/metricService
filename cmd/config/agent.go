@@ -16,10 +16,12 @@ import (
 // AgentConfig структура конфига для агента.
 type AgentConfig struct {
 	Addr             string `json:"address" env:"ADDRESS"`
+	GRPCAddr         string `json:"grpc_addr" env:"GRPC_ADDRESS"`
 	Config           string
 	Hash             string        `env:"KEY"`
 	CryptoPROKey     string        `json:"crypto_key" env:"CRYPTO_KEY"`
 	CryptoPROKeyPath string        `json:"crypto_key_path" env:"CRYPTO_KEY_PATH"`
+	TrustedSubnet    string        `json:"trusted_subnet" env:"TRUSTED_SUBNET"`
 	PollInterval     time.Duration `json:"poll_interval" env:"POLL_INTERVAL"`
 	ReportInterval   time.Duration `json:"report_interval" env:"REPORT_INTERVAL"`
 }
@@ -45,6 +47,8 @@ func AgentConfigInit() *AgentConfig {
 	flag.StringVar(&cfgAgent.Hash, "k", "", "hash")
 	flag.StringVar(&cfgAgent.CryptoPROKey, "crypto-key", "", "path to file")
 	flag.StringVar(&cfgAgent.CryptoPROKeyPath, "crypto-key-path", "../../cmd/server/", "path to folder")
+	flag.StringVar(&cfgAgent.TrustedSubnet, "t", "", "CIDR")
+	flag.StringVar(&cfgAgent.GRPCAddr, "grpc", "", "grpc port")
 	flag.Parse()
 	if err := env.Parse(cfgAgent); err != nil {
 		fmt.Println(err)
