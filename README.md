@@ -6,6 +6,7 @@
 
 1. Необходимо запустить сервер.
 Предусмотрены различные конфигурации. Флаги, конфигурационный файл.
+[ServerConfig](https://github.com/CyrilSbrodov/metricService/blob/main/cmd/config/server.go):
 ```GO
 type ServerConfig struct {
 	Addr             string `json:"address" env:"ADDRESS"` // адрес сервера
@@ -23,6 +24,7 @@ type ServerConfig struct {
 ```
 3. Зпустить агент по сбору метрик.
 Предусмотрены различные конфигурации. Флаги, конфигурационный файл.
+[AgentConfig](https://github.com/CyrilSbrodov/metricService/blob/main/cmd/config/agent.go):
 ```GO
 type AgentConfig struct {
 	Addr             string `json:"address" env:"ADDRESS"`
