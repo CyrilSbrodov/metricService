@@ -2,20 +2,42 @@
 ____
 0. [Сервис сбора метрик и алертинга](https://github.com/CyrilSbrodov/metricService#Сервис-сбора-метрик-и-алертинга).
 1. [Начало работы](https://github.com/CyrilSbrodov/metricService#Начало-работы).
+1.1. [Конфигурация](https://github.com/CyrilSbrodov/metricService#Конфигурация).
+1.2. [Зависимости](https://github.com/CyrilSbrodov/metricService#Зависимости).
 2. [Агент](https://github.com/CyrilSbrodov/metricService#Агент).
 3. [Сервер](https://github.com/CyrilSbrodov/metricService#Сервер).
 ____
 
 # Сервис сбора метрик и алертинга.
 
-Сервис позволяет собирать метрики и отрпавлять их на сервер.
+Сервис позволяет собирать метрики компьютера и отрпавлять их на сервер в зашифрованном виде.
+```GO
+type Metrics struct {
+	ID    string   `json:"id"`              // имя метрики.
+	MType string   `json:"type"`            // параметр, принимающий значение Gauge или Counter.
+	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи Counter.
+	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи Gauge.
+	Hash  string   `json:"hash,omitempty"`  // значение хеш-функции.
+}
+```
+Виды [метрик](https://cs.opensource.google/go/go/+/go1.20.3:src/runtime/mstats.go;l=58):
+```GO
+type MemStats struct {
+	Alloc uint64
+	TotalAlloc uint64
+	Sys uint64
+	Lookups uint64
+	Mallocs uint64
+	//etc.
+}
+```
 
-# Начало работы
+# 1. Начало работы
 
-1. Необходимо запустить сервер.
+## 1.1. Конфигурация
 
-Предусмотрены различные конфигурации. Флаги, конфигурационный файл.
-Флаги при запуске:
+Предусмотрены различные конфигурации. Флаги, облачные переменные, конфигурационный файл.
+Флаги при запуске сервера:
 ```
 -a //адрес сервера
 -i //интервал сохранения метрик в файл
@@ -27,33 +49,9 @@ ____
 -crypto-key-path //путь файла шифрования
 -t //CIDR
 -grpc //адрес grpc
+-config //конфигурационный файл
 ```
-
-[ServerConfig](https://github.com/CyrilSbrodov/metricService/blob/main/cmd/config/server.go):
-```GO
-type ServerConfig struct {
-	Addr             string `json:"address" env:"ADDRESS"` // адрес сервера
-	GRPCAddr         string `json:"grpc_addr" env:"GRPC_ADDRESS"` // gRPC адрес сервера
-	StoreFile        string `json:"store_file" env:"STORE_FILE"` // файл восстановления значения метрик после перезагрузки сервера.
-	Hash             string `env:"KEY"` // хэш ключ
-	DatabaseDSN      string `json:"database_dsn" env:"DATABASE_DSN"`// адрес базы данных
-	CryptoPROKey     string `json:"crypto_key" env:"CRYPTO_KEY"` // имя крипто файла
-	CryptoPROKeyPath string `json:"crypto_pro_key_path" env:"CRYPTO_KEY_PATH"` // путь до крипто файла
-	TrustedSubnet    string `json:"trusted_subnet" env:"TRUSTED_SUBNET"` // разрешенный IP
-	Config           string // имя файла конфигурации
-	Restore          bool          `json:"restore" env:"RESTORE"` // флаг восстановления значения метрик из файла
-	StoreInterval    time.Duration `json:"store_interval" env:"STORE_INTERVAL"` // интервал сохранения метрик в файл.
-}
-```
-Запустить сервер из пакета [cmd](https://github.com/CyrilSbrodov/metricService/blob/main/cmd/server/main.go)
-```
-go run main.go
-```
-
-2. Зпустить агент по сбору метрик.
- 
-Предусмотрены различные конфигурации. Флаги, конфигурационный файл.
-Флаги при запуске:
+Флаги при запуске агента:
 ```
 -a //адрес сервера
 -p //интервал обновления метрик
@@ -65,25 +63,38 @@ go run main.go
 -grpc //адрес grpc
 ```
 
-[AgentConfig](https://github.com/CyrilSbrodov/metricService/blob/main/cmd/config/agent.go):
-```GO
-type AgentConfig struct {
-	Addr             string `json:"address" env:"ADDRESS"` // адрес сервера
-	GRPCAddr         string `json:"grpc_addr" env:"GRPC_ADDRESS"` // gRPC адрес
-	Config           string // имя файла конфигурации
-	Hash             string        `env:"KEY"` // хэш ключ
-	CryptoPROKey     string        `json:"crypto_key" env:"CRYPTO_KEY"` // имя крипто файла
-	CryptoPROKeyPath string        `json:"crypto_key_path" env:"CRYPTO_KEY_PATH"` // путь до крипто файла
-	TrustedSubnet    string        `json:"trusted_subnet" env:"TRUSTED_SUBNET"` // разрешенный IP
-	PollInterval     time.Duration `json:"poll_interval" env:"POLL_INTERVAL"` // интервал обновления метрик
-	ReportInterval   time.Duration `json:"report_interval" env:"REPORT_INTERVAL"` // интервал отправки метрик на сервер
+Склонируйте репозиторий с github:
+```
+git clone https://github.com/CyrilSbrodov/metricService.git
+```
+Пример запуска с адресом сервера:
+```
+cd cmd/server
+go run main.go -a localhost:8080
+```
+
+Либо создайте конфиг файл в формате json
+```
+{
+    "address": "localhost:8080"
+    //etc.
 }
 ```
-Запустить агент из пакета [cmd](https://github.com/CyrilSbrodov/metricService/blob/main/cmd/agent/main.go)
+
+1. Необходимо запустить сервер из пакета [cmd](https://github.com/CyrilSbrodov/metricService/blob/main/cmd/server/main.go)
 ```
 go run main.go
 ```
-# Агент
+
+2. Зпустить агент из пакета [cmd](https://github.com/CyrilSbrodov/metricService/blob/main/cmd/agent/main.go)
+```
+go run main.go
+```
+## 1.2. Зависимости.
+Для работы обязательно понадобится PostgreSQL последней версии.
+
+
+# 2. Агент
 
 [Структура агента](https://github.com/CyrilSbrodov/metricService/blob/main/internal/app/agent.go):
 ```GO
@@ -109,7 +120,7 @@ flag.StringVar(&cfgAgent.GRPCAddr, "grpc", "", "grpc port")
 flag.StringVar(&cfgAgent.CryptoPROKey, "crypto-key", "", "crypto file")
 ```
 
-# Сервер
+# 3. Сервер
 [Структура сервера](https://github.com/CyrilSbrodov/metricService/blob/main/internal/app/server.go):
 ```GO
 type ServerApp struct {
