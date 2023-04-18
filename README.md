@@ -15,6 +15,19 @@ ____
 1. Необходимо запустить сервер.
 
 Предусмотрены различные конфигурации. Флаги, конфигурационный файл.
+Флаги при запуске:
+```
+-a //адрес сервера
+-i //интервал сохранения метрик в файл
+-f //файл сохранения метрик
+-r //включение восстановления метрик из файла
+-k //hash key
+-d //адрес бд
+-crypto-key //имя файла ключа шифрования
+-crypto-key-path //путь файла шифрования
+-t //CIDR
+-grpc //адрес grpc
+```
 
 [ServerConfig](https://github.com/CyrilSbrodov/metricService/blob/main/cmd/config/server.go):
 ```GO
@@ -32,9 +45,25 @@ type ServerConfig struct {
 	StoreInterval    time.Duration `json:"store_interval" env:"STORE_INTERVAL"` // интервал сохранения метрик в файл.
 }
 ```
+Запустить сервер из пакета [cmd](https://github.com/CyrilSbrodov/metricService/blob/main/cmd/server/main.go)
+```
+go run main.go
+```
+
 2. Зпустить агент по сбору метрик.
  
 Предусмотрены различные конфигурации. Флаги, конфигурационный файл.
+Флаги при запуске:
+```
+-a //адрес сервера
+-p //интервал обновления метрик
+-r //интервал ки метрик на сервер
+-k //hash key
+-crypto-key //имя файла ключа шифрования
+-crypto-key-path //путь файла шифрования
+-t //CIDR
+-grpc //адрес grpc
+```
 
 [AgentConfig](https://github.com/CyrilSbrodov/metricService/blob/main/cmd/config/agent.go):
 ```GO
@@ -50,7 +79,10 @@ type AgentConfig struct {
 	ReportInterval   time.Duration `json:"report_interval" env:"REPORT_INTERVAL"` // интервал отправки метрик на сервер
 }
 ```
-
+Запустить агент из пакета [cmd](https://github.com/CyrilSbrodov/metricService/blob/main/cmd/agent/main.go)
+```
+go run main.go
+```
 # Агент
 
 [Структура агента](https://github.com/CyrilSbrodov/metricService/blob/main/internal/app/agent.go):
