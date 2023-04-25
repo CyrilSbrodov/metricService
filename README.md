@@ -4,9 +4,9 @@ ____
 1. [ЗАВИСИМОСТИ](https://github.com/CyrilSbrodov/metricService#ЗАВИСИМОСТИ).
 2. [ЗАПУСК/СБОРКА](https://github.com/CyrilSbrodov/metricService#запусксборка).
 2.1. [Конфигурация](https://github.com/CyrilSbrodov/metricService#Конфигурация).
-2.1.1 [Флаги](https://github.com/CyrilSbrodov/metricService#Флаги).
-2.1.2 [Облачные переменные](https://github.com/CyrilSbrodov/metricService#Облачные-переменные).
-2.1.3 [Конфигурационный файл](https://github.com/CyrilSbrodov/metricService#Конфигурационный-файл).
+2.1.1 [Флаги](https://github.com/CyrilSbrodov/metricService#1-флаги).
+2.1.2 [Облачные переменные](https://github.com/CyrilSbrodov/metricService2-облачные-переменные).
+2.1.3 [Конфигурационный файл](https://github.com/CyrilSbrodov/metricService3-конфигурационный-файл).
 2.2. [Запуск сервера](https://github.com/CyrilSbrodov/metricService#Запуск-сервера).
 2.3. [Запуск агента](https://github.com/CyrilSbrodov/metricService#Запуск-агента).
 3. [Для разработчиков](https://github.com/CyrilSbrodov/metricService#Для-разработчиков).
