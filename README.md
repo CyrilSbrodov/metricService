@@ -2,7 +2,7 @@
 ____
 0. [Сервис сбора метрик и алертинга](https://github.com/CyrilSbrodov/metricService#Сервис-сбора-метрик-и-алертинга).
 1. [ЗАВИСИМОСТИ](https://github.com/CyrilSbrodov/metricService#ЗАВИСИМОСТИ).
-2. [ЗАПУСК/СБОРКА](https://github.com/CyrilSbrodov/metricService#запусксборка).
+2. [ЗАПУСК/СБОРКА](#запусксборка).
 2.1. [Конфигурация](https://github.com/CyrilSbrodov/metricService#Конфигурация).
 2.1.1 [Флаги](https://github.com/CyrilSbrodov/metricService#1-флаги).
 2.1.2 [Облачные переменные](https://github.com/CyrilSbrodov/metricService#2-облачные-переменные).
