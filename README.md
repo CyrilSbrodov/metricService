@@ -1,16 +1,25 @@
 #### Оглавление:
 ____
 0. [Сервис сбора метрик и алертинга](https://github.com/CyrilSbrodov/metricService#Сервис-сбора-метрик-и-алертинга).
-1. [Начало работы](https://github.com/CyrilSbrodov/metricService#Начало-работы).
-1.1. [Конфигурация](https://github.com/CyrilSbrodov/metricService#Конфигурация).
-1.2. [Зависимости](https://github.com/CyrilSbrodov/metricService#Зависимости).
-2. [Агент](https://github.com/CyrilSbrodov/metricService#Агент).
-3. [Сервер](https://github.com/CyrilSbrodov/metricService#Сервер).
+1. [ЗАВИСИМОСТИ](https://github.com/CyrilSbrodov/metricService#ЗАВИСИМОСТИ).
+2. [ЗАПУСК/СБОРКА](https://github.com/CyrilSbrodov/metricService#ЗАПУСК/СБОРКА).
+2.1. [Конфигурация](https://github.com/CyrilSbrodov/metricService#Конфигурация).
+2.1.1 [Флаги](https://github.com/CyrilSbrodov/metricService#Флаги).
+2.1.2 [Облачные переменные](https://github.com/CyrilSbrodov/metricService#Облачные-переменные).
+2.1.3 [Конфигурационный файл](https://github.com/CyrilSbrodov/metricService#Конфигурационный-файл).
+2.2. [Запуск сервера](https://github.com/CyrilSbrodov/metricService#Запуск-сервера).
+2.3. [Запуск агента](https://github.com/CyrilSbrodov/metricService#Запуск-агента).
+3. [Для разработчиков](https://github.com/CyrilSbrodov/metricService#Для-разработчиков).
+3.1. [Агент](https://github.com/CyrilSbrodov/metricService#Агент).
+3.2. [Сервер](https://github.com/CyrilSbrodov/metricService#Сервер).
 ____
 
 # Сервис сбора метрик и алертинга.
 
-Сервис позволяет собирать метрики компьютера и отрпавлять их на сервер в зашифрованном виде.
+Сервис позволяет собирать метрики ПК в системном формате (CPU, RAM, HDD)(числовые метрики) и передает их по протоколам gRPC и HTML зашифрованном формате в БД PostgreSQL.
+Возможность использовать свои метрики.
+
+Структура [метрик](https://github.com/CyrilSbrodov/metricService/blob/main/internal/storage/models.go):
 ```GO
 type Metrics struct {
 	ID    string   `json:"id"`              // имя метрики.
@@ -20,7 +29,7 @@ type Metrics struct {
 	Hash  string   `json:"hash,omitempty"`  // значение хеш-функции.
 }
 ```
-Виды [метрик](https://cs.opensource.google/go/go/+/go1.20.3:src/runtime/mstats.go;l=58):
+Виды собираемых [метрик](https://cs.opensource.google/go/go/+/go1.20.3:src/runtime/mstats.go;l=58):
 ```GO
 type MemStats struct {
 	Alloc uint64
@@ -32,11 +41,35 @@ type MemStats struct {
 }
 ```
 
-# 1. Начало работы
+Структура сервиса следующая:
+1) Сервер - обработка полученных данных и отправка их в БД Postgres.
+2) Агент - сбор данных с ПК.
+3) БД - прием получаемых данных.
+____
+# ЗАВИСИМОСТИ.
 
-## 1.1. Конфигурация
+Используется язык go версии 1.18. Используемые библиотеки:
+- github.com/caarlos0/env/v6 v6.10.1
+- github.com/go-chi/chi/v5 v5.0.7
+- github.com/jackc/pgx/v5 v5.0.4
+- github.com/lib/pq v1.10.7
+- github.com/rs/zerolog v1.28.0
+- github.com/shirou/gopsutil/v3 v3.22.10
+- github.com/stretchr/testify v1.8.1
+- golang.org/x/tools v0.5.0
+- honnef.co/go/tools v0.3.3
+- POSTGRESQL v17
+____
 
-Предусмотрены различные конфигурации. Флаги, облачные переменные, конфигурационный файл.
+# ЗАПУСК/СБОРКА
+
+## Конфигурация
+
+Предусмотрены различные конфигурации:
+1) флаги
+2) облачные переменные 
+3) конфигурационный файл
+
 Флаги при запуске сервера:
 ```
 -a //адрес сервера
@@ -63,39 +96,50 @@ type MemStats struct {
 -grpc //адрес grpc
 ```
 
-Склонируйте репозиторий с github:
-```
-git clone https://github.com/CyrilSbrodov/metricService.git
-```
-Пример запуска с адресом сервера:
+## 1) Флаги
+Параметры запуска передаются в формате: -a localhost:8080, 
+где "-а" параметр адреса сервера, "localhost:8080" адрес сервера.
+
+Это позволяет запускать утилиту следующим образом:
 ```
 cd cmd/server
 go run main.go -a localhost:8080
 ```
 
-Либо создайте конфиг файл в формате json
+## 2) Облачные переменные
+Перед запуском утилиты необходимо присвоить переменным значения в формате: 
+```
+ADDRESS='localhost:8080'
+```
+где "ADDRESS" - облачная переменная, 'localhost:8080' присвоение значения данной переменной.
+
+## 3) Конфигурационный файл
+Для исрользования конфиг файла нужен следующий формат:
 ```
 {
     "address": "localhost:8080"
     //etc.
 }
 ```
+## Запуск сервера
 
-1. Необходимо запустить сервер из пакета [cmd](https://github.com/CyrilSbrodov/metricService/blob/main/cmd/server/main.go)
+Необходимо запустить сервер из пакета [cmd](https://github.com/CyrilSbrodov/metricService/blob/main/cmd/server/main.go)
 ```
+cd cmd/server
 go run main.go
 ```
 
-2. Зпустить агент из пакета [cmd](https://github.com/CyrilSbrodov/metricService/blob/main/cmd/agent/main.go)
+## Запуск агента
+
+Необходимо запустить агент из пакета [cmd](https://github.com/CyrilSbrodov/metricService/blob/main/cmd/agent/main.go)
 ```
+cd cmd/agent
 go run main.go
 ```
-## 1.2. Зависимости.
-Для работы обязательно понадобится PostgreSQL последней версии.
-
-
-# 2. Агент
-
+____
+ 
+# Для разработчиков
+Структура приложения позволяет нативно вносить корректировки:
 [Структура агента](https://github.com/CyrilSbrodov/metricService/blob/main/internal/app/agent.go):
 ```GO
 type AgentApp struct {
@@ -107,6 +151,21 @@ type AgentApp struct {
 	wg     sync.WaitGroup
 }
 ```
+[Структура сервера](https://github.com/CyrilSbrodov/metricService/blob/main/internal/app/server.go):
+```GO
+type ServerApp struct {
+	router   *chi.Mux // роутер
+	cfg      config.ServerConfig // конфиг
+	logger   *loggers.Logger // логгер
+	cryptoer crypto.Cryptoer // интерфейс шифрования
+	private  *rsa.PrivateKey // приватный ключ шифрования
+}
+```
+
+Немного о сервере и агенте:
+
+# 3. Агент
+
 Метрики собираются с интерваорм, согласно конфигу (по умолчанию интервал составляет 2 секунды).
 Метрики отправляются на сервер по одной и батчами с интервалом, согласно конфигу (по умолчанию интервал составляет 10 секунд).
 
@@ -121,16 +180,6 @@ flag.StringVar(&cfgAgent.CryptoPROKey, "crypto-key", "", "crypto file")
 ```
 
 # 3. Сервер
-[Структура сервера](https://github.com/CyrilSbrodov/metricService/blob/main/internal/app/server.go):
-```GO
-type ServerApp struct {
-	router   *chi.Mux // роутер
-	cfg      config.ServerConfig // конфиг
-	logger   *loggers.Logger // логгер
-	cryptoer crypto.Cryptoer // интерфейс шифрования
-	private  *rsa.PrivateKey // приватный ключ шифрования
-}
-```
 Сервер получает метрики по следующим эндпоинтам:
 1) [http](https://github.com/CyrilSbrodov/metricService/blob/main/internal/handlers/handler.go):
 ```GO
