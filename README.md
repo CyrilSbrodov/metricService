@@ -10,8 +10,8 @@ ____
 2.2. [Запуск сервера](https://github.com/CyrilSbrodov/metricService#Запуск-сервера).
 2.3. [Запуск агента](https://github.com/CyrilSbrodov/metricService#Запуск-агента).
 3. [Для разработчиков](https://github.com/CyrilSbrodov/metricService#Для-разработчиков).
-3.1. [Агент](https://github.com/CyrilSbrodov/metricService#Агент).
-3.2. [Сервер](https://github.com/CyrilSbrodov/metricService#Сервер).
+3.1. [Агент](https://github.com/CyrilSbrodov/metricService#1-агент).
+3.2. [Сервер](https://github.com/CyrilSbrodov/metricService#2-Сервер).
 ____
 
 # Сервис сбора метрик и алертинга.
@@ -164,7 +164,7 @@ type ServerApp struct {
 
 Немного о сервере и агенте:
 
-# 3. Агент
+# 1. Агент
 
 Метрики собираются с интерваорм, согласно конфигу (по умолчанию интервал составляет 2 секунды).
 Метрики отправляются на сервер по одной и батчами с интервалом, согласно конфигу (по умолчанию интервал составляет 10 секунд).
@@ -179,7 +179,7 @@ flag.StringVar(&cfgAgent.GRPCAddr, "grpc", "", "grpc port")
 flag.StringVar(&cfgAgent.CryptoPROKey, "crypto-key", "", "crypto file")
 ```
 
-# 3. Сервер
+# 2. Сервер
 Сервер получает метрики по следующим эндпоинтам:
 1) [http](https://github.com/CyrilSbrodov/metricService/blob/main/internal/handlers/handler.go):
 ```GO
